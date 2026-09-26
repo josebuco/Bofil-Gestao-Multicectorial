@@ -9,6 +9,7 @@ import {
   CartesianGrid,
   Cell,
   Legend,
+  Line,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -56,6 +57,7 @@ function DashboardPage() {
     month: row.month,
     receitas: sectors.reduce((s, x) => s + (x.series[i]?.receitas || 0), 0),
     despesas: sectors.reduce((s, x) => s + (x.series[i]?.despesas || 0), 0),
+    saldo: sectors.reduce((s, x) => s + (x.series[i]?.saldo || 0), 0),
   }));
   const bars = sectors.map((s) => ({ name: s.label.split(" ")[0], Receitas: s.revenue, Despesas: s.expense, Saldo: s.balance }));
   const pie = sectors.filter((s) => s.revenue > 0).map((s) => ({ name: s.label, value: s.revenue, slug: s.slug }));
@@ -125,6 +127,7 @@ function DashboardPage() {
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Area type="monotone" dataKey="receitas" name="Receitas" stroke="var(--warning)" strokeWidth={2.5} fill="url(#d-in)" />
                 <Area type="monotone" dataKey="despesas" name="Despesas" stroke="var(--destructive)" strokeWidth={2.5} fill="url(#d-out)" />
+                <Line type="monotone" dataKey="saldo" name="Saldo" stroke="var(--success)" strokeWidth={2} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>

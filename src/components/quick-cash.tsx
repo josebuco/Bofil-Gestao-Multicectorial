@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowDownRight, ArrowUpRight, Plus, Trash2, Wallet } from "lucide-react";
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/access.functions";
 import { getFinance } from "@/lib/finance.functions";
 import { periodLabel } from "@/lib/period";

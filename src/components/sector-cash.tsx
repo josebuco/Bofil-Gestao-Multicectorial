@@ -4,6 +4,7 @@ import {
   AreaChart,
   CartesianGrid,
   Legend,
+  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
