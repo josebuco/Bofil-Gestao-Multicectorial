@@ -33,9 +33,9 @@ export const Route = createFileRoute("/_authenticated/agua")({
   head: () => ({
     meta: [
       { title: "Estação de Água — Bofil" },
-      { name: "description", content: "Gestão de vendas, stock e entregas de água." },
+      { name: "description", content: "Gestão de entregas de água com camião cisterna." },
       { property: "og:title", content: "Estação de Água — Bofil" },
-      { property: "og:description", content: "Gestão de vendas, stock e entregas de água." },
+      { property: "og:description", content: "Gestão de entregas de água com camião cisterna." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -101,15 +101,15 @@ function AguaPage() {
     const f = new FormData(e.currentTarget);
     void run(
       () =>
-        addProduct({
-          data: {
-            name: String(f.get("name")),
-            price: Number(f.get("price")),
-            stock: Number(f.get("stock")),
-            unit: String(f.get("unit")),
-          },
-        }),
-      "Produto criado.",
+          addProduct({
+            data: {
+              name: String(f.get("name")),
+              price: Number(f.get("price")),
+              stock: 0,
+              unit: String(f.get("unit")),
+            },
+          }),
+        "Serviço criado.",
     );
   }
 
@@ -118,14 +118,14 @@ function AguaPage() {
       <PageHeader
         dot="bg-water"
         title="Estação de Água"
-        subtitle="Vendas, stock e entregas"
+        subtitle="Entregas com camião cisterna"
         action={
           <div className="flex gap-2">
             <button
               onClick={() => setForm(form === "product" ? "none" : "product")}
               className="px-3 py-1.5 text-sm font-medium rounded-md ring-1 ring-edge text-foreground hover:bg-white/5"
             >
-              + Produto
+              + Serviço
             </button>
             <button
               onClick={() => setForm(form === "sale" ? "none" : "sale")}
@@ -138,17 +138,16 @@ function AguaPage() {
       />
 
       <div className="flex-1 overflow-auto p-6 space-y-5">
-        <section className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Kpi label="Receita hoje" value={formatMoney(data.todayRevenue)} />
-          <Kpi label="Vendas hoje" value={data.todaySalesCount} />
+          <Kpi label="Entregas hoje" value={data.todaySalesCount} />
           <Kpi label="Entregas pendentes" value={pending} tone="text-warning" />
-          <Kpi label="Stock baixo" value={data.lowStock} tone="text-warning" />
         </section>
 
         <SectorCash slug="agua" />
 
-        <FormPanel open={form === "sale"} title="Nova venda" saving={saving} onSubmit={onSale}>
-          <Field label="Produto">
+        <FormPanel open={form === "sale"} title="Nova entrega" saving={saving} onSubmit={onSale}>
+          <Field label="Serviço">
             <select name="product_id" required className={inputClass}>
               {data.products.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -171,29 +170,25 @@ function AguaPage() {
           </Field>
         </FormPanel>
 
-        <FormPanel open={form === "product"} title="Novo produto" saving={saving} onSubmit={onProduct}>
+        <FormPanel open={form === "product"} title="Novo serviço" saving={saving} onSubmit={onProduct}>
           <Field label="Nome">
-            <input name="name" required className={inputClass} placeholder="Garrafão 20L" />
+            <input name="name" required className={inputClass} placeholder="Cisterna 10.000L" />
           </Field>
           <Field label="Preço (Kz)">
             <input name="price" type="number" min={0} required className={inputClass} />
           </Field>
-          <Field label="Stock">
-            <input name="stock" type="number" min={0} defaultValue={0} required className={inputClass} />
-          </Field>
           <Field label="Unidade">
-            <input name="unit" defaultValue="unidade" required className={inputClass} />
+            <input name="unit" defaultValue="viagem" required className={inputClass} />
           </Field>
         </FormPanel>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          <Card title="Preços e stock">
+          <Card title="Tabela de preços">
             <table className="w-full text-sm">
               <thead className="border-b border-edge text-left">
                 <tr>
-                  <Th>Produto</Th>
+                  <Th>Serviço</Th>
                   <Th>Preço</Th>
-                  <Th>Stock</Th>
                   <Th>Acção</Th>
                 </tr>
               </thead>
@@ -204,13 +199,12 @@ function AguaPage() {
                     <Td>
                       {formatMoney(p.price)}/{p.unit}
                     </Td>
-                    <Td className={p.stock < 20 ? "text-warning" : ""}>{p.stock}</Td>
                     <Td>
                       <ActionButton
                         onClick={() =>
                           void run(
                             () => removeRecord({ data: { table: "water_products", id: p.id } }),
-                            "Produto removido.",
+                            "Serviço removido.",
                           )
                         }
                       >
@@ -223,7 +217,7 @@ function AguaPage() {
             </table>
           </Card>
 
-          <Card title="Vendas recentes">
+          <Card title="Entregas recentes">
             <table className="w-full text-sm">
               <thead className="border-b border-edge text-left">
                 <tr>
