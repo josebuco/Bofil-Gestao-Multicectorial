@@ -83,6 +83,14 @@ export function SectorCash({ slug }: { slug: string }) {
                 strokeWidth={2}
                 fill={`url(#exp-${slug})`}
               />
+              <Line
+                type="monotone"
+                dataKey="saldo"
+                name="Saldo"
+                stroke="var(--success)"
+                strokeWidth={2}
+                dot={false}
+              />
             </AreaChart>
           </ResponsiveContainer>
         </div>
