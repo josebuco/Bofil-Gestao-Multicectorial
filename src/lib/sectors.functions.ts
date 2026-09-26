@@ -24,7 +24,6 @@ export const getWaterData = createServerFn({ method: "GET" })
       sales: sales || [],
       todayRevenue,
       todaySalesCount: todaySales.length,
-      lowStock: (products || []).filter((p) => p.stock < 20).length,
     };
   });
 
