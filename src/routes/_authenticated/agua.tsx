@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { getWaterData } from "@/lib/sectors.functions";
 import {
@@ -24,6 +24,7 @@ import {
 } from "@/components/panel";
 import { SectorCash } from "@/components/sector-cash";
 import { useAccess } from "@/lib/use-access";
+import { dayStartIso, todayAngola } from "@/lib/tz";
 
 const waterOptions = queryOptions({
   queryKey: ["sector", "agua"],
@@ -59,7 +60,21 @@ function AguaPage() {
   const [form, setForm] = useState<"none" | "sale" | "product">("none");
   const [saving, setSaving] = useState(false);
 
-  const pending = data.sales.filter((s) => s.status === "Pendente").length;
+  const [today, setToday] = useState(todayAngola());
+  useEffect(() => {
+    const t = setInterval(() => {
+      const d = todayAngola();
+      if (d !== today) {
+        setToday(d);
+        void qc.invalidateQueries();
+      }
+    }, 30000);
+    return () => clearInterval(t);
+  }, [today, qc]);
+  const dayStart = new Date(dayStartIso(today));
+  // Técnico vê apenas as entregas do dia actual (Angola); a administração vê o histórico.
+  const visibleSales = isAdmin ? data.sales : data.sales.filter((s) => new Date(s.created_at) >= dayStart);
+  const pending = visibleSales.filter((s) => s.status === "Pendente").length;
 
   async function refresh() {
     await qc.invalidateQueries({ queryKey: ["sector", "agua"] });
@@ -241,7 +256,7 @@ function AguaPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-edge/60">
-                {data.sales.map((s) => (
+                {visibleSales.map((s) => (
                   <tr key={s.id} className="hover:bg-white/[0.02]">
                     <Td>{new Date(s.created_at).toLocaleString("pt-AO", { dateStyle: "short", timeStyle: "short" })}</Td>
                     <Td>

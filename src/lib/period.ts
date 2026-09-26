@@ -1,3 +1,4 @@
+import { todayAngola } from "@/lib/tz";
 export type PeriodPreset =
   | "hoje"
   | "7dias"
@@ -29,7 +30,9 @@ function iso(date: Date) {
 }
 
 export function resolvePeriod(preset: PeriodPreset, custom?: { from: string; to: string }) {
-  const now = new Date();
+  // Angola calendar date (UTC+1), independent of device/server timezone.
+  const [ay, am, ad] = todayAngola().split("-").map(Number);
+  const now = new Date(ay!, am! - 1, ad!);
   const to = iso(now);
   switch (preset) {
     case "hoje":
