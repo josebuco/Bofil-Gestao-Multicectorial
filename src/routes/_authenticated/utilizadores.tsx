@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { KeyRound, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { PERMISSION_OPTIONS, createStaff, deleteStaff, listStaff, updateAdminCredentials, updateStaff } from "@/lib/access.functions";
+import { applyBofilAdminCredentials } from "@/lib/admin-setup.functions";
 import { Card, Field, PageHeader, inputClass } from "@/components/panel";
 
 export const Route = createFileRoute("/_authenticated/utilizadores")({
@@ -29,6 +30,7 @@ function UsersPage() {
   const create = useServerFn(createStaff);
   const update = useServerFn(updateStaff);
   const updateAdmin = useServerFn(updateAdminCredentials);
+  const applyRequestedAdmin = useServerFn(applyBofilAdminCredentials);
   const remove = useServerFn(deleteStaff);
   const { data: staff = [], error } = useQuery({ queryKey: ["staff"], queryFn: () => list() });
   const [open, setOpen] = useState(false);
@@ -79,6 +81,12 @@ function UsersPage() {
     setSaving(false);
   }
 
+  async function applyRequestedCredentials() {
+    setSaving(true);
+    await run(() => applyRequestedAdmin(), "A conta administrativa Bofil foi actualizada. Entre novamente com o novo acesso.");
+    setSaving(false);
+  }
+
   return (
     <div className="flex-1 flex flex-col min-w-0">
       <PageHeader
@@ -110,9 +118,14 @@ function UsersPage() {
               <input name="password" type="password" minLength={8} required className={inputClass} />
             </Field>
           </div>
-          <button disabled={saving} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50">
-            {saving ? "A actualizar…" : "Actualizar acesso administrativo"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button disabled={saving} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50">
+              {saving ? "A actualizar…" : "Actualizar acesso administrativo"}
+            </button>
+            <button type="button" disabled={saving} onClick={() => void applyRequestedCredentials()} className="px-4 py-2 rounded-md ring-1 ring-edge text-foreground text-sm font-medium disabled:opacity-50">
+              Aplicar credenciais Bofil pedidas
+            </button>
+          </div>
         </form>
 
         {open ? (
