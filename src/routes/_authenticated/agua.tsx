@@ -138,11 +138,10 @@ function AguaPage() {
       />
 
       <div className="flex-1 overflow-auto p-6 space-y-5">
-        <section className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Kpi label="Receita hoje" value={formatMoney(data.todayRevenue)} />
-          <Kpi label="Vendas hoje" value={data.todaySalesCount} />
+          <Kpi label="Entregas hoje" value={data.todaySalesCount} />
           <Kpi label="Entregas pendentes" value={pending} tone="text-warning" />
-          <Kpi label="Stock baixo" value={data.lowStock} tone="text-warning" />
         </section>
 
         <SectorCash slug="agua" />
