@@ -183,13 +183,12 @@ function AguaPage() {
         </FormPanel>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          <Card title="Preços e stock">
+          <Card title="Tabela de preços">
             <table className="w-full text-sm">
               <thead className="border-b border-edge text-left">
                 <tr>
-                  <Th>Produto</Th>
+                  <Th>Serviço</Th>
                   <Th>Preço</Th>
-                  <Th>Stock</Th>
                   <Th>Acção</Th>
                 </tr>
               </thead>
@@ -200,13 +199,12 @@ function AguaPage() {
                     <Td>
                       {formatMoney(p.price)}/{p.unit}
                     </Td>
-                    <Td className={p.stock < 20 ? "text-warning" : ""}>{p.stock}</Td>
                     <Td>
                       <ActionButton
                         onClick={() =>
                           void run(
                             () => removeRecord({ data: { table: "water_products", id: p.id } }),
-                            "Produto removido.",
+                            "Serviço removido.",
                           )
                         }
                       >
