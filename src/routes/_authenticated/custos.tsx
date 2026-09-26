@@ -61,7 +61,7 @@ function CustosPage() {
   const queryClient = useQueryClient();
   const access = useAccess();
   const [rawTab, setTab] = useState<string>("agua");
-  const allowedSlugs = SECTORS.filter((s) => access.isAdmin || access.sectors.includes(s.slug)).map((s) => s.slug);
+  const allowedSlugs = SECTORS.filter((s) => access.isAdmin || access.sectors.includes(s.slug)).map((s) => s.slug as string);
   const tab = allowedSlugs.includes(rawTab) ? rawTab : (allowedSlugs[0] ?? rawTab);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
