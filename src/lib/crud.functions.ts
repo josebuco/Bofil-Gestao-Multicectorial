@@ -24,7 +24,7 @@ export const createWaterProduct = createServerFn({ method: "POST" })
       .object({
         name: z.string().min(1),
         price: z.number().int().min(0),
-        stock: z.number().int().min(0),
+        stock: z.number().int().min(0).default(0),
         unit: z.string().min(1),
       })
       .parse(d),
