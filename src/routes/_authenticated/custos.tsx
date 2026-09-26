@@ -10,6 +10,7 @@ import {
   createExpense,
   deleteExpense,
   getInvoiceUrl,
+  markExpensePaid,
 } from "@/lib/expenses.functions";
 import { PeriodPicker, usePeriod } from "@/components/panel";
 import { useAccess } from "@/lib/use-access";
@@ -66,6 +67,7 @@ function CustosPage() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [paying, setPaying] = useState<string | null>(null);
 
   const { preset, setPreset, custom, setCustom, range } = usePeriod("mes");
 
@@ -167,24 +169,24 @@ function CustosPage() {
       </header>
 
       <div className="flex-1 overflow-auto p-6 space-y-5">
-        {access.isAdmin ? (
-          <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Despesas do período
-              </p>
-              <p className="font-display font-semibold text-2xl text-foreground mt-2">
-                {formatMoney(periodTotal)} Kz
-              </p>
-            </div>
-            <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Por pagar no período
-              </p>
-              <p className="font-display font-semibold text-2xl text-warning mt-2">
-                {formatMoney(periodPending)} Kz
-              </p>
-            </div>
+        <section className={`grid grid-cols-1 gap-3 ${access.isAdmin ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+          <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Despesas do período
+            </p>
+            <p className="font-display font-semibold text-2xl text-foreground mt-2">
+              {formatMoney(periodTotal)} Kz
+            </p>
+          </div>
+          <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Por pagar no período
+            </p>
+            <p className="font-display font-semibold text-2xl text-warning mt-2">
+              {formatMoney(periodPending)} Kz
+            </p>
+          </div>
+          {access.isAdmin ? (
             <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 Total registado
@@ -193,8 +195,8 @@ function CustosPage() {
                 {formatMoney(data.total)} Kz
               </p>
             </div>
-          </section>
-        ) : null}
+          ) : null}
+        </section>
 
         <div className="flex flex-wrap gap-1 border-b border-edge">
           {SECTORS.filter((s) => access.isAdmin || access.sectors.includes(s.slug)).map((s) => (
@@ -209,11 +211,9 @@ function CustosPage() {
             >
               <span className={`size-1.5 rounded-full ${s.color}`} />
               {s.label}
-              {access.isAdmin ? (
-                <span className="text-[11px] text-muted-foreground">
-                  {formatMoney(periodBySector[s.slug] || 0)} Kz
-                </span>
-              ) : null}
+              <span className="text-[11px] text-muted-foreground">
+                {formatMoney(periodBySector[s.slug] || 0)} Kz
+              </span>
             </button>
           ))}
         </div>
@@ -319,12 +319,10 @@ function CustosPage() {
             <h2 className="font-display font-semibold text-base uppercase tracking-wide text-foreground">
               Despesas — {SECTORS.find((s) => s.slug === tab)?.label}
             </h2>
-            {access.isAdmin ? (
-              <p className="text-xs text-muted-foreground">
-                Total {formatMoney(tabTotal)} Kz · Por pagar{" "}
-                <span className="text-warning">{formatMoney(tabPending)} Kz</span>
-              </p>
-            ) : null}
+            <p className="text-xs text-muted-foreground">
+              Total {formatMoney(tabTotal)} Kz · Por pagar{" "}
+              <span className="text-warning">{formatMoney(tabPending)} Kz</span>
+            </p>
           </div>
 
           {rows.length === 0 ? (
@@ -371,6 +369,24 @@ function CustosPage() {
                         >
                           {e.status}
                         </span>
+                        {e.status === "Pendente" ? (
+                          <button
+                            onClick={() => setPaying(paying === e.id ? null : e.id)}
+                            className="ml-2 text-xs font-medium text-primary hover:underline"
+                          >
+                            Marcar pago
+                          </button>
+                        ) : null}
+                        {paying === e.id ? (
+                          <PayForm
+                            id={e.id}
+                            sector={e.sector}
+                            onDone={async () => {
+                              setPaying(null);
+                              await queryClient.invalidateQueries({ queryKey: ["expenses"] });
+                            }}
+                          />
+                        ) : null}
                       </td>
                       <td className="px-3 py-3">
                         {e.invoice_path ? (
@@ -404,6 +420,60 @@ function CustosPage() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function PayForm({ id, sector, onDone }: { id: string; sector: string; onDone: () => Promise<void> }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function confirm() {
+    setBusy(true);
+    try {
+      let invoicePath: string | null = null;
+      if (file) {
+        const ext = file.name.split(".").pop() || "pdf";
+        const path = `${sector}/${crypto.randomUUID()}.${ext}`;
+        const { error } = await supabase.storage.from("faturas").upload(path, file);
+        if (error) throw new Error(error.message);
+        invoicePath = path;
+      }
+      await markExpensePaid({ data: { id, invoice_path: invoicePath, notes: notes.trim() || null } });
+      toast.success("Despesa marcada como paga.");
+      await onDone();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível confirmar o pagamento.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-2 w-64 space-y-2 rounded-md bg-ink ring-1 ring-edge p-3">
+      <label className="block text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+        Fatura (opcional)
+      </label>
+      <input
+        type="file"
+        accept="image/*,application/pdf"
+        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        className="w-full text-xs text-foreground file:mr-2 file:rounded file:border-0 file:bg-edge file:px-2 file:py-1 file:text-xs file:text-foreground"
+      />
+      <input
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder="Nota (ex.: pago por transferência)"
+        className="w-full rounded-md bg-panel ring-1 ring-edge px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
+      />
+      <button
+        onClick={() => void confirm()}
+        disabled={busy}
+        className="w-full rounded-md bg-brand px-2 py-1.5 text-xs font-medium text-primary-foreground hover:bg-brand/90 disabled:opacity-60"
+      >
+        {busy ? "A guardar..." : "Confirmar pagamento"}
+      </button>
     </div>
   );
 }
