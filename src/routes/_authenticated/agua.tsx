@@ -101,15 +101,15 @@ function AguaPage() {
     const f = new FormData(e.currentTarget);
     void run(
       () =>
-        addProduct({
-          data: {
-            name: String(f.get("name")),
-            price: Number(f.get("price")),
-            stock: Number(f.get("stock")),
-            unit: String(f.get("unit")),
-          },
-        }),
-      "Produto criado.",
+          addProduct({
+            data: {
+              name: String(f.get("name")),
+              price: Number(f.get("price")),
+              stock: 0,
+              unit: String(f.get("unit")),
+            },
+          }),
+        "Serviço criado.",
     );
   }
 
