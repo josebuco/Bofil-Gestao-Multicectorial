@@ -22,6 +22,13 @@
       "when": 1790460995472,
       "tag": "0002_payment_method",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790461963123,
+      "tag": "0003_tighten_sector_policies",
+      "breakpoints": true
     }
   ]
 }
