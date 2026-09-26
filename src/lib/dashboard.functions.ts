@@ -1,11 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { dayStartIso, todayAngola } from "@/lib/tz";
 
 export const getDashboardStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    const todayStart = new Date(dayStartIso(todayAngola()));
 
     const [
       { data: waterToday },
@@ -16,6 +16,7 @@ export const getDashboardStats = createServerFn({ method: "GET" })
       context.supabase
         .from("water_sales")
         .select("total")
+        .neq("status", "Pendente")
         .gte("created_at", todayStart.toISOString()),
       context.supabase
         .from("restaurant_orders")
@@ -53,9 +54,7 @@ export const getDashboardStats = createServerFn({ method: "GET" })
 export const getRevenueBySector = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
+    const monthStart = new Date(dayStartIso(todayAngola().slice(0, 8) + "01"));
 
     const [
       { data: waterSales },
@@ -63,7 +62,7 @@ export const getRevenueBySector = createServerFn({ method: "GET" })
       { data: washQueue },
       { data: transportContracts },
     ] = await Promise.all([
-      context.supabase.from("water_sales").select("total").gte("created_at", monthStart.toISOString()),
+      context.supabase.from("water_sales").select("total").neq("status", "Pendente").gte("created_at", monthStart.toISOString()),
       context.supabase.from("restaurant_orders").select("total").gte("created_at", monthStart.toISOString()).in("status", ["Pago", "Em curso"]),
       context.supabase.from("wash_queue").select("total").gte("created_at", monthStart.toISOString()).neq("status", "Cancelado"),
       context.supabase.from("school_contracts").select("monthly_fee").in("status", ["Activo", "Pendente"]),
@@ -102,8 +101,7 @@ export const getTransportContracts = createServerFn({ method: "GET" })
 export const getDailyOperations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    const todayStart = new Date(dayStartIso(todayAngola()));
 
     const [{ data: restaurantOrders }, { data: washQueue }] = await Promise.all([
       context.supabase

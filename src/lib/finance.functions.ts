@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { angolaParts, dayEndIso, dayStartIso } from "@/lib/tz";
 
 export const SECTOR_LABELS: Record<string, string> = {
   agua: "Água",
@@ -10,12 +11,15 @@ export const SECTOR_LABELS: Record<string, string> = {
   geral: "Geral / Administração",
 };
 
-function dayKey(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+const pad = (n: number) => String(n).padStart(2, "0");
+function dayKey(date: Date | string) {
+  const p = angolaParts(date);
+  return `${p.y}-${pad(p.m)}-${pad(p.d)}`;
 }
 
-function monthKey(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+function monthKey(date: Date | string) {
+  const p = angolaParts(date);
+  return `${p.y}-${pad(p.m)}`;
 }
 
 export const getFinance = createServerFn({ method: "GET" })
@@ -29,10 +33,10 @@ export const getFinance = createServerFn({ method: "GET" })
       .parse(data),
   )
   .handler(async ({ context, data }) => {
-    const fromDate = new Date(`${data.from}T00:00:00`);
-    const toDate = new Date(`${data.to}T23:59:59`);
-    const fromIso = fromDate.toISOString();
-    const toIso = toDate.toISOString();
+    const fromIso = dayStartIso(data.from);
+    const toIso = dayEndIso(data.to);
+    const fromDate = new Date(fromIso);
+    const toDate = new Date(toIso);
     const spanDays = Math.max(
       1,
       Math.round((toDate.getTime() - fromDate.getTime()) / 86400000) + 1,
@@ -63,18 +67,19 @@ export const getFinance = createServerFn({ method: "GET" })
       const cursor = new Date(fromDate);
       while (cursor <= toDate) {
         buckets.push(dayKey(cursor));
-        cursor.setDate(cursor.getDate() + 1);
+        cursor.setUTCDate(cursor.getUTCDate() + 1);
       }
     } else {
-      const cursor = new Date(fromDate.getFullYear(), fromDate.getMonth(), 1);
+      const cursor = new Date(fromDate);
       while (cursor <= toDate) {
-        buckets.push(monthKey(cursor));
-        cursor.setMonth(cursor.getMonth() + 1);
+        const k = monthKey(cursor);
+        if (!buckets.includes(k)) buckets.push(k);
+        cursor.setUTCDate(cursor.getUTCDate() + 1);
       }
     }
 
     const keyOf = (when: string | Date) => {
-      const d = typeof when === "string" ? new Date(when.length <= 10 ? `${when}T00:00:00` : when) : when;
+      const d = typeof when === "string" && when.length <= 10 ? `${when}T12:00:00+01:00` : when;
       return granularity === "day" ? dayKey(d) : monthKey(d);
     };
 
@@ -112,8 +117,9 @@ export const getFinance = createServerFn({ method: "GET" })
     const bank: Record<string, number> = Object.fromEntries(slugs.map((s) => [s, 0]));
 
     for (const s of sales.data || []) {
-      add(revenue, "agua", s.created_at, s.total || 0);
-      if (s.payment_method === "Banco") bank["agua"] = (bank["agua"] || 0) + (s.total || 0);
+      // Pending deliveries are not revenue until delivered.
+      if (s.status !== "Pendente") add(revenue, "agua", s.created_at, s.total || 0);
+      if (s.status !== "Pendente" && s.payment_method === "Banco") bank["agua"] = (bank["agua"] || 0) + (s.total || 0);
       entries.push({
         sector: "agua",
         kind: "receita",

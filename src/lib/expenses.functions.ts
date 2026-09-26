@@ -73,6 +73,11 @@ export const deleteExpense = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Só a administração pode apagar registos.");
     const { error } = await context.supabase.from("expenses").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };

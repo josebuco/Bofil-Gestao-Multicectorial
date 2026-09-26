@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { dayEndIso, dayStartIso } from "@/lib/tz";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const PERMISSION_OPTIONS = [
@@ -175,8 +176,8 @@ export const listSectorEntries = createServerFn({ method: "GET" })
       .from("sector_entries")
       .select("id, amount, created_at, payment_method")
       .eq("sector", data.sector)
-      .gte("created_at", new Date(`${data.from}T00:00:00`).toISOString())
-      .lte("created_at", new Date(`${data.to}T23:59:59`).toISOString())
+      .gte("created_at", dayStartIso(data.from))
+      .lte("created_at", dayEndIso(data.to))
       .order("created_at", { ascending: false })
       .limit(300);
     if (error) throw new Error(error.message);
@@ -187,6 +188,11 @@ export const deleteSectorEntry = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Só a administração pode apagar registos.");
     const { error } = await context.supabase.from("sector_entries").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
