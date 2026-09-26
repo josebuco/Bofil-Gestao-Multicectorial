@@ -73,6 +73,7 @@ function FaturacaoPage() {
   const entries = tab === "todos" ? allEntries : allEntries.filter((e) => e.sector === tab);
 
   const revenue = sector ? sector.revenue : data?.totals.revenue || 0;
+  const bankTotal = sector ? sector.bank : data?.totals.bank || 0;
   const expense = sector ? sector.expense : data?.totals.expense || 0;
   const pending = sector ? sector.pendingExpense : data?.totals.pendingExpense || 0;
   const balance = revenue - expense;
@@ -129,8 +130,9 @@ function FaturacaoPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <Kpi label="Receitas do período" value={formatMoney(revenue)} tone="text-warning" />
+          <Kpi label="Via banco (VB)" value={formatMoney(bankTotal)} tone="text-brand" />
           <Kpi label="Despesas do período" value={formatMoney(expense)} tone="text-destructive" />
           <Kpi
             label="Saldo de caixa"
@@ -236,6 +238,8 @@ function FaturacaoPage() {
               <tr>
                 <Th>Setor</Th>
                 <Th>Receitas</Th>
+                <Th>VB (banco)</Th>
+                <Th>Numerário</Th>
                 <Th>Despesas</Th>
                 <Th>Por pagar</Th>
                 <Th>Saldo</Th>
@@ -246,6 +250,8 @@ function FaturacaoPage() {
                 <tr key={s.slug} className="hover:bg-white/5">
                   <Td className="font-medium">{s.label}</Td>
                    <Td className="text-warning">{formatMoney(s.revenue)}</Td>
+                  <Td className="text-brand">{formatMoney(s.bank)}</Td>
+                  <Td className="text-muted-foreground">{formatMoney(s.revenue - s.bank)}</Td>
                   <Td className="text-destructive">{formatMoney(s.expense)}</Td>
                   <Td className="text-warning">{formatMoney(s.pendingExpense)}</Td>
                   <Td
@@ -276,7 +282,10 @@ function FaturacaoPage() {
               {entries.slice(0, 60).map((e, i) => (
                 <tr key={`${e.date}-${i}`} className="hover:bg-white/5">
                   <Td>{new Date(e.date).toLocaleDateString("pt-AO")}</Td>
-                  <Td>{e.description}</Td>
+                  <Td>
+                    {e.description}
+                    {e.payment === "Banco" ? <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-brand/15 text-brand">VB</span> : null}
+                  </Td>
                   <Td>
                     <span
                       className={`px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wide ${

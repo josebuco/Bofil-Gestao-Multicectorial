@@ -42,12 +42,12 @@ export const getFinance = createServerFn({ method: "GET" })
     const [sales, quick, expenses] = await Promise.all([
       context.supabase
         .from("water_sales")
-        .select("total, created_at, client_name, status")
+        .select("total, created_at, client_name, status, payment_method")
         .gte("created_at", fromIso)
         .lte("created_at", toIso),
       context.supabase
         .from("sector_entries")
-        .select("id, sector, amount, created_at")
+        .select("id, sector, amount, created_at, payment_method")
         .gte("created_at", fromIso)
         .lte("created_at", toIso),
       context.supabase
@@ -107,10 +107,13 @@ export const getFinance = createServerFn({ method: "GET" })
       status: string;
       category?: string;
       invoice_path?: string | null;
+      payment?: string;
     }> = [];
+    const bank: Record<string, number> = Object.fromEntries(slugs.map((s) => [s, 0]));
 
     for (const s of sales.data || []) {
       add(revenue, "agua", s.created_at, s.total || 0);
+      if (s.payment_method === "Banco") bank.agua = (bank.agua || 0) + (s.total || 0);
       entries.push({
         sector: "agua",
         kind: "receita",
@@ -118,10 +121,12 @@ export const getFinance = createServerFn({ method: "GET" })
         description: `Venda de água${s.client_name ? ` — ${s.client_name}` : ""}`,
         amount: s.total || 0,
         status: s.status || "—",
+        payment: s.payment_method,
       });
     }
     for (const q of quick.data || []) {
       add(revenue, q.sector, q.created_at, q.amount || 0);
+      if (q.payment_method === "Banco") bank[q.sector] = (bank[q.sector] || 0) + (q.amount || 0);
       entries.push({
         sector: q.sector,
         kind: "receita",
@@ -129,6 +134,7 @@ export const getFinance = createServerFn({ method: "GET" })
         description: "Entrada",
         amount: q.amount || 0,
         status: "Recebido",
+        payment: q.payment_method,
       });
     }
 
@@ -159,6 +165,7 @@ export const getFinance = createServerFn({ method: "GET" })
         slug,
         label: SECTOR_LABELS[slug]!,
         revenue: rev,
+        bank: bank[slug] || 0,
         expense: exp,
         balance: rev - exp,
         pendingExpense: sectorEntries
@@ -180,6 +187,7 @@ export const getFinance = createServerFn({ method: "GET" })
       entries: entries.slice(0, 500),
       totals: {
         revenue: sectors.reduce((s, x) => s + x.revenue, 0),
+        bank: sectors.reduce((s, x) => s + x.bank, 0),
         expense: sectors.reduce((s, x) => s + x.expense, 0),
         balance: sectors.reduce((s, x) => s + x.balance, 0),
         pendingExpense: sectors.reduce((s, x) => s + x.pendingExpense, 0),
