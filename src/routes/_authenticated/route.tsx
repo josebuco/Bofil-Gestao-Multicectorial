@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect, Link, useRouter } from "@tanstack/re
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccess } from "@/lib/use-access";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -37,6 +38,7 @@ function AuthenticatedLayout() {
     return () => unsubscribe();
   }, [router]);
 
+  const queryClient = useQueryClient();
   const access = useAccess();
   const sectors = allSectors.filter((s) => access.isAdmin || access.sectors.includes(s.perm));
 
@@ -47,6 +49,8 @@ function AuthenticatedLayout() {
   }, [access, currentPath]);
 
   async function handleSignOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
     await supabase.auth.signOut();
     router.navigate({ to: "/auth", replace: true });
   }
