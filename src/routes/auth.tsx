@@ -6,8 +6,12 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Entrar — Kilombwe" },
-      { name: "description", content: "Aceda ao painel de gestão Kilombwe." },
+      { title: "Entrar — Bofil" },
+      { name: "description", content: "Aceda ao painel de gestão Bofil." },
+      { property: "og:title", content: "Entrar — Bofil" },
+      { property: "og:description", content: "Aceda ao painel de gestão Bofil." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AuthPage,
@@ -68,11 +72,11 @@ function AuthPage() {
       <div className="w-full max-w-md rounded-xl border border-edge bg-panel p-8 shadow-xl">
         <div className="mb-8 flex items-center gap-3">
           <div className="grid size-10 place-items-center rounded-md bg-brand text-primary-foreground font-display text-xl font-bold">
-            K
+            B
           </div>
           <div>
             <h1 className="font-display text-lg font-semibold uppercase tracking-wide text-foreground">
-              Kilombwe
+              Bofil
             </h1>
             <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
               Gestão multi-setorial

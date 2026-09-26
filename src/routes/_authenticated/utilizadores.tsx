@@ -4,15 +4,16 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import { KeyRound, ShieldCheck, Trash2, UserPlus } from "lucide-react";
-import { PERMISSION_OPTIONS, createStaff, deleteStaff, listStaff, updateStaff } from "@/lib/access.functions";
+import { PERMISSION_OPTIONS, createStaff, deleteStaff, listStaff, updateAdminCredentials, updateStaff } from "@/lib/access.functions";
+import { applyBofilAdminCredentials } from "@/lib/admin-setup.functions";
 import { Card, Field, PageHeader, inputClass } from "@/components/panel";
 
 export const Route = createFileRoute("/_authenticated/utilizadores")({
   head: () => ({
     meta: [
-      { title: "Utilizadores e Permissões — Kilombwe" },
+      { title: "Utilizadores e Permissões — Bofil" },
       { name: "description", content: "Contas dos técnicos de registo e permissões por setor." },
-      { property: "og:title", content: "Utilizadores e Permissões — Kilombwe" },
+      { property: "og:title", content: "Utilizadores e Permissões — Bofil" },
       { property: "og:description", content: "Contas dos técnicos de registo e permissões por setor." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -28,6 +29,8 @@ function UsersPage() {
   const list = useServerFn(listStaff);
   const create = useServerFn(createStaff);
   const update = useServerFn(updateStaff);
+  const updateAdmin = useServerFn(updateAdminCredentials);
+  const applyRequestedAdmin = useServerFn(applyBofilAdminCredentials);
   const remove = useServerFn(deleteStaff);
   const { data: staff = [], error } = useQuery({ queryKey: ["staff"], queryFn: () => list() });
   const [open, setOpen] = useState(false);
@@ -67,6 +70,23 @@ function UsersPage() {
     setOpen(false);
   }
 
+  async function onUpdateAdmin(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    setSaving(true);
+    await run(
+      () => updateAdmin({ data: { email: String(f.get("email")), password: String(f.get("password")) } }),
+      "Credenciais da conta administrativa actualizadas.",
+    );
+    setSaving(false);
+  }
+
+  async function applyRequestedCredentials() {
+    setSaving(true);
+    await run(() => applyRequestedAdmin(), "A conta administrativa Bofil foi actualizada. Entre novamente com o novo acesso.");
+    setSaving(false);
+  }
+
   return (
     <div className="flex-1 flex flex-col min-w-0">
       <PageHeader
@@ -84,6 +104,29 @@ function UsersPage() {
       />
       <div className="flex-1 overflow-auto p-6 space-y-5">
         {error ? <p className="text-destructive text-sm">{(error as Error).message}</p> : null}
+
+        <form onSubmit={onUpdateAdmin} className="rounded-xl bg-panel ring-1 ring-edge p-5 space-y-4">
+          <div>
+            <h2 className="font-display text-base font-semibold uppercase text-foreground">Conta administrativa</h2>
+            <p className="mt-1 text-xs text-muted-foreground">Actualize o único acesso com controlo total do sistema.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Field label="E-mail do administrador">
+              <input name="email" type="email" defaultValue="bofil.lda@gmail.com" required className={inputClass} />
+            </Field>
+            <Field label="Nova palavra-passe">
+              <input name="password" type="password" minLength={8} required className={inputClass} />
+            </Field>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button disabled={saving} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50">
+              {saving ? "A actualizar…" : "Actualizar acesso administrativo"}
+            </button>
+            <button type="button" disabled={saving} onClick={() => void applyRequestedCredentials()} className="px-4 py-2 rounded-md ring-1 ring-edge text-foreground text-sm font-medium disabled:opacity-50">
+              Aplicar credenciais Bofil pedidas
+            </button>
+          </div>
+        </form>
 
         {open ? (
           <form onSubmit={onCreate} className="rounded-xl bg-panel ring-1 ring-edge p-5 space-y-4">

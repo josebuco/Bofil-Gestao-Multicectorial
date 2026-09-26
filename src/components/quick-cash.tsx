@@ -112,9 +112,9 @@ export function QuickCashPage({
         <section className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="rounded-xl bg-panel ring-1 ring-edge p-5">
             <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-[0.14em]">
-              Entradas <ArrowUpRight className="size-4 text-wash" />
+              Entradas <ArrowUpRight className="size-4 text-warning" />
             </div>
-            <p className="mt-2 font-display text-3xl text-wash">{formatMoney(sector?.revenue || 0)}</p>
+            <p className="mt-2 font-display text-3xl text-warning">{formatMoney(sector?.revenue || 0)}</p>
           </div>
           <div className="rounded-xl bg-panel ring-1 ring-edge p-5">
             <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-[0.14em]">
@@ -123,12 +123,12 @@ export function QuickCashPage({
             <p className="mt-2 font-display text-3xl text-destructive">{formatMoney(sector?.expense || 0)}</p>
           </div>
           <div
-            className={`rounded-xl p-5 ring-1 ${balance >= 0 ? "bg-brand/10 ring-brand/40" : "bg-destructive/10 ring-destructive/40"}`}
+             className={`rounded-xl p-5 ring-1 ${balance >= 0 ? "bg-success/10 ring-success/40" : "bg-destructive/10 ring-destructive/40"}`}
           >
             <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-[0.14em]">
               Saldo <Wallet className="size-4" />
             </div>
-            <p className={`mt-2 font-display text-4xl ${balance >= 0 ? "text-brand" : "text-destructive"}`}>
+             <p className={`mt-2 font-display text-4xl ${balance >= 0 ? "text-success" : "text-destructive"}`}>
               {formatMoney(balance)}
             </p>
           </div>
@@ -140,8 +140,8 @@ export function QuickCashPage({
               <AreaChart data={sector?.series || []}>
                 <defs>
                   <linearGradient id={`q-in-${slug}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--wash)" stopOpacity={0.45} />
-                    <stop offset="100%" stopColor="var(--wash)" stopOpacity={0.02} />
+                    <stop offset="0%" stopColor="var(--warning)" stopOpacity={0.45} />
+                    <stop offset="100%" stopColor="var(--warning)" stopOpacity={0.02} />
                   </linearGradient>
                   <linearGradient id={`q-out-${slug}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="var(--destructive)" stopOpacity={0.4} />
@@ -152,7 +152,7 @@ export function QuickCashPage({
                 <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} />
                 <YAxis stroke="var(--muted-foreground)" fontSize={11} width={70} tickLine={false} axisLine={false} />
                 <Tooltip formatter={(v: number) => formatMoney(v)} contentStyle={chartTooltip} />
-                <Area type="monotone" dataKey="receitas" name="Entradas" stroke="var(--wash)" strokeWidth={2} fill={`url(#q-in-${slug})`} />
+                <Area type="monotone" dataKey="receitas" name="Entradas" stroke="var(--warning)" strokeWidth={2} fill={`url(#q-in-${slug})`} />
                 <Area type="monotone" dataKey="despesas" name="Saídas" stroke="var(--destructive)" strokeWidth={2} fill={`url(#q-out-${slug})`} />
               </AreaChart>
             </ResponsiveContainer>
@@ -169,7 +169,7 @@ export function QuickCashPage({
                 <li key={e.id} className="flex items-center justify-between px-5 py-3 text-sm">
                   <span className="text-muted-foreground">{new Date(e.created_at).toLocaleString("pt-AO")}</span>
                   <span className="flex items-center gap-3">
-                    <span className="font-display text-wash">+{formatMoney(e.amount)}</span>
+                    <span className="font-display text-warning">+{formatMoney(e.amount)}</span>
                     {access.isAdmin ? (
                       <button
                         aria-label="Apagar entrada"

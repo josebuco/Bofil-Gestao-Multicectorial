@@ -1,11 +1,11 @@
 {
-  "name": "Kilombwe — Gestão Multi-Setorial",
-  "short_name": "Kilombwe",
+  "name": "Bofil — Gestão Multi-Setorial",
+  "short_name": "Bofil",
   "description": "Painel de gestão unificado para estação de água, restaurante, lavagem de carros e transporte escolar.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#16181d",
-  "theme_color": "#f59e0b",
+  "theme_color": "#3fbecd",
   "lang": "pt",
   "icons": [
     {

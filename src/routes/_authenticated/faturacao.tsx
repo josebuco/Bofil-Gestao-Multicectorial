@@ -33,12 +33,12 @@ import { chartTooltip } from "@/components/sector-cash";
 export const Route = createFileRoute("/_authenticated/faturacao")({
   head: () => ({
     meta: [
-      { title: "Faturação por Setor — Kilombwe" },
+      { title: "Faturação por Setor — Bofil" },
       {
         name: "description",
         content: "Receitas, despesas e saldo de caixa de cada setor da empresa.",
       },
-      { property: "og:title", content: "Faturação por Setor — Kilombwe" },
+      { property: "og:title", content: "Faturação por Setor — Bofil" },
       {
         property: "og:description",
         content: "Receitas, despesas e saldo de caixa de cada setor da empresa.",
@@ -130,12 +130,12 @@ function FaturacaoPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Kpi label="Receitas do período" value={formatMoney(revenue)} tone="text-wash" />
+          <Kpi label="Receitas do período" value={formatMoney(revenue)} tone="text-warning" />
           <Kpi label="Despesas do período" value={formatMoney(expense)} tone="text-destructive" />
           <Kpi
             label="Saldo de caixa"
             value={formatMoney(balance)}
-            tone={balance >= 0 ? "text-brand" : "text-destructive"}
+            tone={balance >= 0 ? "text-success" : "text-destructive"}
           />
           <Kpi label="Despesas por pagar" value={formatMoney(pending)} tone="text-warning" />
         </div>
@@ -149,8 +149,8 @@ function FaturacaoPage() {
                 <AreaChart data={series}>
                   <defs>
                     <linearGradient id="fatRev" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--wash)" stopOpacity={0.5} />
-                      <stop offset="100%" stopColor="var(--wash)" stopOpacity={0.02} />
+                      <stop offset="0%" stopColor="var(--warning)" stopOpacity={0.5} />
+                      <stop offset="100%" stopColor="var(--warning)" stopOpacity={0.02} />
                     </linearGradient>
                     <linearGradient id="fatExp" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="var(--destructive)" stopOpacity={0.45} />
@@ -166,7 +166,7 @@ function FaturacaoPage() {
                     type="monotone"
                     dataKey="receitas"
                     name="Receitas"
-                    stroke="var(--wash)"
+                    stroke="var(--warning)"
                     strokeWidth={2}
                     fill="url(#fatRev)"
                   />
@@ -196,7 +196,7 @@ function FaturacaoPage() {
                       <YAxis stroke="var(--muted-foreground)" fontSize={11} width={70} />
                       <Tooltip formatter={(v: number) => formatMoney(v)} contentStyle={chartTooltip} />
                       <Legend wrapperStyle={{ fontSize: 12 }} />
-                      <Bar dataKey="receitas" name="Receitas" fill="var(--wash)" radius={[4, 4, 0, 0]} />
+                       <Bar dataKey="receitas" name="Receitas" fill="var(--warning)" radius={[4, 4, 0, 0]} />
                       <Bar
                         dataKey="despesas"
                         name="Despesas"
@@ -245,12 +245,12 @@ function FaturacaoPage() {
               {sectors.map((s) => (
                 <tr key={s.slug} className="hover:bg-white/5">
                   <Td className="font-medium">{s.label}</Td>
-                  <Td className="text-wash">{formatMoney(s.revenue)}</Td>
+                   <Td className="text-warning">{formatMoney(s.revenue)}</Td>
                   <Td className="text-destructive">{formatMoney(s.expense)}</Td>
                   <Td className="text-warning">{formatMoney(s.pendingExpense)}</Td>
                   <Td
                     className={
-                      s.balance >= 0 ? "text-brand font-semibold" : "text-destructive font-semibold"
+                       s.balance >= 0 ? "text-success font-semibold" : "text-destructive font-semibold"
                     }
                   >
                     {formatMoney(s.balance)}
@@ -281,7 +281,7 @@ function FaturacaoPage() {
                     <span
                       className={`px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wide ${
                         e.kind === "receita"
-                          ? "bg-wash/15 text-wash"
+                           ? "bg-warning/15 text-warning"
                           : "bg-destructive/15 text-destructive"
                       }`}
                     >
@@ -289,7 +289,7 @@ function FaturacaoPage() {
                     </span>
                   </Td>
                   <Td className="text-muted-foreground">{e.status}</Td>
-                  <Td className={e.kind === "receita" ? "text-wash" : "text-destructive"}>
+                   <Td className={e.kind === "receita" ? "text-warning" : "text-destructive"}>
                     {e.kind === "receita" ? "+" : "−"}
                     {formatMoney(e.amount)}
                   </Td>

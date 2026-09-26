@@ -24,9 +24,9 @@ import { chartTooltip } from "@/components/sector-cash";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Painel Geral — Kilombwe" },
+      { title: "Painel Geral — Bofil" },
       { name: "description", content: "Receitas, despesas e saldo de todos os setores da empresa." },
-      { property: "og:title", content: "Painel Geral — Kilombwe" },
+      { property: "og:title", content: "Painel Geral — Bofil" },
       { property: "og:description", content: "Receitas, despesas e saldo de todos os setores da empresa." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -70,13 +70,13 @@ function DashboardPage() {
       />
       <div className="flex-1 overflow-auto p-6 space-y-5">
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <Big label="Receitas totais" value={totals.revenue} tone="text-wash" icon={<ArrowUpRight className="size-4 text-wash" />} />
+          <Big label="Receitas totais" value={totals.revenue} tone="text-warning" icon={<ArrowUpRight className="size-4 text-warning" />} />
           <Big label="Despesas totais" value={totals.expense} tone="text-destructive" icon={<ArrowDownRight className="size-4 text-destructive" />} />
           <Big
             label="Saldo global"
             value={totals.balance}
-            tone={totals.balance >= 0 ? "text-brand" : "text-destructive"}
-            icon={<Wallet className="size-4 text-brand" />}
+            tone={totals.balance >= 0 ? "text-success" : "text-destructive"}
+            icon={<Wallet className="size-4 text-success" />}
             highlight
           />
           <Big label="Por pagar" value={totals.pendingExpense} tone="text-warning" />
@@ -93,10 +93,10 @@ function DashboardPage() {
                   <Icon className="size-4" style={{ color: m.color }} /> {s.label}
                 </div>
                 <dl className="mt-3 space-y-1 text-xs">
-                  <Row k="Receitas" v={s.revenue} tone="text-wash" />
+                   <Row k="Receitas" v={s.revenue} tone="text-warning" />
                   <Row k="Despesas" v={s.expense} tone="text-destructive" />
                 </dl>
-                <p className={`mt-3 font-display text-2xl ${s.balance >= 0 ? "text-foreground" : "text-destructive"}`}>
+                 <p className={`mt-3 font-display text-2xl ${s.balance >= 0 ? "text-success" : "text-destructive"}`}>
                   {formatMoney(s.balance)}
                 </p>
               </div>
@@ -110,8 +110,8 @@ function DashboardPage() {
               <AreaChart data={series}>
                 <defs>
                   <linearGradient id="d-in" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--wash)" stopOpacity={0.5} />
-                    <stop offset="100%" stopColor="var(--wash)" stopOpacity={0.02} />
+                    <stop offset="0%" stopColor="var(--warning)" stopOpacity={0.5} />
+                    <stop offset="100%" stopColor="var(--warning)" stopOpacity={0.02} />
                   </linearGradient>
                   <linearGradient id="d-out" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="var(--destructive)" stopOpacity={0.4} />
@@ -123,7 +123,7 @@ function DashboardPage() {
                 <YAxis stroke="var(--muted-foreground)" fontSize={11} width={70} tickLine={false} axisLine={false} />
                 <Tooltip formatter={(v: number) => formatMoney(v)} contentStyle={chartTooltip} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Area type="monotone" dataKey="receitas" name="Receitas" stroke="var(--wash)" strokeWidth={2.5} fill="url(#d-in)" />
+                <Area type="monotone" dataKey="receitas" name="Receitas" stroke="var(--warning)" strokeWidth={2.5} fill="url(#d-in)" />
                 <Area type="monotone" dataKey="despesas" name="Despesas" stroke="var(--destructive)" strokeWidth={2.5} fill="url(#d-out)" />
               </AreaChart>
             </ResponsiveContainer>
@@ -141,9 +141,9 @@ function DashboardPage() {
                     <YAxis stroke="var(--muted-foreground)" fontSize={11} width={70} tickLine={false} axisLine={false} />
                     <Tooltip formatter={(v: number) => formatMoney(v)} contentStyle={chartTooltip} cursor={{ fill: "color-mix(in oklch, var(--edge) 40%, transparent)" }} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="Receitas" fill="var(--wash)" radius={[4, 4, 0, 0]} />
+                     <Bar dataKey="Receitas" fill="var(--warning)" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="Despesas" fill="var(--destructive)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Saldo" fill="var(--brand)" radius={[4, 4, 0, 0]} />
+                     <Bar dataKey="Saldo" fill="var(--success)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -197,7 +197,7 @@ function Big({
   highlight?: boolean;
 }) {
   return (
-    <div className={`rounded-xl p-5 ring-1 ${highlight ? "bg-brand/10 ring-brand/40" : "bg-panel ring-edge"}`}>
+    <div className={`rounded-xl p-5 ring-1 ${highlight ? "bg-success/10 ring-success/40" : "bg-panel ring-edge"}`}>
       <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
         {label} {icon}
       </div>

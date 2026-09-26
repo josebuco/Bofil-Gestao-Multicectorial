@@ -8,6 +8,13 @@
       "when": 1790457822831,
       "tag": "0000_roles_entries_cleanup",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790459057617,
+      "tag": "0001_grant_water_product_access",
+      "breakpoints": true
     }
   ]
 }

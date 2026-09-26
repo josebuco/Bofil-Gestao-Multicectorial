@@ -70,8 +70,8 @@
   --card-foreground: oklch(0.93 0.01 240);
   --popover: oklch(0.23 0.025 240);
   --popover-foreground: oklch(0.93 0.01 240);
-  --primary: oklch(0.75 0.16 80);
-  --primary-foreground: oklch(0.15 0.03 80);
+  --primary: oklch(0.72 0.13 205);
+  --primary-foreground: oklch(0.14 0.025 220);
   --secondary: oklch(0.29 0.03 240);
   --secondary-foreground: oklch(0.93 0.01 240);
   --muted: oklch(0.29 0.03 240);
@@ -82,15 +82,15 @@
   --destructive-foreground: oklch(0.95 0.01 25);
   --border: oklch(0.29 0.03 240);
   --input: oklch(0.29 0.03 240);
-  --ring: oklch(0.75 0.16 80);
+  --ring: oklch(0.72 0.13 205);
 
   /* Semantic sector tokens */
-  --brand: oklch(0.75 0.16 80);
-  --brand-foreground: oklch(0.15 0.03 80);
+  --brand: oklch(0.72 0.13 205);
+  --brand-foreground: oklch(0.14 0.025 220);
   --water: oklch(0.75 0.14 240);
   --water-foreground: oklch(0.15 0.03 240);
-  --restaurant: oklch(0.75 0.16 80);
-  --restaurant-foreground: oklch(0.15 0.03 80);
+  --restaurant: oklch(0.68 0.18 35);
+  --restaurant-foreground: oklch(0.97 0.01 35);
   --wash: oklch(0.52 0.1 170);
   --wash-foreground: oklch(0.95 0.01 170);
   --transport: oklch(0.68 0.2 20);

@@ -22,11 +22,15 @@ const expensesOptions = queryOptions({
 export const Route = createFileRoute("/_authenticated/custos")({
   head: () => ({
     meta: [
-      { title: "Centro de Custos — Kilombwe" },
+      { title: "Centro de Custos — Bofil" },
       {
         name: "description",
         content: "Registo de despesas por setor com descrição e fatura anexada.",
       },
+      { property: "og:title", content: "Centro de Custos — Bofil" },
+      { property: "og:description", content: "Registo de despesas por setor com descrição e fatura anexada." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   loader: async ({ context }) => {
@@ -201,7 +205,7 @@ function CustosPage() {
               <span className={`size-1.5 rounded-full ${s.color}`} />
               {s.label}
               <span className="text-[11px] text-muted-foreground">
-                {formatMoney(data.totalsBySector[s.slug] || 0)} Kz
+                {formatMoney(periodBySector[s.slug] || 0)} Kz
               </span>
             </button>
           ))}
