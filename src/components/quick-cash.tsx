@@ -31,6 +31,7 @@ export function QuickCashPage({
   const list = useServerFn(listSectorEntries);
   const access = useAccess();
   const [amount, setAmount] = useState("");
+  const [method, setMethod] = useState<"Numerário" | "Banco">("Numerário");
   const [saving, setSaving] = useState(false);
 
   const finance = useQuery({
@@ -58,7 +59,7 @@ export function QuickCashPage({
     if (!value || value <= 0) { toast.error("Indique um valor válido."); return; }
     setSaving(true);
     try {
-      await add({ data: { sector: slug, amount: value } });
+      await add({ data: { sector: slug, amount: value, payment_method: method } });
       setAmount("");
       toast.success(`Entrada de ${formatMoney(value)} Kz registada.`);
       await refresh();
@@ -98,6 +99,18 @@ export function QuickCashPage({
               className={`${inputClass} mt-1.5 text-2xl font-display h-14`}
             />
             <p className="text-[11px] text-muted-foreground mt-1.5">Data e hora são registadas automaticamente.</p>
+          </div>
+          <div className="flex rounded-md ring-1 ring-edge overflow-hidden h-14">
+            {(["Numerário", "Banco"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMethod(m)}
+                className={`px-4 text-sm font-medium ${method === m ? "bg-brand text-primary-foreground" : "text-muted-foreground hover:bg-white/5"}`}
+              >
+                {m === "Banco" ? "Banco (VB)" : m}
+              </button>
+            ))}
           </div>
           <button
             disabled={saving}
@@ -168,7 +181,10 @@ export function QuickCashPage({
               ) : null}
               {(entries.data || []).map((e) => (
                 <li key={e.id} className="flex items-center justify-between px-5 py-3 text-sm">
-                  <span className="text-muted-foreground">{new Date(e.created_at).toLocaleString("pt-AO")}</span>
+                  <span className="text-muted-foreground">
+                    {new Date(e.created_at).toLocaleString("pt-AO")}
+                    {e.payment_method === "Banco" ? <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-brand/15 text-brand">VB</span> : null}
+                  </span>
                   <span className="flex items-center gap-3">
                     <span className="font-display text-warning">+{formatMoney(e.amount)}</span>
                     {access.isAdmin ? (

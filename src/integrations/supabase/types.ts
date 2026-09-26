@@ -262,6 +262,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          payment_method: string
           sector: string
         }
         Insert: {
@@ -269,6 +270,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          payment_method?: string
           sector: string
         }
         Update: {
@@ -276,6 +278,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          payment_method?: string
           sector?: string
         }
         Relationships: []
@@ -458,6 +461,7 @@ export type Database = {
           client_name: string | null
           created_at: string
           id: string
+          payment_method: string
           product_id: string | null
           quantity: number
           status: string
@@ -468,6 +472,7 @@ export type Database = {
           client_name?: string | null
           created_at?: string
           id?: string
+          payment_method?: string
           product_id?: string | null
           quantity?: number
           status?: string
@@ -478,6 +483,7 @@ export type Database = {
           client_name?: string | null
           created_at?: string
           id?: string
+          payment_method?: string
           product_id?: string | null
           quantity?: number
           status?: string

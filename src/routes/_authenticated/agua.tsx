@@ -90,6 +90,7 @@ function AguaPage() {
             quantity: Number(f.get("quantity")),
             client_name: String(f.get("client_name") || "").trim() || null,
             status: String(f.get("status")),
+            payment_method: f.get("payment_method") === "Banco" ? "Banco" : "Numerário",
           },
         }),
       "Venda registada.",
@@ -166,6 +167,12 @@ function AguaPage() {
             <select name="status" className={inputClass} defaultValue="Entregue">
               <option>Entregue</option>
               <option>Pendente</option>
+            </select>
+          </Field>
+          <Field label="Pagamento">
+            <select name="payment_method" className={inputClass} defaultValue="Numerário">
+              <option value="Numerário">Numerário</option>
+              <option value="Banco">Banco (VB)</option>
             </select>
           </Field>
         </FormPanel>

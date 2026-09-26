@@ -155,6 +155,7 @@ export const addSectorEntry = createServerFn({ method: "POST" })
       .object({
         sector: z.enum(["restaurante", "lavagem", "transporte"]),
         amount: z.number().int().positive().max(1_000_000_000),
+        payment_method: z.enum(["Numerário", "Banco"]).default("Numerário"),
       })
       .parse(d),
   )
@@ -172,7 +173,7 @@ export const listSectorEntries = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     const { data: rows, error } = await context.supabase
       .from("sector_entries")
-      .select("id, amount, created_at")
+      .select("id, amount, created_at, payment_method")
       .eq("sector", data.sector)
       .gte("created_at", new Date(`${data.from}T00:00:00`).toISOString())
       .lte("created_at", new Date(`${data.to}T23:59:59`).toISOString())

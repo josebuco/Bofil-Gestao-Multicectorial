@@ -1,0 +1,2 @@
+ALTER TABLE public.water_sales ADD COLUMN IF NOT EXISTS payment_method text NOT NULL DEFAULT 'Numerário';
+ALTER TABLE public.sector_entries ADD COLUMN IF NOT EXISTS payment_method text NOT NULL DEFAULT 'Numerário';

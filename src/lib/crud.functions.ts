@@ -44,6 +44,7 @@ export const createWaterSale = createServerFn({ method: "POST" })
         quantity: z.number().int().min(1),
         client_name: z.string().nullable().default(null),
         status: z.string().min(1),
+        payment_method: z.enum(["Numerário", "Banco"]).default("Numerário"),
       })
       .parse(d),
   )
@@ -63,6 +64,7 @@ export const createWaterSale = createServerFn({ method: "POST" })
       total,
       client_name: data.client_name,
       status: data.status,
+      payment_method: data.payment_method,
     });
     if (error) throw new Error(error.message);
 
