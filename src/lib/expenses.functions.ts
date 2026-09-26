@@ -13,6 +13,11 @@ export const SECTORS = [
 export const getExpenses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+
     const monthStart = new Date();
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
@@ -25,6 +30,17 @@ export const getExpenses = createServerFn({ method: "GET" })
 
     if (error) throw new Error(error.message);
     const expenses = data || [];
+
+    // Técnicos não podem ver agregados de despesa: só as linhas que lhes pertencem.
+    if (!isAdmin) {
+      return {
+        expenses,
+        totalsBySector: {} as Record<string, number>,
+        monthTotal: 0,
+        pendingTotal: 0,
+        total: 0,
+      };
+    }
 
     const totalsBySector: Record<string, number> = {};
     let monthTotal = 0;

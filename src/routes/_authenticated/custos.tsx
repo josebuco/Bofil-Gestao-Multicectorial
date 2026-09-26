@@ -167,32 +167,34 @@ function CustosPage() {
       </header>
 
       <div className="flex-1 overflow-auto p-6 space-y-5">
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Despesas do período
-            </p>
-            <p className="font-display font-semibold text-2xl text-foreground mt-2">
-              {formatMoney(periodTotal)} Kz
-            </p>
-          </div>
-          <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Por pagar no período
-            </p>
-            <p className="font-display font-semibold text-2xl text-warning mt-2">
-              {formatMoney(periodPending)} Kz
-            </p>
-          </div>
-          <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Total registado
-            </p>
-            <p className="font-display font-semibold text-2xl text-foreground mt-2">
-              {formatMoney(data.total)} Kz
-            </p>
-          </div>
-        </section>
+        {access.isAdmin ? (
+          <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Despesas do período
+              </p>
+              <p className="font-display font-semibold text-2xl text-foreground mt-2">
+                {formatMoney(periodTotal)} Kz
+              </p>
+            </div>
+            <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Por pagar no período
+              </p>
+              <p className="font-display font-semibold text-2xl text-warning mt-2">
+                {formatMoney(periodPending)} Kz
+              </p>
+            </div>
+            <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Total registado
+              </p>
+              <p className="font-display font-semibold text-2xl text-foreground mt-2">
+                {formatMoney(data.total)} Kz
+              </p>
+            </div>
+          </section>
+        ) : null}
 
         <div className="flex flex-wrap gap-1 border-b border-edge">
           {SECTORS.filter((s) => access.isAdmin || access.sectors.includes(s.slug)).map((s) => (
@@ -207,9 +209,11 @@ function CustosPage() {
             >
               <span className={`size-1.5 rounded-full ${s.color}`} />
               {s.label}
-              <span className="text-[11px] text-muted-foreground">
-                {formatMoney(periodBySector[s.slug] || 0)} Kz
-              </span>
+              {access.isAdmin ? (
+                <span className="text-[11px] text-muted-foreground">
+                  {formatMoney(periodBySector[s.slug] || 0)} Kz
+                </span>
+              ) : null}
             </button>
           ))}
         </div>
@@ -315,10 +319,12 @@ function CustosPage() {
             <h2 className="font-display font-semibold text-base uppercase tracking-wide text-foreground">
               Despesas — {SECTORS.find((s) => s.slug === tab)?.label}
             </h2>
-            <p className="text-xs text-muted-foreground">
-              Total {formatMoney(tabTotal)} Kz · Por pagar{" "}
-              <span className="text-warning">{formatMoney(tabPending)} Kz</span>
-            </p>
+            {access.isAdmin ? (
+              <p className="text-xs text-muted-foreground">
+                Total {formatMoney(tabTotal)} Kz · Por pagar{" "}
+                <span className="text-warning">{formatMoney(tabPending)} Kz</span>
+              </p>
+            ) : null}
           </div>
 
           {rows.length === 0 ? (
