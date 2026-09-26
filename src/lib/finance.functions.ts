@@ -113,7 +113,7 @@ export const getFinance = createServerFn({ method: "GET" })
 
     for (const s of sales.data || []) {
       add(revenue, "agua", s.created_at, s.total || 0);
-      if (s.payment_method === "Banco") bank.agua = (bank.agua || 0) + (s.total || 0);
+      if (s.payment_method === "Banco") bank["agua"] = (bank["agua"] || 0) + (s.total || 0);
       entries.push({
         sector: "agua",
         kind: "receita",
