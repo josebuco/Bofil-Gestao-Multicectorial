@@ -31,7 +31,7 @@ export const getExpenses = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     const expenses = data || [];
 
-    // Técnicos não podem ver agregados de despesa: só as linhas que lhes pertencem.
+    // Técnicos não recebem o total registado de todo o sempre.
     if (!isAdmin) {
       return {
         expenses,
@@ -98,6 +98,26 @@ export const deleteExpense = createServerFn({ method: "POST" })
     });
     if (!isAdmin) throw new Error("Só a administração pode apagar registos.");
     const { error } = await context.supabase.from("expenses").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const markExpensePaid = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        invoice_path: z.string().nullable().default(null),
+        notes: z.string().nullable().default(null),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const patch: { status: string; invoice_path?: string; notes?: string } = { status: "Pago" };
+    if (data.invoice_path) patch.invoice_path = data.invoice_path;
+    if (data.notes) patch.notes = data.notes;
+    const { error } = await context.supabase.from("expenses").update(patch).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
