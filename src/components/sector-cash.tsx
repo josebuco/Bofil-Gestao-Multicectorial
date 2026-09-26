@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   Area,
-  AreaChart,
+  ComposedChart,
   CartesianGrid,
   Legend,
   Line,
@@ -52,7 +52,7 @@ export function SectorCash({ slug }: { slug: string }) {
         </div>
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={sector?.series || []}>
+            <ComposedChart data={sector?.series || []}>
               <defs>
                 <linearGradient id={`rev-${slug}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="var(--warning)" stopOpacity={0.45} />
@@ -92,7 +92,7 @@ export function SectorCash({ slug }: { slug: string }) {
                 strokeWidth={2}
                 dot={false}
               />
-            </AreaChart>
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       </div>

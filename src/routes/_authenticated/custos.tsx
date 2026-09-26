@@ -1,3 +1,4 @@
+import { todayAngola } from "@/lib/tz";
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -247,7 +248,7 @@ function CustosPage() {
                 name="expense_date"
                 type="date"
                 required
-                defaultValue={new Date().toISOString().slice(0, 10)}
+                defaultValue={todayAngola()}
                 className={`${inputClass} mt-1.5`}
               />
             </div>

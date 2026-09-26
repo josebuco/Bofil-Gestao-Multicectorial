@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowDownRight, ArrowUpRight, Droplets, Bus, Car, UtensilsCrossed, Wallet, Building2 } from "lucide-react";
 import {
   Area,
-  AreaChart,
+  ComposedChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -109,7 +109,7 @@ function DashboardPage() {
         <Card title="Evolução da empresa">
           <div className="h-72 p-4">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={series}>
+              <ComposedChart data={series}>
                 <defs>
                   <linearGradient id="d-in" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="var(--warning)" stopOpacity={0.5} />
@@ -128,7 +128,7 @@ function DashboardPage() {
                 <Area type="monotone" dataKey="receitas" name="Receitas" stroke="var(--warning)" strokeWidth={2.5} fill="url(#d-in)" />
                 <Area type="monotone" dataKey="despesas" name="Despesas" stroke="var(--destructive)" strokeWidth={2.5} fill="url(#d-out)" />
                 <Line type="monotone" dataKey="saldo" name="Saldo" stroke="var(--success)" strokeWidth={2} dot={false} />
-              </AreaChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         </Card>

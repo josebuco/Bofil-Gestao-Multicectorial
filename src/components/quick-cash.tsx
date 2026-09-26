@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowDownRight, ArrowUpRight, Plus, Trash2, Wallet } from "lucide-react";
-import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, ComposedChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/access.functions";
 import { getFinance } from "@/lib/finance.functions";
 import { periodLabel } from "@/lib/period";
@@ -150,7 +150,7 @@ export function QuickCashPage({
         <Card title="Evolução">
           <div className="h-60 p-4">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={sector?.series || []}>
+              <ComposedChart data={sector?.series || []}>
                 <defs>
                   <linearGradient id={`q-in-${slug}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="var(--warning)" stopOpacity={0.45} />
@@ -168,7 +168,7 @@ export function QuickCashPage({
                 <Area type="monotone" dataKey="receitas" name="Entradas" stroke="var(--warning)" strokeWidth={2} fill={`url(#q-in-${slug})`} />
                 <Area type="monotone" dataKey="despesas" name="Saídas" stroke="var(--destructive)" strokeWidth={2} fill={`url(#q-out-${slug})`} />
                 <Line type="monotone" dataKey="saldo" name="Saldo" stroke="var(--success)" strokeWidth={2} dot={false} />
-              </AreaChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         </Card>

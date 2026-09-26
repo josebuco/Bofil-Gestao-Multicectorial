@@ -62,9 +62,12 @@ export const createExpense = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ context, data }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    const { todayAngola } = await import("@/lib/tz");
+    const row = { ...data, expense_date: isAdmin ? data.expense_date : todayAngola() };
     const { error } = await context.supabase
       .from("expenses")
-      .insert({ ...data, created_by: context.userId });
+      .insert({ ...row, created_by: context.userId });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
