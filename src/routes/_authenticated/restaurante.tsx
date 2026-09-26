@@ -4,9 +4,9 @@ import { QuickCashPage } from "@/components/quick-cash";
 export const Route = createFileRoute("/_authenticated/restaurante")({
   head: () => ({
     meta: [
-      { title: "Restaurante — Kilombwe" },
+      { title: "Restaurante — Bofil" },
       { name: "description", content: "Entradas, saídas e saldo automático do setor Restaurante." },
-      { property: "og:title", content: "Restaurante — Kilombwe" },
+      { property: "og:title", content: "Restaurante — Bofil" },
       { property: "og:description", content: "Entradas, saídas e saldo automático do setor Restaurante." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

@@ -56,11 +56,11 @@ function AuthenticatedLayout() {
       <aside className="w-60 shrink-0 border-r border-edge bg-ink flex flex-col">
         <div className="h-16 flex items-center gap-2.5 px-5 border-b border-edge">
           <div className="size-8 rounded-md bg-brand grid place-items-center font-display font-semibold text-primary-foreground text-lg">
-            K
+            B
           </div>
           <div className="leading-none">
             <p className="font-display font-semibold tracking-wide text-foreground text-[15px] uppercase">
-              Kilombwe
+              Bofil
             </p>
             <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mt-1">
               Gestão multi-setorial

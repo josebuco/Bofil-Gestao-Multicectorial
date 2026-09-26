@@ -10,9 +10,9 @@ import { Card, Field, PageHeader, inputClass } from "@/components/panel";
 export const Route = createFileRoute("/_authenticated/utilizadores")({
   head: () => ({
     meta: [
-      { title: "Utilizadores e Permissões — Kilombwe" },
+      { title: "Utilizadores e Permissões — Bofil" },
       { name: "description", content: "Contas dos técnicos de registo e permissões por setor." },
-      { property: "og:title", content: "Utilizadores e Permissões — Kilombwe" },
+      { property: "og:title", content: "Utilizadores e Permissões — Bofil" },
       { property: "og:description", content: "Contas dos técnicos de registo e permissões por setor." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
