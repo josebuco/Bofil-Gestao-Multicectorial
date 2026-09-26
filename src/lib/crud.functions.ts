@@ -66,12 +66,7 @@ export const createWaterSale = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
 
-    await context.supabase
-      .from("water_products")
-      .update({ stock: Math.max(0, (product.stock || 0) - data.quantity) })
-      .eq("id", product.id);
-
-    await log(context.supabase as never, `Venda de ${product.name} × ${data.quantity}`, "agua", total);
+    await log(context.supabase as never, `Entrega de ${product.name} × ${data.quantity}`, "agua", total);
     return { ok: true, total };
   });
 
