@@ -15,6 +15,13 @@
       "when": 1790459057617,
       "tag": "0001_grant_water_product_access",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790460995472,
+      "tag": "0002_payment_method",
+      "breakpoints": true
     }
   ]
 }
