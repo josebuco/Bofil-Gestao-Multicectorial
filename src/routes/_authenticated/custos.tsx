@@ -423,3 +423,57 @@ function CustosPage() {
     </div>
   );
 }
+
+function PayForm({ id, sector, onDone }: { id: string; sector: string; onDone: () => Promise<void> }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function confirm() {
+    setBusy(true);
+    try {
+      let invoicePath: string | null = null;
+      if (file) {
+        const ext = file.name.split(".").pop() || "pdf";
+        const path = `${sector}/${crypto.randomUUID()}.${ext}`;
+        const { error } = await supabase.storage.from("faturas").upload(path, file);
+        if (error) throw new Error(error.message);
+        invoicePath = path;
+      }
+      await markExpensePaid({ data: { id, invoice_path: invoicePath, notes: notes.trim() || null } });
+      toast.success("Despesa marcada como paga.");
+      await onDone();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível confirmar o pagamento.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-2 w-64 space-y-2 rounded-md bg-ink ring-1 ring-edge p-3">
+      <label className="block text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+        Fatura (opcional)
+      </label>
+      <input
+        type="file"
+        accept="image/*,application/pdf"
+        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        className="w-full text-xs text-foreground file:mr-2 file:rounded file:border-0 file:bg-edge file:px-2 file:py-1 file:text-xs file:text-foreground"
+      />
+      <input
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder="Nota (ex.: pago por transferência)"
+        className="w-full rounded-md bg-panel ring-1 ring-edge px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
+      />
+      <button
+        onClick={() => void confirm()}
+        disabled={busy}
+        className="w-full rounded-md bg-brand px-2 py-1.5 text-xs font-medium text-primary-foreground hover:bg-brand/90 disabled:opacity-60"
+      >
+        {busy ? "A guardar..." : "Confirmar pagamento"}
+      </button>
+    </div>
+  );
+}
