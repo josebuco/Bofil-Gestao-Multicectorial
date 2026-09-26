@@ -170,18 +170,15 @@ function AguaPage() {
           </Field>
         </FormPanel>
 
-        <FormPanel open={form === "product"} title="Novo produto" saving={saving} onSubmit={onProduct}>
+        <FormPanel open={form === "product"} title="Novo serviço" saving={saving} onSubmit={onProduct}>
           <Field label="Nome">
-            <input name="name" required className={inputClass} placeholder="Garrafão 20L" />
+            <input name="name" required className={inputClass} placeholder="Cisterna 10.000L" />
           </Field>
           <Field label="Preço (Kz)">
             <input name="price" type="number" min={0} required className={inputClass} />
           </Field>
-          <Field label="Stock">
-            <input name="stock" type="number" min={0} defaultValue={0} required className={inputClass} />
-          </Field>
           <Field label="Unidade">
-            <input name="unit" defaultValue="unidade" required className={inputClass} />
+            <input name="unit" defaultValue="viagem" required className={inputClass} />
           </Field>
         </FormPanel>
 
