@@ -10,6 +10,7 @@ import {
   createExpense,
   deleteExpense,
   getInvoiceUrl,
+  markExpensePaid,
 } from "@/lib/expenses.functions";
 import { PeriodPicker, usePeriod } from "@/components/panel";
 import { useAccess } from "@/lib/use-access";
@@ -66,6 +67,7 @@ function CustosPage() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [paying, setPaying] = useState<string | null>(null);
 
   const { preset, setPreset, custom, setCustom, range } = usePeriod("mes");
 
@@ -209,11 +211,9 @@ function CustosPage() {
             >
               <span className={`size-1.5 rounded-full ${s.color}`} />
               {s.label}
-              {access.isAdmin ? (
-                <span className="text-[11px] text-muted-foreground">
-                  {formatMoney(periodBySector[s.slug] || 0)} Kz
-                </span>
-              ) : null}
+              <span className="text-[11px] text-muted-foreground">
+                {formatMoney(periodBySector[s.slug] || 0)} Kz
+              </span>
             </button>
           ))}
         </div>
@@ -319,12 +319,10 @@ function CustosPage() {
             <h2 className="font-display font-semibold text-base uppercase tracking-wide text-foreground">
               Despesas — {SECTORS.find((s) => s.slug === tab)?.label}
             </h2>
-            {access.isAdmin ? (
-              <p className="text-xs text-muted-foreground">
-                Total {formatMoney(tabTotal)} Kz · Por pagar{" "}
-                <span className="text-warning">{formatMoney(tabPending)} Kz</span>
-              </p>
-            ) : null}
+            <p className="text-xs text-muted-foreground">
+              Total {formatMoney(tabTotal)} Kz · Por pagar{" "}
+              <span className="text-warning">{formatMoney(tabPending)} Kz</span>
+            </p>
           </div>
 
           {rows.length === 0 ? (
@@ -371,6 +369,24 @@ function CustosPage() {
                         >
                           {e.status}
                         </span>
+                        {e.status === "Pendente" ? (
+                          <button
+                            onClick={() => setPaying(paying === e.id ? null : e.id)}
+                            className="ml-2 text-xs font-medium text-primary hover:underline"
+                          >
+                            Marcar pago
+                          </button>
+                        ) : null}
+                        {paying === e.id ? (
+                          <PayForm
+                            id={e.id}
+                            sector={e.sector}
+                            onDone={async () => {
+                              setPaying(null);
+                              await queryClient.invalidateQueries({ queryKey: ["expenses"] });
+                            }}
+                          />
+                        ) : null}
                       </td>
                       <td className="px-3 py-3">
                         {e.invoice_path ? (
