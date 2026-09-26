@@ -22,7 +22,6 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -35,31 +34,12 @@ function AuthPage() {
     setLoading(true);
 
     try {
-      if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        if (data.session) {
-          toast.success("Conta criada com sucesso.");
-          navigate({ to: "/dashboard", replace: true });
-        } else {
-          const { error: signInError } =
-            await supabase.auth.signInWithPassword({ email, password });
-          if (signInError) throw signInError;
-          toast.success("Conta criada com sucesso.");
-          navigate({ to: "/dashboard", replace: true });
-        }
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        navigate({ to: "/dashboard", replace: true });
-      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      navigate({ to: "/dashboard", replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao autenticar");
     } finally {
@@ -85,12 +65,10 @@ function AuthPage() {
         </div>
 
         <h2 className="font-display text-2xl font-semibold uppercase tracking-wide text-foreground">
-          {isSignUp ? "Criar conta" : "Entrar"}
+          Entrar
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {isSignUp
-            ? "Registe-se para aceder ao painel."
-            : "Aceda ao painel de gestão da sua empresa."}
+          Aceda ao painel de gestão da sua empresa.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -127,23 +105,12 @@ function AuthPage() {
             disabled={loading}
             className="w-full rounded-md bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
-            {loading
-              ? "Aguarde..."
-              : isSignUp
-              ? "Criar conta"
-              : "Entrar no painel"}
+            {loading ? "Aguarde..." : "Entrar no painel"}
           </button>
         </form>
 
         <p className="mt-4 text-center text-sm text-muted-foreground">
-          {isSignUp ? "Já tem conta?" : "Ainda não tem conta?"}{" "}
-          <button
-            type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="font-medium text-primary hover:underline"
-          >
-            {isSignUp ? "Entrar" : "Criar conta"}
-          </button>
+          O acesso é criado pela administração.
         </p>
       </div>
     </div>
