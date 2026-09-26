@@ -118,7 +118,7 @@ function AguaPage() {
       <PageHeader
         dot="bg-water"
         title="Estação de Água"
-        subtitle="Vendas, stock e entregas"
+        subtitle="Entregas com camião cisterna"
         action={
           <div className="flex gap-2">
             <button
