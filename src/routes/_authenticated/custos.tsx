@@ -167,24 +167,24 @@ function CustosPage() {
       </header>
 
       <div className="flex-1 overflow-auto p-6 space-y-5">
-        {access.isAdmin ? (
-          <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Despesas do período
-              </p>
-              <p className="font-display font-semibold text-2xl text-foreground mt-2">
-                {formatMoney(periodTotal)} Kz
-              </p>
-            </div>
-            <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Por pagar no período
-              </p>
-              <p className="font-display font-semibold text-2xl text-warning mt-2">
-                {formatMoney(periodPending)} Kz
-              </p>
-            </div>
+        <section className={`grid grid-cols-1 gap-3 ${access.isAdmin ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+          <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Despesas do período
+            </p>
+            <p className="font-display font-semibold text-2xl text-foreground mt-2">
+              {formatMoney(periodTotal)} Kz
+            </p>
+          </div>
+          <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Por pagar no período
+            </p>
+            <p className="font-display font-semibold text-2xl text-warning mt-2">
+              {formatMoney(periodPending)} Kz
+            </p>
+          </div>
+          {access.isAdmin ? (
             <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 Total registado
@@ -193,8 +193,8 @@ function CustosPage() {
                 {formatMoney(data.total)} Kz
               </p>
             </div>
-          </section>
-        ) : null}
+          ) : null}
+        </section>
 
         <div className="flex flex-wrap gap-1 border-b border-edge">
           {SECTORS.filter((s) => access.isAdmin || access.sectors.includes(s.slug)).map((s) => (
