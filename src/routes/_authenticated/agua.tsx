@@ -23,6 +23,7 @@ import {
   inputClass,
 } from "@/components/panel";
 import { SectorCash } from "@/components/sector-cash";
+import { useAccess } from "@/lib/use-access";
 
 const waterOptions = queryOptions({
   queryKey: ["sector", "agua"],
@@ -53,6 +54,7 @@ function AguaPage() {
   const addProduct = useServerFn(createWaterProduct);
   const setStatus = useServerFn(updateWaterSaleStatus);
   const removeRecord = useServerFn(deleteRecord);
+  const { isAdmin } = useAccess();
 
   const [form, setForm] = useState<"none" | "sale" | "product">("none");
   const [saving, setSaving] = useState(false);
@@ -196,7 +198,7 @@ function AguaPage() {
                 <tr>
                   <Th>Serviço</Th>
                   <Th>Preço</Th>
-                  <Th>Acção</Th>
+                  {isAdmin ? <Th>Acção</Th> : null}
                 </tr>
               </thead>
               <tbody className="divide-y divide-edge/60">
@@ -206,18 +208,21 @@ function AguaPage() {
                     <Td>
                       {formatMoney(p.price)}/{p.unit}
                     </Td>
-                    <Td>
-                      <ActionButton
-                        onClick={() =>
-                          void run(
-                            () => removeRecord({ data: { table: "water_products", id: p.id } }),
-                            "Serviço removido.",
-                          )
-                        }
-                      >
-                        Apagar
-                      </ActionButton>
-                    </Td>
+                    {isAdmin ? (
+                      <Td>
+                        <ActionButton
+                          onClick={() => {
+                            if (confirm("Apagar este serviço?"))
+                              void run(
+                                () => removeRecord({ data: { table: "water_products", id: p.id } }),
+                                "Serviço removido.",
+                              );
+                          }}
+                        >
+                          Apagar
+                        </ActionButton>
+                      </Td>
+                    ) : null}
                   </tr>
                 ))}
               </tbody>
@@ -228,6 +233,7 @@ function AguaPage() {
             <table className="w-full text-sm">
               <thead className="border-b border-edge text-left">
                 <tr>
+                  <Th>Data</Th>
                   <Th>Item</Th>
                   <Th>Cliente</Th>
                   <Th>Valor</Th>
@@ -237,6 +243,7 @@ function AguaPage() {
               <tbody className="divide-y divide-edge/60">
                 {data.sales.map((s) => (
                   <tr key={s.id} className="hover:bg-white/[0.02]">
+                    <Td>{new Date(s.created_at).toLocaleString("pt-AO", { dateStyle: "short", timeStyle: "short" })}</Td>
                     <Td>
                       {(s.water_products as unknown as { name: string })?.name} × {s.quantity}
                     </Td>
@@ -257,6 +264,19 @@ function AguaPage() {
                             }
                           >
                             Entregar
+                          </ActionButton>
+                        ) : null}
+                        {isAdmin ? (
+                          <ActionButton
+                            onClick={() => {
+                              if (confirm("Apagar esta venda?"))
+                                void run(
+                                  () => removeRecord({ data: { table: "water_sales", id: s.id } }),
+                                  "Venda apagada.",
+                                );
+                            }}
+                          >
+                            Apagar
                           </ActionButton>
                         ) : null}
                       </div>

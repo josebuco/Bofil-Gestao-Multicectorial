@@ -376,12 +376,16 @@ function CustosPage() {
                         )}
                       </td>
                       <td className="px-3 py-3 text-right">
-                        <button
-                          onClick={() => handleDelete(e.id)}
-                          className="text-xs text-muted-foreground hover:text-danger"
-                        >
-                          Apagar
-                        </button>
+                        {access.isAdmin ? (
+                          <button
+                            onClick={() => {
+                              if (confirm("Apagar esta despesa?")) void handleDelete(e.id);
+                            }}
+                            className="text-xs text-muted-foreground hover:text-destructive"
+                          >
+                            Apagar
+                          </button>
+                        ) : null}
                       </td>
                     </tr>
                   ))}
