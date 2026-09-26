@@ -146,8 +146,8 @@ function AguaPage() {
 
         <SectorCash slug="agua" />
 
-        <FormPanel open={form === "sale"} title="Nova venda" saving={saving} onSubmit={onSale}>
-          <Field label="Produto">
+        <FormPanel open={form === "sale"} title="Nova entrega" saving={saving} onSubmit={onSale}>
+          <Field label="Serviço">
             <select name="product_id" required className={inputClass}>
               {data.products.map((p) => (
                 <option key={p.id} value={p.id}>
