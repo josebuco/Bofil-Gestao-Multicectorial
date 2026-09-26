@@ -217,7 +217,7 @@ function AguaPage() {
             </table>
           </Card>
 
-          <Card title="Vendas recentes">
+          <Card title="Entregas recentes">
             <table className="w-full text-sm">
               <thead className="border-b border-edge text-left">
                 <tr>
