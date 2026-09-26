@@ -33,9 +33,9 @@ export const Route = createFileRoute("/_authenticated/agua")({
   head: () => ({
     meta: [
       { title: "Estação de Água — Bofil" },
-      { name: "description", content: "Gestão de vendas, stock e entregas de água." },
+      { name: "description", content: "Gestão de entregas de água com camião cisterna." },
       { property: "og:title", content: "Estação de Água — Bofil" },
-      { property: "og:description", content: "Gestão de vendas, stock e entregas de água." },
+      { property: "og:description", content: "Gestão de entregas de água com camião cisterna." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
