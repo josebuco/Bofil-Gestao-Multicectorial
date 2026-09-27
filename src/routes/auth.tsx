@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { DeviceLock, useDeviceStatus } from "@/components/device-gate";
 import { registerAdminDevice } from "@/lib/devices.functions";
 import { getDeviceToken } from "@/lib/device-token";
+import { markDeviceApproved } from "@/components/pwa-manifest";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
