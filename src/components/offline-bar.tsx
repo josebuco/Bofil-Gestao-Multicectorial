@@ -6,6 +6,7 @@ import { QUEUE_EVENT, isNetworkError, readQueue, writeQueue, type QueuedItem } f
 import { addSectorEntry } from "@/lib/access.functions";
 import { createWaterSale } from "@/lib/crud.functions";
 import { createExpense } from "@/lib/expenses.functions";
+import { createStockUsage } from "@/lib/rental.functions";
 
 async function sendItem(item: QueuedItem) {
   const data = item.data as never;
