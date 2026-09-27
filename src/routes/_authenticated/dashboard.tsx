@@ -21,6 +21,7 @@ import { getFinance } from "@/lib/finance.functions";
 import { periodLabel } from "@/lib/period";
 import { Card, PageHeader, PeriodPicker, formatMoney, usePeriod } from "@/components/panel";
 import { chartTooltip } from "@/components/sector-cash";
+import { useMergedFinance } from "@/lib/offline-finance";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -51,8 +52,9 @@ function DashboardPage() {
     queryFn: () => getFinance({ data: range }),
   });
 
-  const sectors = data?.sectors || [];
-  const totals = data?.totals || { revenue: 0, expense: 0, balance: 0, pendingExpense: 0 };
+  const finance = useMergedFinance(data, range);
+  const sectors = finance.sectors;
+  const totals = finance.totals;
   const series = (sectors[0]?.series || []).map((row, i) => ({
     month: row.month,
     receitas: sectors.reduce((s, x) => s + (x.series[i]?.receitas || 0), 0),

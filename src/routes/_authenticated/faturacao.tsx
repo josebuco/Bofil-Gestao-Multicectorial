@@ -37,6 +37,7 @@ import {
   usePeriod,
 } from "@/components/panel";
 import { chartTooltip } from "@/components/sector-cash";
+import { useMergedFinance } from "@/lib/offline-finance";
 
 export const Route = createFileRoute("/_authenticated/faturacao")({
   head: () => ({
@@ -120,16 +121,17 @@ function FaturacaoPage() {
     }
   };
 
-  const sectors = data?.sectors || [];
+  const finance = useMergedFinance(data, range);
+  const sectors = finance.sectors;
   const sector = sectors.find((s) => s.slug === tab);
-  const allEntries = data?.entries || [];
+  const allEntries = finance.entries;
   const entries = tab === "todos" ? allEntries : allEntries.filter((e) => e.sector === tab);
 
-  const revenue = sector ? sector.revenue : data?.totals.revenue || 0;
-  const bankTotal = sector ? sector.bank : data?.totals.bank || 0;
-  const expense = sector ? sector.expense : data?.totals.expense || 0;
-  const pending = sector ? sector.pendingExpense : data?.totals.pendingExpense || 0;
-  const cashBalance = sector ? sector.cash : data?.totals.cash || 0;
+  const revenue = sector ? sector.revenue : finance.totals.revenue;
+  const bankTotal = sector ? sector.bank : finance.totals.bank;
+  const expense = sector ? sector.expense : finance.totals.expense;
+  const pending = sector ? sector.pendingExpense : finance.totals.pendingExpense;
+  const cashBalance = sector ? sector.cash : finance.totals.cash;
 
   const base = sectors[0]?.series || [];
   const series = sector
@@ -224,7 +226,7 @@ function FaturacaoPage() {
           </div>
         </Card>
 
-        <Card title={data?.granularity === "day" ? "Evolução diária" : "Evolução mensal"}>
+        <Card title={finance.granularity === "day" ? "Evolução diária" : "Evolução mensal"}>
           <div className="p-5 h-72">
             {isPending ? (
               <p className="text-sm text-muted-foreground">A carregar…</p>
@@ -377,6 +379,7 @@ function FaturacaoPage() {
                   <Td>
                     {e.description}
                     {e.payment === "Banco" || e.kind === "deposito" ? <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-brand/15 text-brand">VB</span> : null}
+                    {e.pending ? <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">No aparelho</span> : null}
                   </Td>
                   <Td>
                     <span

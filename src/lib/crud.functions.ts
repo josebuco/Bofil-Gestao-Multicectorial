@@ -45,11 +45,13 @@ export const createWaterSale = createServerFn({ method: "POST" })
         client_name: z.string().nullable().default(null),
         status: z.string().min(1),
         payment_method: z.enum(["Numerário", "Banco"]).default("Numerário"),
+        offline_total: z.number().int().min(0).optional(),
         recorded_at: z.string().datetime().optional(),
       })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
+    const { offline_total: _offlineTotal, ...sale } = data;
     const { data: product, error: pErr } = await context.supabase
       .from("water_products")
       .select("id, name, price, stock")
@@ -57,22 +59,22 @@ export const createWaterSale = createServerFn({ method: "POST" })
       .single();
     if (pErr || !product) throw new Error("Produto não encontrado.");
 
-    const t = data.recorded_at ? new Date(data.recorded_at).getTime() : NaN;
+    const t = sale.recorded_at ? new Date(sale.recorded_at).getTime() : NaN;
     const created_at = t && t <= Date.now() && t > Date.now() - 60 * 864e5 ? new Date(t).toISOString() : undefined;
-    const total = product.price * data.quantity;
+    const total = product.price * sale.quantity;
     const { error } = await context.supabase.from("water_sales").insert({
       product_id: data.product_id,
-      quantity: data.quantity,
+      quantity: sale.quantity,
       unit_price: product.price,
       total,
-      client_name: data.client_name,
-      status: data.status,
-      payment_method: data.payment_method,
+      client_name: sale.client_name,
+      status: sale.status,
+      payment_method: sale.payment_method,
       ...(created_at ? { created_at } : {}),
     });
     if (error) throw new Error(error.message);
 
-    await log(context.supabase as never, `Entrega de ${product.name} × ${data.quantity}`, "agua", total);
+    await log(context.supabase as never, `Entrega de ${product.name} × ${sale.quantity}`, "agua", total);
     return { ok: true, total };
   });
 
