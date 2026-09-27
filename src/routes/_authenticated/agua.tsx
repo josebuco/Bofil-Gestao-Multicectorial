@@ -76,15 +76,15 @@ function AguaPage() {
   const dayStart = new Date(dayStartIso(today));
   // Técnico vê apenas as entregas do dia actual (Angola); a administração vê o histórico.
   const queuedSales = useQueue("water_sale").map((q) => {
-    const p = data.products.find((x) => x.id === q.data.product_id);
-    const qty = Number(q.data.quantity) || 0;
+    const p = data.products.find((x) => x.id === q.data["product_id"]);
+    const qty = Number(q.data["quantity"]) || 0;
     return {
       id: q.id,
       created_at: q.at,
       quantity: qty,
-      client_name: (q.data.client_name as string | null) ?? null,
+      client_name: (q.data["client_name"] as string | null) ?? null,
       total: (p?.price || 0) * qty,
-      status: String(q.data.status),
+      status: String(q.data["status"]),
       water_products: { name: p?.name || "Serviço" },
       pending: true,
     };

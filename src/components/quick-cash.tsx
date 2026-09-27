@@ -45,8 +45,8 @@ export function QuickCashPage({
   });
 
   const queued = useQueue("sector_entry")
-    .filter((q) => q.data.sector === slug)
-    .map((q) => ({ id: q.id, amount: Number(q.data.amount) || 0, payment_method: String(q.data.payment_method), created_at: q.at, pending: true }));
+    .filter((q) => q.data["sector"] === slug)
+    .map((q) => ({ id: q.id, amount: Number(q.data["amount"]) || 0, payment_method: String(q.data["payment_method"]), created_at: q.at, pending: true }));
   const pendingSum = queued.reduce((t, q) => t + q.amount, 0);
   const allEntries = [...queued, ...(entries.data || []).map((e) => ({ ...e, pending: false }))];
   const sector = finance.data?.sectors.find((s) => s.slug === slug);
