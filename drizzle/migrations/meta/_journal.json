@@ -43,6 +43,13 @@
       "when": 1790500216528,
       "tag": "0005_bank_deposits",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790505672076,
+      "tag": "0006_device_access",
+      "breakpoints": true
     }
   ]
 }
