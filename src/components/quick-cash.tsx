@@ -10,7 +10,7 @@ import { periodLabel } from "@/lib/period";
 import { Card, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
 import { chartTooltip } from "@/components/sector-cash";
 import { useAccess } from "@/lib/use-access";
-import { sendOrQueue } from "@/lib/offline";
+import { sendOrQueue, useQueue } from "@/lib/offline";
 
 type Slug = "restaurante" | "lavagem" | "transporte";
 
@@ -44,6 +44,11 @@ export function QuickCashPage({
     queryFn: () => list({ data: { sector: slug, ...range } }),
   });
 
+  const queued = useQueue("sector_entry")
+    .filter((q) => q.data.sector === slug)
+    .map((q) => ({ id: q.id, amount: Number(q.data.amount) || 0, payment_method: String(q.data.payment_method), created_at: q.at, pending: true }));
+  const pendingSum = queued.reduce((t, q) => t + q.amount, 0);
+  const allEntries = [...queued, ...(entries.data || []).map((e) => ({ ...e, pending: false }))];
   const sector = finance.data?.sectors.find((s) => s.slug === slug);
   const outs = (finance.data?.entries || []).filter((e) => e.sector === slug && e.kind === "despesa");
 
@@ -75,7 +80,7 @@ export function QuickCashPage({
     }
   }
 
-  const balance = sector?.balance || 0;
+  const balance = (sector?.balance || 0) + pendingSum;
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
@@ -132,7 +137,7 @@ export function QuickCashPage({
             <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-[0.14em]">
               Entradas <ArrowUpRight className="size-4 text-warning" />
             </div>
-            <p className="mt-2 font-display text-3xl text-warning">{formatMoney(sector?.revenue || 0)}</p>
+            <p className="mt-2 font-display text-3xl text-warning">{formatMoney((sector?.revenue || 0) + pendingSum)}</p>
           </div>
           <div className="rounded-xl bg-panel ring-1 ring-edge p-5">
             <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-[0.14em]">
@@ -181,18 +186,19 @@ export function QuickCashPage({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <Card title="Entradas">
             <ul className="divide-y divide-edge/60 max-h-96 overflow-auto">
-              {(entries.data || []).length === 0 ? (
+              {allEntries.length === 0 ? (
                 <li className="p-5 text-sm text-muted-foreground">Sem entradas neste período.</li>
               ) : null}
-              {(entries.data || []).map((e) => (
+              {allEntries.map((e) => (
                 <li key={e.id} className="flex items-center justify-between px-5 py-3 text-sm">
                   <span className="text-muted-foreground">
                     {new Date(e.created_at).toLocaleString("pt-AO")}
                     {e.payment_method === "Banco" ? <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-brand/15 text-brand">VB</span> : null}
+                    {e.pending ? <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">No aparelho</span> : null}
                   </span>
                   <span className="flex items-center gap-3">
                     <span className="font-display text-warning">+{formatMoney(e.amount)}</span>
-                    {access.isAdmin ? (
+                    {access.isAdmin && !e.pending ? (
                       <button
                         aria-label="Apagar entrada"
                         onClick={async () => {
