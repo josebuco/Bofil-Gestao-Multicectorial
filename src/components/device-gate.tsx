@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { deviceStatus, requestDevice, redeemCode } from "@/lib/devices.functions";
 import { getDeviceToken } from "@/lib/device-token";
+import { markDeviceApproved, clearDeviceApproved } from "@/components/pwa-manifest";
 
 type St = { status: "none" | "pending" | "approved" | "revoked"; code: string | null };
 
