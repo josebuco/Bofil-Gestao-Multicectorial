@@ -49,6 +49,27 @@ function AluguerPage() {
   const expenses = useQuery({ queryKey: ["expenses"], queryFn: () => listX() });
   const cats = useQuery({ queryKey: ["expense-categories"], queryFn: () => listC() });
   const categories = Array.from(new Set([...BASE_CATEGORIES, ...(cats.data || [])]));
+  const listStk = useServerFn(listStock);
+  const addUse = useServerFn(createStockUsage);
+  const stock = useQuery({ queryKey: ["rental-stock"], queryFn: () => listStk() });
+
+  const qUsage = useQueue("stock_usage").map((q) => ({
+    id: q.id,
+    purchase_id: String(q.data["purchase_id"] || ""),
+    asset_id: (q.data["asset_id"] as string) || null,
+    quantity: Number(q.data["quantity"]) || 0,
+    amount: Number(q.data["amount"]) || 0,
+    note: (q.data["note"] as string) || null,
+    used_on: String(q.data["used_on"] || q.at.slice(0, 10)),
+    pending: true,
+  }));
+  const allUsage = [...qUsage, ...(stock.data?.usages || []).map((u) => ({ ...u, pending: false }))];
+  const stockItems = (stock.data?.items || []).map((i) => {
+    const pend = qUsage.filter((u) => u.purchase_id === i.id);
+    const pq = pend.reduce((s, u) => s + u.quantity, 0);
+    const pa = pend.reduce((s, u) => s + u.amount, 0);
+    return { ...i, left_quantity: i.left_quantity - pq, left_amount: i.left_amount - pa };
+  });
 
   const qEntries = useQueue("sector_entry").filter((q) => q.data["sector"] === "aluguer")
     .map((q) => ({ id: q.id, amount: Number(q.data["amount"]) || 0, payment_method: String(q.data["payment_method"]), created_at: q.at, asset_id: (q.data["asset_id"] as string) || null, pending: true }));
