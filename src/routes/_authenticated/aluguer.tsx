@@ -89,7 +89,7 @@ function AluguerPage() {
     ev.preventDefault();
     if (!current) return;
     const value = Math.round(Number(amount));
-    if (!value || value <= 0) return toast.error("Indique um valor válido.");
+    if (!value || value <= 0) { toast.error("Indique um valor válido."); return; }
     const payload = { sector: "aluguer" as const, amount: value, payment_method: method, asset_id: current.id };
     try {
       const r = await sendOrQueue("sector_entry", payload, `Aluguer ${current.name}: ${formatMoney(value)} Kz`, () => addEntry({ data: payload }));

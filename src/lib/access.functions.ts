@@ -156,7 +156,7 @@ export const addSectorEntry = createServerFn({ method: "POST" })
     z
       .object({
         sector: z.enum(["restaurante", "lavagem", "transporte", "aluguer"]),
-        asset_id: z.string().uuid().nullable().optional(),
+        asset_id: z.string().uuid().nullable().default(null),
         amount: z.number().int().positive().max(1_000_000_000),
         payment_method: z.enum(["Numerário", "Banco"]).default("Numerário"),
         recorded_at: z.string().datetime().optional(),
