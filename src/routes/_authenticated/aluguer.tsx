@@ -333,6 +333,63 @@ function AluguerPage() {
                   ))}
                 </ul>
               </Card>
+
+              <Card title={`Consumo de estoque — ${current.name}`}>
+                <form onSubmit={onUsage} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
+                  <select
+                    value={usePurchase}
+                    onChange={(e) => { setUsePurchase(e.target.value); setUseValue(""); }}
+                    className={`${inputClass} col-span-2`}
+                  >
+                    <option value="">Escolher item do estoque…</option>
+                    {stockItems.filter((i) => i.left_quantity > 0).map((i) => (
+                      <option key={i.id} value={i.id}>
+                        {i.description} — {i.left_quantity} disponíveis
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={useQty}
+                    onChange={(e) => setUseQty(e.target.value)}
+                    type="number"
+                    min={1}
+                    placeholder="Quantidade"
+                    className={inputClass}
+                  />
+                  <input
+                    value={useValue}
+                    onChange={(e) => setUseValue(e.target.value)}
+                    type="number"
+                    min={0}
+                    placeholder={suggested ? `${formatMoney(suggested)} Kz` : "Valor (Kz)"}
+                    className={inputClass}
+                  />
+                  <p className="col-span-2 text-[11px] text-muted-foreground">
+                    Sai do estoque e fica no custo da unidade. Não entra nas despesas gerais do período.
+                  </p>
+                  <button
+                    disabled={!usePurchase}
+                    className="col-span-2 h-10 rounded-md bg-primary text-primary-foreground font-medium disabled:opacity-50"
+                  >
+                    Aplicar na unidade
+                  </button>
+                </form>
+                <ul className="divide-y divide-edge/60 max-h-80 overflow-auto">
+                  {curUsage.length === 0 && <li className="p-5 text-sm text-muted-foreground">Nada aplicado a esta unidade.</li>}
+                  {curUsage.map((u) => {
+                    const lot = stockItems.find((i) => i.id === u.purchase_id);
+                    return (
+                      <li key={u.id} className="flex justify-between px-5 py-3 text-sm gap-3">
+                        <span className="text-muted-foreground min-w-0 truncate">
+                          {u.used_on} · {u.quantity}× {lot?.description || "Item de estoque"}
+                          {u.pending ? badge : null}
+                        </span>
+                        <span className="font-display text-primary shrink-0">−{formatMoney(u.amount || 0)}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Card>
             </div>
           </>
         )}
