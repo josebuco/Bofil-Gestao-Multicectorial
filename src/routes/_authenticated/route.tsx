@@ -5,10 +5,17 @@ import { useAccess } from "@/lib/use-access";
 import { useQueryClient } from "@tanstack/react-query";
 import { deviceStatus, registerAdminDevice } from "@/lib/devices.functions";
 import { getDeviceToken } from "@/lib/device-token";
+import { OfflineBar } from "@/components/offline-bar";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
+    if (!navigator.onLine) {
+      // Sem internet: usa a sessão guardada neste aparelho autorizado.
+      const { data: s } = await supabase.auth.getSession();
+      if (s.session && localStorage.getItem("bofil_device_ok") === "1") return { user: s.session.user };
+      throw redirect({ to: "/auth" });
+    }
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
       throw redirect({ to: "/auth" });
@@ -124,6 +131,7 @@ function AuthenticatedLayout() {
       </aside>
 
       <main className="flex-1 min-w-0 flex flex-col">
+        <OfflineBar />
         <Outlet />
       </main>
     </div>

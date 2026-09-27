@@ -10,6 +10,7 @@ import { periodLabel } from "@/lib/period";
 import { Card, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
 import { chartTooltip } from "@/components/sector-cash";
 import { useAccess } from "@/lib/use-access";
+import { sendOrQueue } from "@/lib/offline";
 
 type Slug = "restaurante" | "lavagem" | "transporte";
 
@@ -59,10 +60,14 @@ export function QuickCashPage({
     if (!value || value <= 0) { toast.error("Indique um valor válido."); return; }
     setSaving(true);
     try {
-      await add({ data: { sector: slug, amount: value, payment_method: method } });
+      const payload = { sector: slug, amount: value, payment_method: method };
+      const r = await sendOrQueue("sector_entry", payload, `${title}: ${formatMoney(value)} Kz`, () => add({ data: payload }));
       setAmount("");
-      toast.success(`Entrada de ${formatMoney(value)} Kz registada.`);
-      await refresh();
+      if (r === "queued") toast.success(`Sem internet: ${formatMoney(value)} Kz guardado no aparelho. Envia ao sincronizar.`);
+      else {
+        toast.success(`Entrada de ${formatMoney(value)} Kz registada.`);
+        await refresh();
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Não foi possível guardar.");
     } finally {

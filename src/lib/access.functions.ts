@@ -157,13 +157,18 @@ export const addSectorEntry = createServerFn({ method: "POST" })
         sector: z.enum(["restaurante", "lavagem", "transporte"]),
         amount: z.number().int().positive().max(1_000_000_000),
         payment_method: z.enum(["Numerário", "Banco"]).default("Numerário"),
+        recorded_at: z.string().datetime().optional(),
       })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
+    const { recorded_at, ...row } = data;
+    const t = recorded_at ? new Date(recorded_at).getTime() : NaN;
+    // Registos feitos sem internet mantêm a hora real (até 60 dias atrás, nunca no futuro).
+    const created_at = t && t <= Date.now() && t > Date.now() - 60 * 864e5 ? new Date(t).toISOString() : undefined;
     const { error } = await context.supabase
       .from("sector_entries")
-      .insert({ ...data, created_by: context.userId });
+      .insert({ ...row, created_by: context.userId, ...(created_at ? { created_at } : {}) });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
