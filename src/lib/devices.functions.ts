@@ -9,7 +9,7 @@ async function hash(token: string) {
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 function sixDigits() {
-  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000;
+  const n = (crypto.getRandomValues(new Uint32Array(1))[0] ?? 0) % 1_000_000;
   return n.toString().padStart(6, "0");
 }
 async function admin() {
