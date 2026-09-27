@@ -199,6 +199,7 @@ function FaturacaoPage() {
           <div className="p-5 flex flex-wrap items-end gap-3">
             <p className="w-full text-xs text-muted-foreground">
               O valor sai do saldo de caixa (numerário) e entra no saldo via banco (VB). Não altera receitas nem despesas.
+              Disponível em caixa neste setor: <span className="text-success font-semibold">{formatMoney(availableCash)}</span>.
             </p>
             <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
               Setor
