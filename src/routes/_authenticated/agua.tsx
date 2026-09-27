@@ -180,7 +180,7 @@ function AguaPage() {
 
       <div className="flex-1 overflow-auto p-6 space-y-5">
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Kpi label="Receita hoje" value={formatMoney(data.todayRevenue + queuedToday.reduce((t, s) => t + s.total, 0))} />
+           <Kpi label="Receita hoje" value={formatMoney(data.todayRevenue + queuedToday.filter((s) => s.status !== "Pendente").reduce((t, s) => t + s.total, 0))} />
           <Kpi label="Entregas hoje" value={data.todaySalesCount + queuedToday.length} />
           <Kpi label="Entregas pendentes" value={pending} tone="text-warning" />
         </section>
