@@ -186,16 +186,6 @@ function CustosPage() {
               {formatMoney(periodPending)} Kz
             </p>
           </div>
-          {access.isAdmin ? (
-            <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Total registado
-              </p>
-              <p className="font-display font-semibold text-2xl text-foreground mt-2">
-                {formatMoney(data.total)} Kz
-              </p>
-            </div>
-          ) : null}
         </section>
 
         <div className="flex flex-wrap gap-1 border-b border-edge">

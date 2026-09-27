@@ -31,17 +31,7 @@ export const getExpenses = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     const expenses = data || [];
 
-    // Técnicos não recebem o total registado de todo o sempre.
-    if (!isAdmin) {
-      return {
-        expenses,
-        totalsBySector: {} as Record<string, number>,
-        monthTotal: 0,
-        pendingTotal: 0,
-        total: 0,
-      };
-    }
-
+    // Só totais por período; nunca o acumulado de todo o sempre.
     const totalsBySector: Record<string, number> = {};
     let monthTotal = 0;
     let pendingTotal = 0;
@@ -56,7 +46,6 @@ export const getExpenses = createServerFn({ method: "GET" })
       totalsBySector,
       monthTotal,
       pendingTotal,
-      total: expenses.reduce((s, e) => s + (e.amount || 0), 0),
     };
   });
 
