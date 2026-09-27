@@ -29,6 +29,13 @@
       "when": 1790461963123,
       "tag": "0003_tighten_sector_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790499761811,
+      "tag": "0004_expense_payment_method",
+      "breakpoints": true
     }
   ]
 }

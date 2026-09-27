@@ -63,6 +63,7 @@ export const createExpense = createServerFn({ method: "POST" })
         status: z.string().min(1),
         invoice_path: z.string().nullable().default(null),
         notes: z.string().nullable().default(null),
+        payment_method: z.enum(["Numerário", "Banco"]).default("Numerário"),
       })
       .parse(data),
   )
