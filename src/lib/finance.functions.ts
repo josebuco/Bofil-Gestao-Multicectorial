@@ -253,8 +253,8 @@ async function sectorCashOnHand(
   let exp = 0;
   let bankExp = 0;
   for (const e of entries.data || []) {
-    exp += e.amount || 0;
-    if (e.payment_method === "Banco") bankExp += e.amount || 0;
+    rev += e.amount || 0;
+    if (e.payment_method === "Banco") bankRev += e.amount || 0;
   }
   for (const e of expenses.data || []) {
     exp += e.amount || 0;
