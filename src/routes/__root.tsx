@@ -1,4 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import {
   Outlet,
   Link,
@@ -126,14 +128,27 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+const persister = createSyncStoragePersister({
+  storage: typeof window !== "undefined" ? window.localStorage : undefined,
+  key: "bofil_cache",
+});
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-
-  return (
-    <QueryClientProvider client={queryClient}>
+  const inner = (
+    <>
       <PwaManifestGate />
       <Outlet />
       <Toaster />
-    </QueryClientProvider>
+    </>
+  );
+  if (typeof window === "undefined") {
+    return <QueryClientProvider client={queryClient}>{inner}</QueryClientProvider>;
+  }
+  // Guarda uma cópia dos dados no aparelho para abrir sem internet.
+  return (
+    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24 * 60 }}>
+      {inner}
+    </PersistQueryClientProvider>
   );
 }
