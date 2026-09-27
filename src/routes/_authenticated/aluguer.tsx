@@ -173,10 +173,12 @@ function AluguerPage() {
                     <p className="font-display uppercase tracking-wide text-foreground truncate">{a.name}</p>
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-0.5">{a.kind}{a.plate ? ` · ${a.plate}` : ""}</p>
-                  <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                  <div className={`mt-3 grid gap-2 text-xs ${access.isAdmin ? "grid-cols-3" : "grid-cols-1"}`}>
                     <div><p className="text-muted-foreground">Entradas</p><p className="font-display text-warning">{formatMoney(s.rev)}</p></div>
+                    {access.isAdmin && <>
                     <div><p className="text-muted-foreground">Custos</p><p className="font-display text-destructive">{formatMoney(s.exp)}</p></div>
                     <div><p className="text-muted-foreground">Saldo</p><p className={`font-display ${s.bal >= 0 ? "text-success" : "text-destructive"}`}>{formatMoney(s.bal)}</p></div>
+                    </>}
                   </div>
                 </button>
               );

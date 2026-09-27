@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAguaRouteImport } from './routes/_authenticated/agua'
+import { Route as AuthenticatedAluguerRouteImport } from './routes/_authenticated/aluguer'
 import { Route as AuthenticatedCustosRouteImport } from './routes/_authenticated/custos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFaturacaoRouteImport } from './routes/_authenticated/faturacao'
@@ -38,6 +39,11 @@ const AuthRoute = AuthRouteImport.update({
 const AuthenticatedAguaRoute = AuthenticatedAguaRouteImport.update({
   id: '/agua',
   path: '/agua',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAluguerRoute = AuthenticatedAluguerRouteImport.update({
+  id: '/aluguer',
+  path: '/aluguer',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCustosRoute = AuthenticatedCustosRouteImport.update({
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/agua': typeof AuthenticatedAguaRoute
+  '/aluguer': typeof AuthenticatedAluguerRoute
   '/custos': typeof AuthenticatedCustosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/faturacao': typeof AuthenticatedFaturacaoRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/agua': typeof AuthenticatedAguaRoute
+  '/aluguer': typeof AuthenticatedAluguerRoute
   '/custos': typeof AuthenticatedCustosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/faturacao': typeof AuthenticatedFaturacaoRoute
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/agua': typeof AuthenticatedAguaRoute
+  '/_authenticated/aluguer': typeof AuthenticatedAluguerRoute
   '/_authenticated/custos': typeof AuthenticatedCustosRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/faturacao': typeof AuthenticatedFaturacaoRoute
@@ -122,6 +131,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/agua'
+    | '/aluguer'
     | '/custos'
     | '/dashboard'
     | '/faturacao'
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/agua'
+    | '/aluguer'
     | '/custos'
     | '/dashboard'
     | '/faturacao'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/agua'
+    | '/_authenticated/aluguer'
     | '/_authenticated/custos'
     | '/_authenticated/dashboard'
     | '/_authenticated/faturacao'
@@ -190,6 +202,13 @@ declare module '@tanstack/react-router' {
       path: '/agua'
       fullPath: '/agua'
       preLoaderRoute: typeof AuthenticatedAguaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/aluguer': {
+      id: '/_authenticated/aluguer'
+      path: '/aluguer'
+      fullPath: '/aluguer'
+      preLoaderRoute: typeof AuthenticatedAluguerRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/custos': {
@@ -246,6 +265,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAguaRoute: typeof AuthenticatedAguaRoute
+  AuthenticatedAluguerRoute: typeof AuthenticatedAluguerRoute
   AuthenticatedCustosRoute: typeof AuthenticatedCustosRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFaturacaoRoute: typeof AuthenticatedFaturacaoRoute
@@ -257,6 +277,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAguaRoute: AuthenticatedAguaRoute,
+  AuthenticatedAluguerRoute: AuthenticatedAluguerRoute,
   AuthenticatedCustosRoute: AuthenticatedCustosRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFaturacaoRoute: AuthenticatedFaturacaoRoute,
