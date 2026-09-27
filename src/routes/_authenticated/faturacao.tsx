@@ -18,7 +18,12 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { addBankDeposit, deleteBankDeposit, getFinance } from "@/lib/finance.functions";
+import {
+  addBankDeposit,
+  deleteBankDeposit,
+  getCashAvailable,
+  getFinance,
+} from "@/lib/finance.functions";
 import { periodLabel } from "@/lib/period";
 import {
   Card,
@@ -74,10 +79,24 @@ function FaturacaoPage() {
   const [depSector, setDepSector] = useState("agua");
   const [depAmount, setDepAmount] = useState("");
   const [saving, setSaving] = useState(false);
-  const refresh = () => qc.invalidateQueries({ queryKey: ["finance"] });
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["finance"] });
+    qc.invalidateQueries({ queryKey: ["cashAvailable"] });
+  };
+  const { data: avail } = useQuery({
+    queryKey: ["cashAvailable", depSector],
+    queryFn: () => getCashAvailable({ data: { sector: depSector } }),
+  });
+  const availableCash = avail?.available ?? 0;
   const deposit = async () => {
     const amount = Math.round(Number(depAmount));
     if (!amount || amount <= 0) { toast.error("Indique o valor do depósito."); return; }
+    if (amount > availableCash) {
+      toast.error(
+        `Saldo de caixa insuficiente: disponível apenas ${formatMoney(availableCash)}.`,
+      );
+      return;
+    }
     setSaving(true);
     try {
       await addBankDeposit({ data: { sector: depSector, amount } });
