@@ -129,6 +129,7 @@ export type Database = {
           invoice_path: string | null
           notes: string | null
           payment_method: string
+          quantity: number | null
           sector: string
           status: string
           supplier: string | null
@@ -146,6 +147,7 @@ export type Database = {
           invoice_path?: string | null
           notes?: string | null
           payment_method?: string
+          quantity?: number | null
           sector: string
           status?: string
           supplier?: string | null
@@ -163,6 +165,7 @@ export type Database = {
           invoice_path?: string | null
           notes?: string | null
           payment_method?: string
+          quantity?: number | null
           sector?: string
           status?: string
           supplier?: string | null
@@ -234,6 +237,57 @@ export type Database = {
           plate?: string | null
         }
         Relationships: []
+      }
+      rental_stock_usage: {
+        Row: {
+          amount: number
+          asset_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          purchase_id: string
+          quantity: number
+          used_on: string
+        }
+        Insert: {
+          amount?: number
+          asset_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          purchase_id: string
+          quantity?: number
+          used_on?: string
+        }
+        Update: {
+          amount?: number
+          asset_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          purchase_id?: string
+          quantity?: number
+          used_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_stock_usage_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "rental_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rental_stock_usage_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       restaurant_menu_items: {
         Row: {
