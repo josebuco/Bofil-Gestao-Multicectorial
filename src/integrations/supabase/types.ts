@@ -65,6 +65,39 @@ export type Database = {
         }
         Relationships: []
       }
+      devices: {
+        Row: {
+          approved_at: string | null
+          code: string | null
+          code_expires_at: string | null
+          created_at: string
+          id: string
+          last_seen_at: string | null
+          status: string
+          token_hash: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          code?: string | null
+          code_expires_at?: string | null
+          created_at?: string
+          id?: string
+          last_seen_at?: string | null
+          status?: string
+          token_hash?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          code?: string | null
+          code_expires_at?: string | null
+          created_at?: string
+          id?: string
+          last_seen_at?: string | null
+          status?: string
+          token_hash?: string | null
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number
