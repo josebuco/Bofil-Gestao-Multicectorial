@@ -5,8 +5,8 @@
   - [x] Aba Dispositivos removida do menu e rota apagada
   - [x] Verificado: build OK, tsgo OK, screenshot confirmado
 
-- [ ] Exibir registos offline em todos os setores
-  - [ ] Listas e totais do Centro de Custos
-  - [ ] Entradas, saídas e saldos por setor
-  - [ ] Gráficos do setor, Painel e Faturação
-  - [ ] Verificar compilação e apresentação
+- [x] Exibir registos offline em todos os setores
+  - [x] Listas e totais do Centro de Custos
+  - [x] Entradas, saídas e saldos por setor
+  - [x] Gráficos do setor, Painel e Faturação
+  - [x] Verificar compilação e apresentação
