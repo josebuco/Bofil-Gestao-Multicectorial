@@ -36,6 +36,13 @@
       "when": 1790499761811,
       "tag": "0004_expense_payment_method",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790500216528,
+      "tag": "0005_bank_deposits",
+      "breakpoints": true
     }
   ]
 }

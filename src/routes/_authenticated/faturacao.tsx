@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useState } from "react";
 import {
   Area,
@@ -17,7 +18,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { getFinance } from "@/lib/finance.functions";
+import { addBankDeposit, deleteBankDeposit, getFinance } from "@/lib/finance.functions";
 import { periodLabel } from "@/lib/period";
 import {
   Card,
@@ -27,6 +28,7 @@ import {
   Td,
   Th,
   formatMoney,
+  inputClass,
   usePeriod,
 } from "@/components/panel";
 import { chartTooltip } from "@/components/sector-cash";
@@ -67,6 +69,37 @@ function FaturacaoPage() {
     queryKey: ["finance", range.from, range.to],
     queryFn: () => getFinance({ data: range }),
   });
+
+  const qc = useQueryClient();
+  const [depSector, setDepSector] = useState("agua");
+  const [depAmount, setDepAmount] = useState("");
+  const [saving, setSaving] = useState(false);
+  const refresh = () => qc.invalidateQueries({ queryKey: ["finance"] });
+  const deposit = async () => {
+    const amount = Math.round(Number(depAmount));
+    if (!amount || amount <= 0) { toast.error("Indique o valor do depósito."); return; }
+    setSaving(true);
+    try {
+      await addBankDeposit({ data: { sector: depSector, amount } });
+      toast.success("Depósito registado: saiu do caixa e entrou no banco.");
+      setDepAmount("");
+      refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+  const removeDeposit = async (id: string) => {
+    if (!confirm("Apagar este depósito?")) return;
+    try {
+      await deleteBankDeposit({ data: { id } });
+      toast.success("Depósito apagado.");
+      refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
 
   const sectors = data?.sectors || [];
   const sector = sectors.find((s) => s.slug === tab);
@@ -142,6 +175,34 @@ function FaturacaoPage() {
           />
           <Kpi label="Despesas por pagar" value={formatMoney(pending)} tone="text-warning" />
         </div>
+
+        <Card title="Depositar no banco">
+          <div className="p-5 flex flex-wrap items-end gap-3">
+            <p className="w-full text-xs text-muted-foreground">
+              O valor sai do saldo de caixa (numerário) e entra no saldo via banco (VB). Não altera receitas nem despesas.
+            </p>
+            <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+              Setor
+              <select value={depSector} onChange={(e) => setDepSector(e.target.value)} className={`${inputClass} mt-1.5`}>
+                {sectors.map((s) => (
+                  <option key={s.slug} value={s.slug}>{s.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+              Valor (Kz)
+              <input type="number" min={1} value={depAmount} onChange={(e) => setDepAmount(e.target.value)} className={`${inputClass} mt-1.5`} />
+            </label>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={deposit}
+              className="px-4 py-2 rounded-md bg-brand text-primary-foreground text-sm font-semibold disabled:opacity-50"
+            >
+              {saving ? "A registar…" : "Depositar"}
+            </button>
+          </div>
+        </Card>
 
         <Card title={data?.granularity === "day" ? "Evolução diária" : "Evolução mensal"}>
           <div className="p-5 h-72">
@@ -286,6 +347,7 @@ function FaturacaoPage() {
                 <Th>Tipo</Th>
                 <Th>Estado</Th>
                 <Th>Valor</Th>
+                <Th> </Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-edge">
@@ -294,23 +356,32 @@ function FaturacaoPage() {
                   <Td>{new Date(e.date).toLocaleDateString("pt-AO")}</Td>
                   <Td>
                     {e.description}
-                    {e.payment === "Banco" ? <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-brand/15 text-brand">VB</span> : null}
+                    {e.payment === "Banco" || e.kind === "deposito" ? <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-brand/15 text-brand">VB</span> : null}
                   </Td>
                   <Td>
                     <span
                       className={`px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wide ${
                         e.kind === "receita"
                            ? "bg-warning/15 text-warning"
-                          : "bg-destructive/15 text-destructive"
+                          : e.kind === "deposito"
+                            ? "bg-brand/15 text-brand"
+                            : "bg-destructive/15 text-destructive"
                       }`}
                     >
                       {e.kind}
                     </span>
                   </Td>
                   <Td className="text-muted-foreground">{e.status}</Td>
-                   <Td className={e.kind === "receita" ? "text-warning" : "text-destructive"}>
-                    {e.kind === "receita" ? "+" : "−"}
+                   <Td className={e.kind === "receita" ? "text-warning" : e.kind === "deposito" ? "text-brand" : "text-destructive"}>
+                    {e.kind === "receita" ? "+" : e.kind === "deposito" ? "⇄ " : "−"}
                     {formatMoney(e.amount)}
+                  </Td>
+                  <Td>
+                    {e.kind === "deposito" && e.id ? (
+                      <button type="button" onClick={() => removeDeposit(e.id!)} className="text-xs text-destructive hover:underline">
+                        Apagar
+                      </button>
+                    ) : null}
                   </Td>
                 </tr>
               ))}
