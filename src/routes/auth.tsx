@@ -7,6 +7,7 @@ import { DeviceLock, useDeviceStatus } from "@/components/device-gate";
 import { registerAdminDevice } from "@/lib/devices.functions";
 import { getDeviceToken } from "@/lib/device-token";
 import { markDeviceApproved } from "@/components/pwa-manifest";
+import { readOfflineSession, saveOfflineSession } from "@/lib/offline-session";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -33,9 +34,28 @@ function AuthPage() {
 
   useEffect(() => {
     if (st?.status !== "approved") return;
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/dashboard", replace: true });
-    });
+    let active = true;
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!active) return;
+        if (data.session?.user) {
+          saveOfflineSession(data.session.user);
+          navigate({ to: "/dashboard", replace: true });
+          return;
+        }
+        if (!navigator.onLine && readOfflineSession()) {
+          navigate({ to: "/dashboard", replace: true });
+        }
+      })
+      .catch(() => {
+        if (active && !navigator.onLine && readOfflineSession()) {
+          navigate({ to: "/dashboard", replace: true });
+        }
+      });
+    return () => {
+      active = false;
+    };
   }, [navigate, st?.status]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -57,6 +77,7 @@ function AuthPage() {
         await registerAdminDevice({ data: { token: getDeviceToken() } });
       }
       markDeviceApproved();
+      saveOfflineSession(signed.user);
       queryClient.clear();
       navigate({ to: "/dashboard", replace: true });
     } catch (err) {

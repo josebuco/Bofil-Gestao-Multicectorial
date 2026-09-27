@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { deviceStatus, registerAdminDevice } from "@/lib/devices.functions";
 import { getDeviceToken } from "@/lib/device-token";
 import { OfflineBar } from "@/components/offline-bar";
+import { clearOfflineSession, readOfflineSession, saveOfflineSession } from "@/lib/offline-session";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -14,10 +15,14 @@ export const Route = createFileRoute("/_authenticated")({
     const { data: s } = await supabase.auth
       .getSession()
       .catch(() => ({ data: { session: null } }) as never);
-    const user = s.session?.user;
-    if (!user) throw redirect({ to: "/auth" });
-
     const offline = typeof navigator !== "undefined" && !navigator.onLine;
+    const stored = readOfflineSession();
+    const user = s.session?.user ?? (offline && stored
+      ? { id: stored.userId, email: stored.email }
+      : null);
+    if (!user) throw redirect({ to: "/auth" });
+    if (s.session?.user) saveOfflineSession(s.session.user);
+
     if (offline) {
       if (localStorage.getItem("bofil_device_ok") === "1") return { user };
       throw redirect({ to: "/auth" });
@@ -31,6 +36,7 @@ export const Route = createFileRoute("/_authenticated")({
       const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
       if (isAdmin) await registerAdminDevice({ data: { token } });
       else {
+        clearOfflineSession();
         await supabase.auth.signOut();
         throw redirect({ to: "/auth" });
       }
@@ -76,6 +82,7 @@ function AuthenticatedLayout() {
   async function handleSignOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
+    clearOfflineSession();
     await supabase.auth.signOut();
     router.navigate({ to: "/auth", replace: true });
   }

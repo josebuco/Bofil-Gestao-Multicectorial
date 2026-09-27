@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Use Bofil as the product brand and reserve yellow for revenue; positive balances use green, because this is the approved financial color language.
+- Preserve a minimal local offline-session marker after successful authentication and erase it only on sign-out or rejected access, so authorised devices can reopen offline after token refresh becomes unavailable.
