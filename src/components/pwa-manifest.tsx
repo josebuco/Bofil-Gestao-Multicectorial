@@ -39,13 +39,8 @@ export function PwaManifestGate() {
       } else if (!ok && existing) {
         existing.remove();
       }
-      const inIframe = window.self !== window.top;
-      const isPreview = /id-preview--|lovableproject\.com/.test(location.hostname);
-      if ("serviceWorker" in navigator && import.meta.env.PROD && !inIframe && !isPreview) {
-        if (ok) navigator.serviceWorker.register("/sw.js").catch(() => {});
-        else
-          navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister()));
-      }
+      if (ok) void registerAppSw();
+      else void unregisterAppSw();
     };
 
     sync();
