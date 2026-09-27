@@ -15,8 +15,12 @@ export function useDeviceStatus() {
       if (next.status === "approved") markDeviceApproved();
       else clearDeviceApproved();
     } catch {
+      // Sem internet: um aparelho já autorizado continua a entrar.
+      if (localStorage.getItem("bofil_device_ok") === "1") {
+        setSt({ status: "approved", code: null });
+        return;
+      }
       setSt({ status: "none", code: null });
-      clearDeviceApproved();
     }
   }
   useEffect(() => {

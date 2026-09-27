@@ -9,6 +9,12 @@ import { getDeviceToken } from "@/lib/device-token";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
+    if (!navigator.onLine) {
+      // Sem internet: usa a sessão guardada neste aparelho autorizado.
+      const { data: s } = await supabase.auth.getSession();
+      if (s.session && localStorage.getItem("bofil_device_ok") === "1") return { user: s.session.user };
+      throw redirect({ to: "/auth" });
+    }
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
       throw redirect({ to: "/auth" });
