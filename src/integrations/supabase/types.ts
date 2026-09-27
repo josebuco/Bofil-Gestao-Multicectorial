@@ -98,9 +98,28 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number
+          asset_id: string | null
           category: string
           created_at: string
           created_by: string | null
@@ -117,6 +136,7 @@ export type Database = {
         }
         Insert: {
           amount?: number
+          asset_id?: string | null
           category?: string
           created_at?: string
           created_by?: string | null
@@ -133,6 +153,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          asset_id?: string | null
           category?: string
           created_at?: string
           created_by?: string | null
@@ -147,7 +168,15 @@ export type Database = {
           supplier?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "expenses_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "rental_assets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -173,6 +202,36 @@ export type Database = {
           role?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      rental_assets: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          kind: string
+          name: string
+          notes: string | null
+          plate: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          kind?: string
+          name: string
+          notes?: string | null
+          plate?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          notes?: string | null
+          plate?: string | null
         }
         Relationships: []
       }
@@ -319,6 +378,7 @@ export type Database = {
       sector_entries: {
         Row: {
           amount: number
+          asset_id: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -327,6 +387,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          asset_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -335,13 +396,22 @@ export type Database = {
         }
         Update: {
           amount?: number
+          asset_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           payment_method?: string
           sector?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sector_entries_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "rental_assets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sectors: {
         Row: {

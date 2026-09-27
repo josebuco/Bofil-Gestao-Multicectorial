@@ -50,6 +50,13 @@
       "when": 1790505672076,
       "tag": "0006_device_access",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790530409924,
+      "tag": "0007_rental_assets_and_categories",
+      "breakpoints": true
     }
   ]
 }
