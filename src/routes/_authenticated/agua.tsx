@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { sendOrQueue } from "@/lib/offline";
+import { sendOrQueue, useQueue } from "@/lib/offline";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { getWaterData } from "@/lib/sectors.functions";
@@ -75,7 +75,25 @@ function AguaPage() {
   }, [today, qc]);
   const dayStart = new Date(dayStartIso(today));
   // Técnico vê apenas as entregas do dia actual (Angola); a administração vê o histórico.
-  const visibleSales = isAdmin ? data.sales : data.sales.filter((s) => new Date(s.created_at) >= dayStart);
+  const queuedSales = useQueue("water_sale").map((q) => {
+    const p = data.products.find((x) => x.id === q.data["product_id"]);
+    const qty = Number(q.data["quantity"]) || 0;
+    return {
+      id: q.id,
+      created_at: q.at,
+      quantity: qty,
+      client_name: (q.data["client_name"] as string | null) ?? null,
+      total: (p?.price || 0) * qty,
+      status: String(q.data["status"]),
+      water_products: { name: p?.name || "Serviço" },
+      pending: true,
+    };
+  });
+  const queuedToday = queuedSales.filter((s) => new Date(s.created_at) >= dayStart);
+  const visibleSales = [
+    ...queuedSales,
+    ...(isAdmin ? data.sales : data.sales.filter((s) => new Date(s.created_at) >= dayStart)).map((s) => ({ ...s, pending: false })),
+  ];
   const pending = visibleSales.filter((s) => s.status === "Pendente").length;
 
   async function refresh() {
@@ -161,8 +179,8 @@ function AguaPage() {
 
       <div className="flex-1 overflow-auto p-6 space-y-5">
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Kpi label="Receita hoje" value={formatMoney(data.todayRevenue)} />
-          <Kpi label="Entregas hoje" value={data.todaySalesCount} />
+          <Kpi label="Receita hoje" value={formatMoney(data.todayRevenue + queuedToday.reduce((t, s) => t + s.total, 0))} />
+          <Kpi label="Entregas hoje" value={data.todaySalesCount + queuedToday.length} />
           <Kpi label="Entregas pendentes" value={pending} tone="text-warning" />
         </section>
 
@@ -273,7 +291,10 @@ function AguaPage() {
                         <span className={s.status === "Pendente" ? "text-warning" : "text-muted-foreground"}>
                           {s.status}
                         </span>
-                        {s.status === "Pendente" ? (
+                        {s.pending ? (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">No aparelho</span>
+                        ) : null}
+                        {s.status === "Pendente" && !s.pending ? (
                           <ActionButton
                             onClick={() =>
                               void run(
@@ -285,7 +306,7 @@ function AguaPage() {
                             Entregar
                           </ActionButton>
                         ) : null}
-                        {isAdmin ? (
+                        {isAdmin && !s.pending ? (
                           <ActionButton
                             onClick={() => {
                               if (confirm("Apagar esta venda?"))

@@ -52,3 +52,21 @@ export async function sendOrQueue(
     throw e;
   }
 }
+
+import { useEffect, useState } from "react";
+
+/** Lista viva dos registos ainda guardados no aparelho. */
+export function useQueue(kind?: QueuedKind): QueuedItem[] {
+  const [items, setItems] = useState<QueuedItem[]>([]);
+  useEffect(() => {
+    const upd = () => setItems(readQueue().filter((i) => !kind || i.kind === kind));
+    upd();
+    window.addEventListener(QUEUE_EVENT, upd);
+    window.addEventListener("storage", upd);
+    return () => {
+      window.removeEventListener(QUEUE_EVENT, upd);
+      window.removeEventListener("storage", upd);
+    };
+  }, [kind]);
+  return items;
+}
