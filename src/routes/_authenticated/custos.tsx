@@ -104,7 +104,8 @@ function CustosPage() {
     setSaving(true);
     try {
       let invoicePath: string | null = null;
-      if (file) {
+      const offline = typeof navigator !== "undefined" && !navigator.onLine;
+      if (file && !offline) {
         const ext = file.name.split(".").pop() || "pdf";
         const path = `${tab}/${crypto.randomUUID()}.${ext}`;
         const { error } = await supabase.storage.from("faturas").upload(path, file);
@@ -112,25 +113,26 @@ function CustosPage() {
         invoicePath = path;
       }
 
-      await createExpense({
-        data: {
-          sector: tab,
-          category: String(form.get("category") || "Outros"),
-          description: String(form.get("description") || ""),
-          amount: Number(form.get("amount") || 0),
-          expense_date: String(form.get("expense_date") || ""),
-          supplier: (String(form.get("supplier") || "").trim() || null) as string | null,
-          status: String(form.get("status") || "Pendente"),
-          invoice_path: invoicePath,
-          notes: (String(form.get("notes") || "").trim() || null) as string | null,
-          payment_method: form.get("payment_method") === "Banco" ? "Banco" : "Numerário",
-        },
-      });
+      const payload = {
+        sector: tab,
+        category: String(form.get("category") || "Outros"),
+        description: String(form.get("description") || ""),
+        amount: Number(form.get("amount") || 0),
+        expense_date: String(form.get("expense_date") || ""),
+        supplier: (String(form.get("supplier") || "").trim() || null) as string | null,
+        status: String(form.get("status") || "Pendente"),
+        invoice_path: invoicePath,
+        notes: (String(form.get("notes") || "").trim() || null) as string | null,
+        payment_method: (form.get("payment_method") === "Banco" ? "Banco" : "Numerário") as "Banco" | "Numerário",
+      };
+      const r = await sendOrQueue("expense", payload, `Despesa: ${payload.description}`, () => createExpense({ data: payload }));
 
-      toast.success("Despesa registada.");
+      if (r === "queued")
+        toast.success(file ? "Sem internet: despesa guardada no aparelho (anexe a fatura depois)." : "Sem internet: despesa guardada no aparelho.");
+      else toast.success("Despesa registada.");
       setOpen(false);
       setFile(null);
-      await queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      if (r === "sent") await queryClient.invalidateQueries({ queryKey: ["expenses"] });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao guardar a despesa.");
     } finally {

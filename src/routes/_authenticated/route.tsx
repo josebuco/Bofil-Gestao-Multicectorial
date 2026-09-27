@@ -5,6 +5,7 @@ import { useAccess } from "@/lib/use-access";
 import { useQueryClient } from "@tanstack/react-query";
 import { deviceStatus, registerAdminDevice } from "@/lib/devices.functions";
 import { getDeviceToken } from "@/lib/device-token";
+import { OfflineBar } from "@/components/offline-bar";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -130,6 +131,7 @@ function AuthenticatedLayout() {
       </aside>
 
       <main className="flex-1 min-w-0 flex flex-col">
+        <OfflineBar />
         <Outlet />
       </main>
     </div>

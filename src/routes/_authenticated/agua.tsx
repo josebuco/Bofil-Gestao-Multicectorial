@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { sendOrQueue } from "@/lib/offline";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { getWaterData } from "@/lib/sectors.functions";
@@ -99,17 +100,19 @@ function AguaPage() {
   function onSale(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
+    const payload = {
+      product_id: String(f.get("product_id")),
+      quantity: Number(f.get("quantity")),
+      client_name: String(f.get("client_name") || "").trim() || null,
+      status: String(f.get("status")),
+      payment_method: (f.get("payment_method") === "Banco" ? "Banco" : "Numerário") as "Banco" | "Numerário",
+    };
+    let queued = false;
     void run(
-      () =>
-        addSale({
-          data: {
-            product_id: String(f.get("product_id")),
-            quantity: Number(f.get("quantity")),
-            client_name: String(f.get("client_name") || "").trim() || null,
-            status: String(f.get("status")),
-            payment_method: f.get("payment_method") === "Banco" ? "Banco" : "Numerário",
-          },
-        }),
+      async () => {
+        queued = (await sendOrQueue("water_sale", payload, `Água × ${payload.quantity}`, () => addSale({ data: payload }))) === "queued";
+        if (queued) toast.info("Sem internet: venda guardada no aparelho. Envia ao sincronizar.");
+      },
       "Venda registada.",
     );
   }
