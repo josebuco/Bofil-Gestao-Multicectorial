@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 // Fila local de registos feitos sem internet. Guardada no próprio aparelho.
 const KEY = "bofil_offline_queue";
 export const QUEUE_EVENT = "bofil-queue-changed";
@@ -52,8 +53,6 @@ export async function sendOrQueue(
     throw e;
   }
 }
-
-import { useEffect, useState } from "react";
 
 /** Lista viva dos registos ainda guardados no aparelho. */
 export function useQueue(kind?: QueuedKind): QueuedItem[] {
