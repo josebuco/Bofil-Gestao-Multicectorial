@@ -11,6 +11,7 @@ async function sendItem(item: QueuedItem) {
   const data = item.data as never;
   if (item.kind === "sector_entry") return addSectorEntry({ data });
   if (item.kind === "water_sale") return createWaterSale({ data });
+  if (item.kind === "stock_usage") return createStockUsage({ data });
   return createExpense({ data });
 }
 
