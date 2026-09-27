@@ -115,6 +115,7 @@ export const getFinance = createServerFn({ method: "GET" })
       payment?: string;
     }> = [];
     const bank: Record<string, number> = Object.fromEntries(slugs.map((s) => [s, 0]));
+    const bankExp: Record<string, number> = Object.fromEntries(slugs.map((s) => [s, 0]));
 
     for (const s of sales.data || []) {
       // Pending deliveries are not revenue until delivered.
@@ -146,6 +147,7 @@ export const getFinance = createServerFn({ method: "GET" })
 
     for (const e of expenses.data || []) {
       add(expense, e.sector, e.expense_date, e.amount || 0);
+      if (e.payment_method === "Banco") bankExp[e.sector] = (bankExp[e.sector] || 0) + (e.amount || 0);
       entries.push({
         sector: e.sector,
         kind: "despesa",
@@ -155,6 +157,7 @@ export const getFinance = createServerFn({ method: "GET" })
         status: e.status,
         category: e.category,
         invoice_path: e.invoice_path,
+        payment: e.payment_method,
       });
     }
 
@@ -171,7 +174,10 @@ export const getFinance = createServerFn({ method: "GET" })
         slug,
         label: SECTOR_LABELS[slug]!,
         revenue: rev,
-        bank: bank[slug] || 0,
+        bankRevenue: bank[slug] || 0,
+        bankExpense: bankExp[slug] || 0,
+        bank: (bank[slug] || 0) - (bankExp[slug] || 0),
+        cash: rev - (bank[slug] || 0) - (exp - (bankExp[slug] || 0)),
         expense: exp,
         balance: rev - exp,
         pendingExpense: sectorEntries
@@ -194,6 +200,8 @@ export const getFinance = createServerFn({ method: "GET" })
       totals: {
         revenue: sectors.reduce((s, x) => s + x.revenue, 0),
         bank: sectors.reduce((s, x) => s + x.bank, 0),
+        bankRevenue: sectors.reduce((s, x) => s + x.bankRevenue, 0),
+        cash: sectors.reduce((s, x) => s + x.cash, 0),
         expense: sectors.reduce((s, x) => s + x.expense, 0),
         balance: sectors.reduce((s, x) => s + x.balance, 0),
         pendingExpense: sectors.reduce((s, x) => s + x.pendingExpense, 0),

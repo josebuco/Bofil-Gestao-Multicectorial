@@ -77,7 +77,7 @@ function FaturacaoPage() {
   const bankTotal = sector ? sector.bank : data?.totals.bank || 0;
   const expense = sector ? sector.expense : data?.totals.expense || 0;
   const pending = sector ? sector.pendingExpense : data?.totals.pendingExpense || 0;
-  const balance = revenue - expense;
+  const cashBalance = sector ? sector.cash : data?.totals.cash || 0;
 
   const base = sectors[0]?.series || [];
   const series = sector
@@ -133,12 +133,12 @@ function FaturacaoPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <Kpi label="Receitas do período" value={formatMoney(revenue)} tone="text-warning" />
-          <Kpi label="Via banco (VB)" value={formatMoney(bankTotal)} tone="text-brand" />
+          <Kpi label="Saldo via banco (VB)" value={formatMoney(bankTotal)} tone="text-brand" />
           <Kpi label="Despesas do período" value={formatMoney(expense)} tone="text-destructive" />
           <Kpi
-            label="Saldo de caixa"
-            value={formatMoney(balance)}
-            tone={balance >= 0 ? "text-success" : "text-destructive"}
+            label="Saldo de caixa (numerário)"
+            value={formatMoney(cashBalance)}
+            tone={cashBalance >= 0 ? "text-success" : "text-destructive"}
           />
           <Kpi label="Despesas por pagar" value={formatMoney(pending)} tone="text-warning" />
         </div>
@@ -248,11 +248,11 @@ function FaturacaoPage() {
               <tr>
                 <Th>Setor</Th>
                 <Th>Receitas</Th>
-                <Th>VB (banco)</Th>
+                <Th>Saldo VB (banco)</Th>
                 <Th>Numerário</Th>
                 <Th>Despesas</Th>
                 <Th>Por pagar</Th>
-                <Th>Saldo</Th>
+                <Th>Saldo caixa</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-edge">
@@ -261,15 +261,15 @@ function FaturacaoPage() {
                   <Td className="font-medium">{s.label}</Td>
                    <Td className="text-warning">{formatMoney(s.revenue)}</Td>
                   <Td className="text-brand">{formatMoney(s.bank)}</Td>
-                  <Td className="text-muted-foreground">{formatMoney(s.revenue - s.bank)}</Td>
+                  <Td className="text-muted-foreground">{formatMoney(s.revenue - s.bankRevenue)}</Td>
                   <Td className="text-destructive">{formatMoney(s.expense)}</Td>
                   <Td className="text-warning">{formatMoney(s.pendingExpense)}</Td>
                   <Td
                     className={
-                       s.balance >= 0 ? "text-success font-semibold" : "text-destructive font-semibold"
+                       s.cash >= 0 ? "text-success font-semibold" : "text-destructive font-semibold"
                     }
                   >
-                    {formatMoney(s.balance)}
+                    {formatMoney(s.cash)}
                   </Td>
                 </tr>
               ))}
