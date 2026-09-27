@@ -55,6 +55,7 @@ function AuthPage() {
         }
         await registerAdminDevice({ data: { token: getDeviceToken() } });
       }
+      markDeviceApproved();
       queryClient.clear();
       navigate({ to: "/dashboard", replace: true });
     } catch (err) {
