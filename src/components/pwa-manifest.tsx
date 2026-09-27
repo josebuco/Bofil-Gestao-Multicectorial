@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { registerAppSw, unregisterAppSw } from "@/lib/pwa";
 
 const FLAG = "bofil_device_ok";
 export const DEVICE_APPROVED_EVENT = "bofil-device-approved";
