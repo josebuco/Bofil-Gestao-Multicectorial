@@ -150,7 +150,7 @@ function CustosPage() {
         invoicePath = path;
       }
 
-      const isRental = tab === "aluguer";
+      const isRental = tab === "aluguer" || tab === "transporte";
       const payload = {
         sector: tab,
         category: isRental ? STOCK_CATEGORY : String(form.get("category") || "Outros"),
@@ -290,7 +290,7 @@ function CustosPage() {
                 className={`${inputClass} mt-1.5`}
               />
             </div>
-            {tab === "aluguer" ? (
+            {tab === "aluguer" || tab === "transporte" ? (
               <>
                 <div>
                   <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">

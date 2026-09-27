@@ -2,10 +2,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+const FLEET = z.enum(["aluguer", "transporte"]).default("aluguer");
+export type FleetSector = "aluguer" | "transporte";
+
 export const listAssets = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data, error } = await context.supabase.from("rental_assets").select("*").order("name");
+  .inputValidator((d) => z.object({ sector: FLEET }).parse(d ?? {}))
+  .handler(async ({ context, data: input }) => {
+    const { data, error } = await context.supabase.from("rental_assets").select("*").eq("sector", input.sector).order("name");
     if (error) throw new Error(error.message);
     return data || [];
   });
@@ -18,6 +22,7 @@ export const createAsset = createServerFn({ method: "POST" })
         name: z.string().trim().min(1).max(100),
         kind: z.enum(["Veículo", "Equipamento"]),
         plate: z.string().trim().max(40).nullable().default(null),
+        sector: FLEET,
       })
       .parse(d),
   )
@@ -59,11 +64,12 @@ export const STOCK_CATEGORY = "Compra de estoque";
 /** Lotes de estoque comprados no Centro de Custos e o que já foi aplicado nos veículos. */
 export const listStock = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d) => z.object({ sector: FLEET }).parse(d ?? {}))
+  .handler(async ({ context, data: input }) => {
     const { data: purchases, error } = await context.supabase
       .from("expenses")
       .select("id, description, amount, quantity, expense_date, supplier")
-      .eq("sector", "aluguer")
+      .eq("sector", input.sector)
       .eq("category", STOCK_CATEGORY)
       .order("expense_date", { ascending: false })
       .limit(200);
@@ -72,6 +78,7 @@ export const listStock = createServerFn({ method: "GET" })
     const { data: usage } = await context.supabase
       .from("rental_stock_usage")
       .select("*")
+      .eq("sector", input.sector)
       .order("created_at", { ascending: false })
       .limit(500);
 
@@ -109,6 +116,7 @@ export const createStockUsage = createServerFn({ method: "POST" })
         amount: z.number().int().min(0),
         note: z.string().trim().max(200).nullable().default(null),
         used_on: z.string().min(1),
+        sector: FLEET,
         recorded_at: z.string().datetime().optional(),
       })
       .parse(d),
