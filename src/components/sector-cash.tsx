@@ -13,6 +13,7 @@ import {
 import { getFinance } from "@/lib/finance.functions";
 import { periodLabel } from "@/lib/period";
 import { Card, Kpi, PeriodPicker, formatMoney, usePeriod } from "@/components/panel";
+import { useMergedFinance } from "@/lib/offline-finance";
 
 export const chartTooltip = {
   background: "var(--panel)",
@@ -29,7 +30,8 @@ export function SectorCash({ slug }: { slug: string }) {
     queryFn: () => getFinance({ data: range }),
   });
 
-  const sector = data?.sectors.find((s) => s.slug === slug);
+  const finance = useMergedFinance(data, range);
+  const sector = finance.sectors.find((s) => s.slug === slug);
 
   return (
     <Card

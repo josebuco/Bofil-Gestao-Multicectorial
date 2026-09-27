@@ -11,6 +11,7 @@ import { Card, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } fr
 import { chartTooltip } from "@/components/sector-cash";
 import { useAccess } from "@/lib/use-access";
 import { sendOrQueue, useQueue } from "@/lib/offline";
+import { useMergedFinance } from "@/lib/offline-finance";
 
 type Slug = "restaurante" | "lavagem" | "transporte";
 
@@ -47,10 +48,10 @@ export function QuickCashPage({
   const queued = useQueue("sector_entry")
     .filter((q) => q.data["sector"] === slug)
     .map((q) => ({ id: q.id, amount: Number(q.data["amount"]) || 0, payment_method: String(q.data["payment_method"]), created_at: q.at, pending: true }));
-  const pendingSum = queued.reduce((t, q) => t + q.amount, 0);
   const allEntries = [...queued, ...(entries.data || []).map((e) => ({ ...e, pending: false }))];
-  const sector = finance.data?.sectors.find((s) => s.slug === slug);
-  const outs = (finance.data?.entries || []).filter((e) => e.sector === slug && e.kind === "despesa");
+  const mergedFinance = useMergedFinance(finance.data, range);
+  const sector = mergedFinance.sectors.find((s) => s.slug === slug);
+  const outs = mergedFinance.entries.filter((e) => e.sector === slug && e.kind === "despesa");
 
   async function refresh() {
     await Promise.all([
@@ -80,7 +81,7 @@ export function QuickCashPage({
     }
   }
 
-  const balance = (sector?.balance || 0) + pendingSum;
+  const balance = sector?.balance || 0;
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
@@ -137,7 +138,7 @@ export function QuickCashPage({
             <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-[0.14em]">
               Entradas <ArrowUpRight className="size-4 text-warning" />
             </div>
-            <p className="mt-2 font-display text-3xl text-warning">{formatMoney((sector?.revenue || 0) + pendingSum)}</p>
+            <p className="mt-2 font-display text-3xl text-warning">{formatMoney(sector?.revenue || 0)}</p>
           </div>
           <div className="rounded-xl bg-panel ring-1 ring-edge p-5">
             <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-[0.14em]">
@@ -223,7 +224,10 @@ export function QuickCashPage({
               ) : null}
               {outs.map((e, i) => (
                 <li key={i} className="flex items-center justify-between px-5 py-3 text-sm">
-                  <span className="text-muted-foreground">{e.date.slice(0, 10)}</span>
+                  <span className="text-muted-foreground">
+                    {e.date.slice(0, 10)}
+                    {e.pending ? <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">No aparelho</span> : null}
+                  </span>
                   <span className="font-display text-destructive">−{formatMoney(e.amount)}</span>
                 </li>
               ))}

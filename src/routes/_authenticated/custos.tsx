@@ -1,5 +1,5 @@
 import { todayAngola } from "@/lib/tz";
-import { sendOrQueue } from "@/lib/offline";
+import { sendOrQueue, useQueue } from "@/lib/offline";
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -61,6 +61,27 @@ const CATEGORIES = [
 
 function CustosPage() {
   const { data } = useSuspenseQuery(expensesOptions);
+  const queuedExpenses = useQueue("expense").map((item) => ({
+    id: item.id,
+    sector: String(item.data["sector"]),
+    category: String(item.data["category"] || "Geral"),
+    description: String(item.data["description"] || "Despesa"),
+    amount: Number(item.data["amount"]) || 0,
+    expense_date: String(item.data["expense_date"] || item.at.slice(0, 10)),
+    supplier: (item.data["supplier"] as string | null) ?? null,
+    status: String(item.data["status"] || "Pendente"),
+    invoice_path: null as string | null,
+    notes: (item.data["notes"] as string | null) ?? null,
+    payment_method: String(item.data["payment_method"] || "Numerário"),
+    created_by: null,
+    created_at: item.at,
+    updated_at: item.at,
+    pending: true,
+  }));
+  const allExpenses = [
+    ...queuedExpenses,
+    ...data.expenses.map((expense) => ({ ...expense, pending: false })),
+  ];
   const queryClient = useQueryClient();
   const access = useAccess();
   const [rawTab, setTab] = useState<string>("agua");
@@ -73,7 +94,7 @@ function CustosPage() {
 
   const { preset, setPreset, custom, setCustom, range } = usePeriod("mes");
 
-  const inRange = data.expenses.filter(
+  const inRange = allExpenses.filter(
     (e) => e.expense_date >= range.from && e.expense_date <= range.to,
   );
   const periodBySector: Record<string, number> = {};
@@ -373,7 +394,12 @@ function CustosPage() {
                         >
                           {e.status}
                         </span>
-                        {e.status === "Pendente" ? (
+                        {e.pending ? (
+                          <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">
+                            No aparelho
+                          </span>
+                        ) : null}
+                        {e.status === "Pendente" && !e.pending ? (
                           <button
                             onClick={() => setPaying(paying === e.id ? null : e.id)}
                             className="ml-2 text-xs font-medium text-primary hover:underline"
@@ -393,9 +419,11 @@ function CustosPage() {
                         ) : null}
                       </td>
                       <td className="px-3 py-3">
-                        {e.invoice_path ? (
+                        {e.invoice_path && !e.pending ? (
                           <button
-                            onClick={() => openInvoice(e.invoice_path!)}
+                            onClick={() => {
+                              if (e.invoice_path) void openInvoice(e.invoice_path);
+                            }}
                             className="text-xs font-medium text-primary hover:underline"
                           >
                             Ver fatura
@@ -405,7 +433,7 @@ function CustosPage() {
                         )}
                       </td>
                       <td className="px-3 py-3 text-right">
-                        {access.isAdmin ? (
+                        {access.isAdmin && !e.pending ? (
                           <button
                             onClick={() => {
                               if (confirm("Apagar esta despesa?")) void handleDelete(e.id);

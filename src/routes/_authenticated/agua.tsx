@@ -83,7 +83,7 @@ function AguaPage() {
       created_at: q.at,
       quantity: qty,
       client_name: (q.data["client_name"] as string | null) ?? null,
-      total: (p?.price || 0) * qty,
+      total: Number(q.data["offline_total"]) || (p?.price || 0) * qty,
       status: String(q.data["status"]),
       water_products: { name: p?.name || "Serviço" },
       pending: true,
@@ -125,6 +125,7 @@ function AguaPage() {
       client_name: String(f.get("client_name") || "").trim() || null,
       status: String(f.get("status")),
       payment_method: (f.get("payment_method") === "Banco" ? "Banco" : "Numerário") as "Banco" | "Numerário",
+      offline_total: (data.products.find((product) => product.id === String(f.get("product_id")))?.price || 0) * Number(f.get("quantity")),
     };
     let queued = false;
     void run(
@@ -179,7 +180,7 @@ function AguaPage() {
 
       <div className="flex-1 overflow-auto p-6 space-y-5">
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Kpi label="Receita hoje" value={formatMoney(data.todayRevenue + queuedToday.reduce((t, s) => t + s.total, 0))} />
+           <Kpi label="Receita hoje" value={formatMoney(data.todayRevenue + queuedToday.filter((s) => s.status !== "Pendente").reduce((t, s) => t + s.total, 0))} />
           <Kpi label="Entregas hoje" value={data.todaySalesCount + queuedToday.length} />
           <Kpi label="Entregas pendentes" value={pending} tone="text-warning" />
         </section>
