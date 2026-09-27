@@ -7,6 +7,7 @@ export const SECTORS = [
   { slug: "restaurante", label: "Restaurante", color: "bg-restaurant" },
   { slug: "lavagem", label: "Lavagem", color: "bg-wash" },
   { slug: "transporte", label: "Transporte Escolar", color: "bg-transport" },
+  { slug: "aluguer", label: "Aluguer", color: "bg-primary" },
   { slug: "geral", label: "Geral / Administração", color: "bg-primary" },
 ] as const;
 
@@ -65,6 +66,7 @@ export const createExpense = createServerFn({ method: "POST" })
         notes: z.string().nullable().default(null),
         payment_method: z.enum(["Numerário", "Banco"]).default("Numerário"),
         recorded_at: z.string().datetime().optional(),
+        asset_id: z.string().uuid().nullable().optional(),
       })
       .parse(data),
   )

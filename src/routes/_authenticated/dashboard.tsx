@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDownRight, ArrowUpRight, Droplets, Bus, Car, UtensilsCrossed, Wallet, Building2 } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Droplets, Bus, Truck, Car, UtensilsCrossed, Wallet, Building2 } from "lucide-react";
 import {
   Area,
   ComposedChart,
@@ -42,6 +42,7 @@ const META: Record<string, { color: string; bg: string; icon: typeof Droplets }>
   restaurante: { color: "var(--restaurant)", bg: "bg-restaurant", icon: UtensilsCrossed },
   lavagem: { color: "var(--wash)", bg: "bg-wash", icon: Car },
   transporte: { color: "var(--transport)", bg: "bg-transport", icon: Bus },
+  aluguer: { color: "var(--primary)", bg: "bg-primary", icon: Truck },
   geral: { color: "var(--brand)", bg: "bg-brand", icon: Building2 },
 };
 
