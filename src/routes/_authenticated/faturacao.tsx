@@ -181,6 +181,15 @@ function FaturacaoPage() {
                     strokeWidth={2}
                     fill="url(#fatExp)"
                   />
+                  <Line
+                    type="monotone"
+                    dataKey="saldo"
+                    name="Saldo"
+                    stroke="var(--success)"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4 }}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             )}
