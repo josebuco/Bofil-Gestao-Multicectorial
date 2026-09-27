@@ -154,8 +154,42 @@ function AluguerPage() {
     }
   }
 
+  // Consumo de estoque: abate ao lote comprado, sem somar às despesas gerais.
+  const [usePurchase, setUsePurchase] = useState("");
+  const [useQty, setUseQty] = useState("1");
+  const [useValue, setUseValue] = useState("");
+  const selectedLot = stockItems.find((i) => i.id === usePurchase);
+  const suggested = selectedLot ? selectedLot.unit_price * (Number(useQty) || 0) : 0;
+
+  async function onUsage(ev: React.FormEvent) {
+    ev.preventDefault();
+    if (!current || !selectedLot) return;
+    const qty = Math.round(Number(useQty));
+    if (!qty || qty <= 0) { toast.error("Indique a quantidade."); return; }
+    if (qty > selectedLot.left_quantity) { toast.error("Não há essa quantidade no estoque."); return; }
+    const value = Math.round(Number(useValue) || suggested);
+    const payload = {
+      purchase_id: selectedLot.id,
+      asset_id: current.id,
+      quantity: qty,
+      amount: value,
+      note: null as string | null,
+      used_on: todayAngola(),
+    };
+    try {
+      const r = await sendOrQueue("stock_usage", payload, `${qty}× ${selectedLot.description} → ${current.name}`, () => addUse({ data: payload }));
+      setUseQty("1");
+      setUseValue("");
+      toast.success(r === "queued" ? "Sem internet: guardado no aparelho." : "Estoque aplicado à unidade.");
+      if (r === "sent") await qc.invalidateQueries({ queryKey: ["rental-stock"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível guardar.");
+    }
+  }
+
   const curEntries = current ? allEntries.filter((e) => e.asset_id === current.id) : [];
   const curExp = current ? allExp.filter((e) => e.asset_id === current.id) : [];
+  const curUsage = current ? allUsage.filter((u) => u.asset_id === current.id) : [];
   const badge = <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">No aparelho</span>;
 
   return (
