@@ -245,6 +245,39 @@ function AluguerPage() {
           </section>
         )}
 
+        <Card title="Estoque de peças e materiais">
+          <ul className="divide-y divide-edge/60 max-h-80 overflow-auto">
+            {stockItems.length === 0 && (
+              <li className="p-5 text-sm text-muted-foreground">
+                Ainda não há compras de estoque. Registe-as no Centro de Custos, no separador Aluguer.
+              </li>
+            )}
+            {stockItems.map((i) => (
+              <li key={i.id} className="px-5 py-3 flex items-center justify-between gap-3 text-sm">
+                <div className="min-w-0">
+                  <p className="text-foreground truncate flex items-center gap-2">
+                    <Package className="size-3.5 text-primary shrink-0" />
+                    {i.description}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {new Date(i.purchase_date).toLocaleDateString("pt-AO")} · {formatMoney(i.unit_price)} Kz por unidade
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className={`font-display ${i.left_quantity > 0 ? "text-success" : "text-muted-foreground"}`}>
+                    {i.left_quantity} de {i.quantity}
+                  </p>
+                  {access.isAdmin && (
+                    <p className="text-[11px] text-muted-foreground">
+                      Resta {formatMoney(Math.max(0, i.left_amount))} de {formatMoney(i.amount)} Kz
+                    </p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+
         {current && (
           <>
             <div className="flex items-center justify-between">
