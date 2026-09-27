@@ -51,6 +51,7 @@ const LABELS: Record<string, string> = {
   restaurante: "Restaurante",
   lavagem: "Lavagem",
   transporte: "Transporte Escolar",
+  aluguer: "Aluguer de Veículos e Equipamentos",
   geral: "Geral / Administração",
 };
 

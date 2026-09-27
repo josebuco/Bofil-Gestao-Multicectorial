@@ -1,7 +1,8 @@
 import { todayAngola } from "@/lib/tz";
 import { sendOrQueue, useQueue } from "@/lib/offline";
 import { createFileRoute } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
+import { queryOptions, useQuery, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
+import { addCategory, listCategories } from "@/lib/rental.functions";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -84,6 +85,19 @@ function CustosPage() {
   ];
   const queryClient = useQueryClient();
   const access = useAccess();
+  const extraCats = useQuery({ queryKey: ["expense-categories"], queryFn: () => listCategories() });
+  const categories = Array.from(new Set([...CATEGORIES.filter((c) => c !== "Outros"), ...(extraCats.data || []), "Outros"]));
+  async function newCategory() {
+    const name = window.prompt("Nome da nova categoria de custo:")?.trim();
+    if (!name) return;
+    try {
+      await addCategory({ data: { name } });
+      await queryClient.invalidateQueries({ queryKey: ["expense-categories"] });
+      toast.success(`Categoria "${name}" criada.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível criar (precisa de internet).");
+    }
+  }
   const [rawTab, setTab] = useState<string>("agua");
   const allowedSlugs = SECTORS.filter((s) => access.isAdmin || access.sectors.includes(s.slug)).map((s) => s.slug as string);
   const tab = allowedSlugs.includes(rawTab) ? rawTab : (allowedSlugs[0] ?? rawTab);
@@ -275,11 +289,14 @@ function CustosPage() {
               />
             </div>
             <div>
-              <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+              <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground flex justify-between">
                 Categoria
+                <button type="button" onClick={newCategory} className="normal-case tracking-normal text-primary hover:underline">
+                  + Nova categoria
+                </button>
               </label>
               <select name="category" className={`${inputClass} mt-1.5`}>
-                {CATEGORIES.map((c) => (
+                {categories.map((c) => (
                   <option key={c} value={c}>
                     {c}
                   </option>

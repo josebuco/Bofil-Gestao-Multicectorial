@@ -8,6 +8,7 @@ export const PERMISSION_OPTIONS = [
   { slug: "restaurante", label: "Restaurante" },
   { slug: "lavagem", label: "Lavagem" },
   { slug: "transporte", label: "Transporte Escolar" },
+  { slug: "aluguer", label: "Aluguer de Veículos" },
   { slug: "custos", label: "Centro de Custos" },
 ] as const;
 
@@ -47,7 +48,7 @@ export const listStaff = createServerFn({ method: "GET" })
     }));
   });
 
-const sectorsSchema = z.array(z.enum(["agua", "restaurante", "lavagem", "transporte", "custos"]));
+const sectorsSchema = z.array(z.enum(["agua", "restaurante", "lavagem", "transporte", "aluguer", "custos"]));
 
 export const createStaff = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -154,7 +155,8 @@ export const addSectorEntry = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z
       .object({
-        sector: z.enum(["restaurante", "lavagem", "transporte"]),
+        sector: z.enum(["restaurante", "lavagem", "transporte", "aluguer"]),
+        asset_id: z.string().uuid().nullable().default(null),
         amount: z.number().int().positive().max(1_000_000_000),
         payment_method: z.enum(["Numerário", "Banco"]).default("Numerário"),
         recorded_at: z.string().datetime().optional(),
@@ -179,7 +181,7 @@ export const listSectorEntries = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     const { data: rows, error } = await context.supabase
       .from("sector_entries")
-      .select("id, amount, created_at, payment_method")
+      .select("id, amount, created_at, payment_method, asset_id")
       .eq("sector", data.sector)
       .gte("created_at", dayStartIso(data.from))
       .lte("created_at", dayEndIso(data.to))

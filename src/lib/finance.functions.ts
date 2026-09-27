@@ -8,6 +8,7 @@ export const SECTOR_LABELS: Record<string, string> = {
   restaurante: "Restaurante",
   lavagem: "Lavagem",
   transporte: "Transporte Escolar",
+  aluguer: "Aluguer de Veículos e Equipamentos",
   geral: "Geral / Administração",
 };
 

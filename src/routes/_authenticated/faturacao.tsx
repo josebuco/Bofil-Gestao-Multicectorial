@@ -64,6 +64,7 @@ const SECTOR_COLORS: Record<string, string> = {
   restaurante: "var(--restaurant)",
   lavagem: "var(--wash)",
   transporte: "var(--transport)",
+  aluguer: "var(--primary)",
   geral: "var(--brand)",
 };
 
