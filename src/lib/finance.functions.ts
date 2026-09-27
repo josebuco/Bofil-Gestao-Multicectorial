@@ -43,7 +43,7 @@ export const getFinance = createServerFn({ method: "GET" })
     );
     const granularity: "day" | "month" = spanDays <= 62 ? "day" : "month";
 
-    const [sales, quick, expenses] = await Promise.all([
+    const [sales, quick, expenses, deposits] = await Promise.all([
       context.supabase
         .from("water_sales")
         .select("total, created_at, client_name, status, payment_method")
@@ -59,6 +59,11 @@ export const getFinance = createServerFn({ method: "GET" })
         .select("*")
         .gte("expense_date", data.from)
         .lte("expense_date", data.to),
+      context.supabase
+        .from("bank_deposits")
+        .select("id, sector, amount, created_at")
+        .gte("created_at", fromIso)
+        .lte("created_at", toIso),
     ]);
 
     // build buckets
@@ -105,7 +110,8 @@ export const getFinance = createServerFn({ method: "GET" })
 
     const entries: Array<{
       sector: string;
-      kind: "receita" | "despesa";
+      kind: "receita" | "despesa" | "deposito";
+      id?: string;
       date: string;
       description: string;
       amount: number;
@@ -161,6 +167,20 @@ export const getFinance = createServerFn({ method: "GET" })
       });
     }
 
+    const dep: Record<string, number> = Object.fromEntries(slugs.map((s) => [s, 0]));
+    for (const d of deposits.data || []) {
+      dep[d.sector] = (dep[d.sector] || 0) + (d.amount || 0);
+      entries.push({
+        sector: d.sector,
+        kind: "deposito",
+        date: d.created_at,
+        description: "Depósito no banco",
+        amount: d.amount || 0,
+        status: "Depositado",
+        id: d.id,
+      });
+    }
+
     entries.sort((a, b) => (a.date < b.date ? 1 : -1));
 
     const label = (key: string) =>
@@ -176,8 +196,9 @@ export const getFinance = createServerFn({ method: "GET" })
         revenue: rev,
         bankRevenue: bank[slug] || 0,
         bankExpense: bankExp[slug] || 0,
-        bank: (bank[slug] || 0) - (bankExp[slug] || 0),
-        cash: rev - (bank[slug] || 0) - (exp - (bankExp[slug] || 0)),
+        deposits: dep[slug] || 0,
+        bank: (bank[slug] || 0) - (bankExp[slug] || 0) + (dep[slug] || 0),
+        cash: rev - (bank[slug] || 0) - (exp - (bankExp[slug] || 0)) - (dep[slug] || 0),
         expense: exp,
         balance: rev - exp,
         pendingExpense: sectorEntries
@@ -207,4 +228,26 @@ export const getFinance = createServerFn({ method: "GET" })
         pendingExpense: sectors.reduce((s, x) => s + x.pendingExpense, 0),
       },
     };
+  });
+
+export const addBankDeposit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ sector: z.string().min(1), amount: z.number().int().positive() }).parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase
+      .from("bank_deposits")
+      .insert({ ...data, created_by: context.userId });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteBankDeposit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase.from("bank_deposits").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
