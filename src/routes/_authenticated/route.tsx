@@ -10,27 +10,30 @@ import { OfflineBar } from "@/components/offline-bar";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    if (!navigator.onLine) {
-      // Sem internet: usa a sessão guardada neste aparelho autorizado.
-      const { data: s } = await supabase.auth.getSession();
-      if (s.session && localStorage.getItem("bofil_device_ok") === "1") return { user: s.session.user };
+    // A sessão está guardada no aparelho: lê-se sempre primeiro, com ou sem internet.
+    const { data: s } = await supabase.auth
+      .getSession()
+      .catch(() => ({ data: { session: null } }) as never);
+    const user = s.session?.user;
+    if (!user) throw redirect({ to: "/auth" });
+
+    const offline = typeof navigator !== "undefined" && !navigator.onLine;
+    if (offline) {
+      if (localStorage.getItem("bofil_device_ok") === "1") return { user };
       throw redirect({ to: "/auth" });
     }
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) {
-      throw redirect({ to: "/auth" });
-    }
+
     const token = getDeviceToken();
     const dev = await deviceStatus({ data: { token } }).catch(() => null);
     if (dev && dev.status !== "approved") {
-      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: data.user.id, _role: "admin" });
+      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
       if (isAdmin) await registerAdminDevice({ data: { token } });
       else {
         await supabase.auth.signOut();
         throw redirect({ to: "/auth" });
       }
     }
-    return { user: data.user };
+    return { user };
   },
   component: AuthenticatedLayout,
 });
