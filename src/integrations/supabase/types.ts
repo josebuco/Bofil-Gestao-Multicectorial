@@ -41,6 +41,30 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_deposits: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          sector: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          sector: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          sector?: string
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number
