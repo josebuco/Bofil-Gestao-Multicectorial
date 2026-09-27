@@ -3,6 +3,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { DeviceLock, useDeviceStatus } from "@/components/device-gate";
+import { registerAdminDevice } from "@/lib/devices.functions";
+import { getDeviceToken } from "@/lib/device-token";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -24,23 +27,34 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [adminMode, setAdminMode] = useState(false);
+  const { st, refresh } = useDeviceStatus();
 
   useEffect(() => {
+    if (st?.status !== "approved") return;
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) navigate({ to: "/dashboard", replace: true });
     });
-  }, [navigate]);
+  }, [navigate, st?.status]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: signed, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (error) throw error;
+      if (st?.status !== "approved") {
+        const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: signed.user.id, _role: "admin" });
+        if (!isAdmin) {
+          await supabase.auth.signOut();
+          throw new Error("Este dispositivo ainda não está autorizado.");
+        }
+        await registerAdminDevice({ data: { token: getDeviceToken() } });
+      }
       queryClient.clear();
       navigate({ to: "/dashboard", replace: true });
     } catch (err) {
@@ -49,6 +63,10 @@ function AuthPage() {
       setLoading(false);
     }
   }
+
+  if (!st) return <div className="min-h-screen bg-background" />;
+  if (st.status !== "approved" && !adminMode)
+    return <DeviceLock st={st} refresh={refresh} onAdmin={() => setAdminMode(true)} />;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">

@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccess } from "@/lib/use-access";
 import { useQueryClient } from "@tanstack/react-query";
+import { deviceStatus, registerAdminDevice } from "@/lib/devices.functions";
+import { getDeviceToken } from "@/lib/device-token";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -10,6 +12,16 @@ export const Route = createFileRoute("/_authenticated")({
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
       throw redirect({ to: "/auth" });
+    }
+    const token = getDeviceToken();
+    const dev = await deviceStatus({ data: { token } }).catch(() => null);
+    if (dev && dev.status !== "approved") {
+      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: data.user.id, _role: "admin" });
+      if (isAdmin) await registerAdminDevice({ data: { token } });
+      else {
+        await supabase.auth.signOut();
+        throw redirect({ to: "/auth" });
+      }
     }
     return { user: data.user };
   },
@@ -25,6 +37,7 @@ const allSectors = [
   { id: "/custos", label: "Centro de Custos", color: "bg-brand", perm: "custos" },
   { id: "/faturacao", label: "Faturação", color: "bg-wash", perm: "admin" },
   { id: "/utilizadores", label: "Utilizadores", color: "bg-muted-foreground", perm: "admin" },
+  { id: "/dispositivos", label: "Dispositivos", color: "bg-muted-foreground", perm: "admin" },
 ] as const;
 
 function AuthenticatedLayout() {
