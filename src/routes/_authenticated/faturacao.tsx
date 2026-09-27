@@ -77,7 +77,7 @@ function FaturacaoPage() {
   const refresh = () => qc.invalidateQueries({ queryKey: ["finance"] });
   const deposit = async () => {
     const amount = Math.round(Number(depAmount));
-    if (!amount || amount <= 0) return toast.error("Indique o valor do depósito.");
+    if (!amount || amount <= 0) { toast.error("Indique o valor do depósito."); return; }
     setSaving(true);
     try {
       await addBankDeposit({ data: { sector: depSector, amount } });
