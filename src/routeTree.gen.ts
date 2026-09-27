@@ -15,7 +15,6 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAguaRouteImport } from './routes/_authenticated/agua'
 import { Route as AuthenticatedCustosRouteImport } from './routes/_authenticated/custos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedDispositivosRouteImport } from './routes/_authenticated/dispositivos'
 import { Route as AuthenticatedFaturacaoRouteImport } from './routes/_authenticated/faturacao'
 import { Route as AuthenticatedLavagemRouteImport } from './routes/_authenticated/lavagem'
 import { Route as AuthenticatedRestauranteRouteImport } from './routes/_authenticated/restaurante'
@@ -51,12 +50,6 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedDispositivosRoute =
-  AuthenticatedDispositivosRouteImport.update({
-    id: '/dispositivos',
-    path: '/dispositivos',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedFaturacaoRoute = AuthenticatedFaturacaoRouteImport.update({
   id: '/faturacao',
   path: '/faturacao',
@@ -91,7 +84,6 @@ export interface FileRoutesByFullPath {
   '/agua': typeof AuthenticatedAguaRoute
   '/custos': typeof AuthenticatedCustosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/dispositivos': typeof AuthenticatedDispositivosRoute
   '/faturacao': typeof AuthenticatedFaturacaoRoute
   '/lavagem': typeof AuthenticatedLavagemRoute
   '/restaurante': typeof AuthenticatedRestauranteRoute
@@ -104,7 +96,6 @@ export interface FileRoutesByTo {
   '/agua': typeof AuthenticatedAguaRoute
   '/custos': typeof AuthenticatedCustosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/dispositivos': typeof AuthenticatedDispositivosRoute
   '/faturacao': typeof AuthenticatedFaturacaoRoute
   '/lavagem': typeof AuthenticatedLavagemRoute
   '/restaurante': typeof AuthenticatedRestauranteRoute
@@ -119,7 +110,6 @@ export interface FileRoutesById {
   '/_authenticated/agua': typeof AuthenticatedAguaRoute
   '/_authenticated/custos': typeof AuthenticatedCustosRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/dispositivos': typeof AuthenticatedDispositivosRoute
   '/_authenticated/faturacao': typeof AuthenticatedFaturacaoRoute
   '/_authenticated/lavagem': typeof AuthenticatedLavagemRoute
   '/_authenticated/restaurante': typeof AuthenticatedRestauranteRoute
@@ -134,7 +124,6 @@ export interface FileRouteTypes {
     | '/agua'
     | '/custos'
     | '/dashboard'
-    | '/dispositivos'
     | '/faturacao'
     | '/lavagem'
     | '/restaurante'
@@ -147,7 +136,6 @@ export interface FileRouteTypes {
     | '/agua'
     | '/custos'
     | '/dashboard'
-    | '/dispositivos'
     | '/faturacao'
     | '/lavagem'
     | '/restaurante'
@@ -161,7 +149,6 @@ export interface FileRouteTypes {
     | '/_authenticated/agua'
     | '/_authenticated/custos'
     | '/_authenticated/dashboard'
-    | '/_authenticated/dispositivos'
     | '/_authenticated/faturacao'
     | '/_authenticated/lavagem'
     | '/_authenticated/restaurante'
@@ -219,13 +206,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/dispositivos': {
-      id: '/_authenticated/dispositivos'
-      path: '/dispositivos'
-      fullPath: '/dispositivos'
-      preLoaderRoute: typeof AuthenticatedDispositivosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/faturacao': {
       id: '/_authenticated/faturacao'
       path: '/faturacao'
@@ -268,7 +248,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAguaRoute: typeof AuthenticatedAguaRoute
   AuthenticatedCustosRoute: typeof AuthenticatedCustosRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedDispositivosRoute: typeof AuthenticatedDispositivosRoute
   AuthenticatedFaturacaoRoute: typeof AuthenticatedFaturacaoRoute
   AuthenticatedLavagemRoute: typeof AuthenticatedLavagemRoute
   AuthenticatedRestauranteRoute: typeof AuthenticatedRestauranteRoute
@@ -280,7 +259,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAguaRoute: AuthenticatedAguaRoute,
   AuthenticatedCustosRoute: AuthenticatedCustosRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedDispositivosRoute: AuthenticatedDispositivosRoute,
   AuthenticatedFaturacaoRoute: AuthenticatedFaturacaoRoute,
   AuthenticatedLavagemRoute: AuthenticatedLavagemRoute,
   AuthenticatedRestauranteRoute: AuthenticatedRestauranteRoute,

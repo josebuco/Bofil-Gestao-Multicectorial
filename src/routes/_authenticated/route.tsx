@@ -37,7 +37,6 @@ const allSectors = [
   { id: "/custos", label: "Centro de Custos", color: "bg-brand", perm: "custos" },
   { id: "/faturacao", label: "Faturação", color: "bg-wash", perm: "admin" },
   { id: "/utilizadores", label: "Utilizadores", color: "bg-muted-foreground", perm: "admin" },
-  { id: "/dispositivos", label: "Dispositivos", color: "bg-muted-foreground", perm: "admin" },
 ] as const;
 
 function AuthenticatedLayout() {
