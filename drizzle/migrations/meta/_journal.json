@@ -71,6 +71,20 @@
       "when": 1790540032123,
       "tag": "0009_fleet_by_sector",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790540462961,
+      "tag": "0010_rental_assets_sector",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790540480194,
+      "tag": "0011_fleet_sector_policies",
+      "breakpoints": true
     }
   ]
 }
