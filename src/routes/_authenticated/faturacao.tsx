@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
   Area,
-  AreaChart,
+  ComposedChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -149,7 +149,7 @@ function FaturacaoPage() {
               <p className="text-sm text-muted-foreground">A carregar…</p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={series}>
+                <ComposedChart data={series}>
                   <defs>
                     <linearGradient id="fatRev" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="var(--warning)" stopOpacity={0.5} />
@@ -190,7 +190,7 @@ function FaturacaoPage() {
                     dot={false}
                     activeDot={{ r: 4 }}
                   />
-                </AreaChart>
+                </ComposedChart>
               </ResponsiveContainer>
             )}
           </div>
