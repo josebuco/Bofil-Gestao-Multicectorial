@@ -24,7 +24,9 @@ export const Route = createFileRoute("/_authenticated")({
     }
 
     const token = getDeviceToken();
+    // Falha de rede nunca expulsa: sem resposta, entra com a sessão guardada.
     const dev = await deviceStatus({ data: { token } }).catch(() => null);
+    if (!dev && localStorage.getItem("bofil_device_ok") === "1") return { user };
     if (dev && dev.status !== "approved") {
       const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
       if (isAdmin) await registerAdminDevice({ data: { token } });
@@ -61,6 +63,7 @@ function AuthenticatedLayout() {
   }, [router]);
 
   const queryClient = useQueryClient();
+  const [confirmOut, setConfirmOut] = useState(false);
   const access = useAccess();
   const sectors = allSectors.filter((s) => access.isAdmin || access.sectors.includes(s.perm));
 
@@ -117,9 +120,27 @@ function AuthenticatedLayout() {
           })}
         </nav>
 
+        {confirmOut && (
+          <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4" onClick={() => setConfirmOut(false)}>
+            <div className="w-full max-w-sm rounded-xl border border-edge bg-panel p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <h2 className="font-display text-lg font-semibold uppercase tracking-wide text-foreground">Terminar sessão?</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Atenção: se sair, precisará de internet e do email e palavra-passe para voltar a entrar. Sem internet não conseguirá abrir a conta.
+              </p>
+              <div className="mt-5 flex gap-2">
+                <button onClick={() => setConfirmOut(false)} className="flex-1 rounded-md bg-primary py-2.5 text-sm font-semibold text-primary-foreground">
+                  Continuar ligado
+                </button>
+                <button onClick={handleSignOut} className="flex-1 rounded-md border border-destructive py-2.5 text-sm font-semibold text-destructive hover:bg-destructive/10">
+                  Sair mesmo
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="p-4 border-t border-edge">
           <button
-            onClick={handleSignOut}
+            onClick={() => setConfirmOut(true)}
             className="w-full rounded-md bg-panel ring-1 ring-black/5 p-3 text-left flex items-center gap-3 hover:bg-white/5 transition-colors"
           >
             <div className="size-9 rounded-md bg-edge grid place-items-center font-display font-semibold text-muted-foreground text-sm">
