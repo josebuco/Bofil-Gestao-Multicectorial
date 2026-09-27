@@ -230,12 +230,61 @@ export const getFinance = createServerFn({ method: "GET" })
     };
   });
 
+// Cash physically available in the sector's box: all cash revenue minus cash
+// expenses minus everything already deposited, over all time (not just a period).
+async function sectorCashOnHand(
+  supabase: { from: (t: string) => any },
+  sector: string,
+) {
+  const [sales, entries, expenses, deposits] = await Promise.all([
+    sector === "agua"
+      ? supabase.from("water_sales").select("total, payment_method").neq("status", "Pendente")
+      : Promise.resolve({ data: [] }),
+    supabase.from("sector_entries").select("amount, payment_method").eq("sector", sector),
+    supabase.from("expenses").select("amount, payment_method").eq("sector", sector),
+    supabase.from("bank_deposits").select("amount").eq("sector", sector),
+  ]);
+  let rev = 0;
+  let bankRev = 0;
+  for (const s of sales.data || []) {
+    rev += s.total || 0;
+    if (s.payment_method === "Banco") bankRev += s.total || 0;
+  }
+  let exp = 0;
+  let bankExp = 0;
+  for (const e of entries.data || []) {
+    exp += e.amount || 0;
+    if (e.payment_method === "Banco") bankExp += e.amount || 0;
+  }
+  for (const e of expenses.data || []) {
+    exp += e.amount || 0;
+    if (e.payment_method === "Banco") bankExp += e.amount || 0;
+  }
+  let dep = 0;
+  for (const d of deposits.data || []) dep += d.amount || 0;
+  return rev - bankRev - (exp - bankExp) - dep;
+}
+
+export const getCashAvailable = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ sector: z.string().min(1) }).parse(data))
+  .handler(async ({ context, data }) => {
+    const cash = await sectorCashOnHand(context.supabase, data.sector);
+    return { available: Math.max(0, Math.floor(cash)) };
+  });
+
 export const addBankDeposit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
     z.object({ sector: z.string().min(1), amount: z.number().int().positive() }).parse(data),
   )
   .handler(async ({ context, data }) => {
+    const available = await sectorCashOnHand(context.supabase, data.sector);
+    if (data.amount > available) {
+      throw new Error(
+        `Saldo de caixa insuficiente neste setor: disponível apenas ${Math.floor(available).toLocaleString("pt-AO")} Kz.`,
+      );
+    }
     const { error } = await context.supabase
       .from("bank_deposits")
       .insert({ ...data, created_by: context.userId });
