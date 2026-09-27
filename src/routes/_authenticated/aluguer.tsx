@@ -88,7 +88,10 @@ function AluguerPage() {
   const statsFor = (id: string) => {
     const rev = allEntries.filter((e) => e.asset_id === id).reduce((s, e) => s + e.amount, 0);
     const exp = allExp.filter((e) => e.asset_id === id).reduce((s, e) => s + (e.amount || 0), 0);
-    return { rev, exp, bal: rev - exp };
+    const stk = allUsage
+      .filter((u) => u.asset_id === id && u.used_on >= range.from && u.used_on <= range.to)
+      .reduce((s, u) => s + (u.amount || 0), 0);
+    return { rev, exp: exp + stk, bal: rev - exp - stk };
   };
 
   const [showNew, setShowNew] = useState(false);
