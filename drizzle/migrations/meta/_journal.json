@@ -64,6 +64,13 @@
       "when": 1790536219746,
       "tag": "0008_rental_stock",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790540032123,
+      "tag": "0009_fleet_by_sector",
+      "breakpoints": true
     }
   ]
 }

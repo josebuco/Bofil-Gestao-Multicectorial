@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { QuickCashPage } from "@/components/quick-cash";
+import { FleetPage } from "@/components/fleet-page";
 
 export const Route = createFileRoute("/_authenticated/transporte")({
   head: () => ({
@@ -12,5 +12,5 @@ export const Route = createFileRoute("/_authenticated/transporte")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => <QuickCashPage slug="transporte" title="Transporte Escolar" dot="bg-transport" accent="bg-transport" />,
+  component: () => <FleetPage sector="transporte" title="Transporte Escolar" subtitle="Cada viatura com alunos embarcados, custos e estoque" dot="bg-transport" />,
 });

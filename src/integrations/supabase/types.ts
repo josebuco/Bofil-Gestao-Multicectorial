@@ -217,6 +217,7 @@ export type Database = {
           name: string
           notes: string | null
           plate: string | null
+          sector: string
         }
         Insert: {
           active?: boolean
@@ -226,6 +227,7 @@ export type Database = {
           name: string
           notes?: string | null
           plate?: string | null
+          sector?: string
         }
         Update: {
           active?: boolean
@@ -235,6 +237,7 @@ export type Database = {
           name?: string
           notes?: string | null
           plate?: string | null
+          sector?: string
         }
         Relationships: []
       }
@@ -248,6 +251,7 @@ export type Database = {
           note: string | null
           purchase_id: string
           quantity: number
+          sector: string
           used_on: string
         }
         Insert: {
@@ -259,6 +263,7 @@ export type Database = {
           note?: string | null
           purchase_id: string
           quantity?: number
+          sector?: string
           used_on?: string
         }
         Update: {
@@ -270,6 +275,7 @@ export type Database = {
           note?: string | null
           purchase_id?: string
           quantity?: number
+          sector?: string
           used_on?: string
         }
         Relationships: [
@@ -437,7 +443,9 @@ export type Database = {
           created_by: string | null
           id: string
           payment_method: string
+          per_student: number | null
           sector: string
+          students: number | null
         }
         Insert: {
           amount: number
@@ -446,7 +454,9 @@ export type Database = {
           created_by?: string | null
           id?: string
           payment_method?: string
+          per_student?: number | null
           sector: string
+          students?: number | null
         }
         Update: {
           amount?: number
@@ -455,7 +465,9 @@ export type Database = {
           created_by?: string | null
           id?: string
           payment_method?: string
+          per_student?: number | null
           sector?: string
+          students?: number | null
         }
         Relationships: [
           {
