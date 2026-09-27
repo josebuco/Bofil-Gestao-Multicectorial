@@ -150,9 +150,11 @@ function CustosPage() {
         invoicePath = path;
       }
 
+      const isRental = tab === "aluguer";
       const payload = {
         sector: tab,
-        category: String(form.get("category") || "Outros"),
+        category: isRental ? STOCK_CATEGORY : String(form.get("category") || "Outros"),
+        quantity: isRental ? Math.max(1, Number(form.get("quantity") || 1)) : null,
         description: String(form.get("description") || ""),
         amount: Number(form.get("amount") || 0),
         expense_date: String(form.get("expense_date") || ""),
