@@ -123,6 +123,7 @@ function CustosPage() {
           status: String(form.get("status") || "Pendente"),
           invoice_path: invoicePath,
           notes: (String(form.get("notes") || "").trim() || null) as string | null,
+          payment_method: form.get("payment_method") === "Banco" ? "Banco" : "Numerário",
         },
       });
 
@@ -273,6 +274,15 @@ function CustosPage() {
               <select name="status" className={`${inputClass} mt-1.5`}>
                 <option value="Pendente">Pendente</option>
                 <option value="Pago">Pago</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                Pagamento
+              </label>
+              <select name="payment_method" className={`${inputClass} mt-1.5`}>
+                <option value="Numerário">Numerário (caixa)</option>
+                <option value="Banco">Banco (VB)</option>
               </select>
             </div>
             <div>

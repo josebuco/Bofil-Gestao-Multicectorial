@@ -52,6 +52,7 @@ export type Database = {
           id: string
           invoice_path: string | null
           notes: string | null
+          payment_method: string
           sector: string
           status: string
           supplier: string | null
@@ -67,6 +68,7 @@ export type Database = {
           id?: string
           invoice_path?: string | null
           notes?: string | null
+          payment_method?: string
           sector: string
           status?: string
           supplier?: string | null
@@ -82,6 +84,7 @@ export type Database = {
           id?: string
           invoice_path?: string | null
           notes?: string | null
+          payment_method?: string
           sector?: string
           status?: string
           supplier?: string | null
