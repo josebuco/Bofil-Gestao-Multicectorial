@@ -45,6 +45,7 @@ export const createWaterSale = createServerFn({ method: "POST" })
         client_name: z.string().nullable().default(null),
         status: z.string().min(1),
         payment_method: z.enum(["Numerário", "Banco"]).default("Numerário"),
+        recorded_at: z.string().datetime().optional(),
       })
       .parse(d),
   )
@@ -56,6 +57,8 @@ export const createWaterSale = createServerFn({ method: "POST" })
       .single();
     if (pErr || !product) throw new Error("Produto não encontrado.");
 
+    const t = data.recorded_at ? new Date(data.recorded_at).getTime() : NaN;
+    const created_at = t && t <= Date.now() && t > Date.now() - 60 * 864e5 ? new Date(t).toISOString() : undefined;
     const total = product.price * data.quantity;
     const { error } = await context.supabase.from("water_sales").insert({
       product_id: data.product_id,
@@ -65,6 +68,7 @@ export const createWaterSale = createServerFn({ method: "POST" })
       client_name: data.client_name,
       status: data.status,
       payment_method: data.payment_method,
+      ...(created_at ? { created_at } : {}),
     });
     if (error) throw new Error(error.message);
 
