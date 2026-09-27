@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { deviceStatus, requestDevice, redeemCode } from "@/lib/devices.functions";
 import { getDeviceToken } from "@/lib/device-token";
+import { markDeviceApproved, clearDeviceApproved } from "@/components/pwa-manifest";
 
 type St = { status: "none" | "pending" | "approved" | "revoked"; code: string | null };
 
@@ -9,9 +10,13 @@ export function useDeviceStatus() {
   const [st, setSt] = useState<St | null>(null);
   async function refresh() {
     try {
-      setSt(await deviceStatus({ data: { token: getDeviceToken() } }));
+      const next = await deviceStatus({ data: { token: getDeviceToken() } });
+      setSt(next);
+      if (next.status === "approved") markDeviceApproved();
+      else clearDeviceApproved();
     } catch {
       setSt({ status: "none", code: null });
+      clearDeviceApproved();
     }
   }
   useEffect(() => {

@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
+import { PwaManifestGate } from "@/components/pwa-manifest";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -103,7 +104,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { rel: "icon", type: "image/png", href: "/favicon.png" },
       { rel: "apple-touch-icon", href: "/app-icon.png" },
-      { rel: "manifest", href: "/manifest.webmanifest" },
     ],
   }),
   shellComponent: RootShell,
@@ -131,6 +131,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <PwaManifestGate />
       <Outlet />
       <Toaster />
     </QueryClientProvider>

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { DeviceLock, useDeviceStatus } from "@/components/device-gate";
 import { registerAdminDevice } from "@/lib/devices.functions";
 import { getDeviceToken } from "@/lib/device-token";
+import { markDeviceApproved } from "@/components/pwa-manifest";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -55,6 +56,7 @@ function AuthPage() {
         }
         await registerAdminDevice({ data: { token: getDeviceToken() } });
       }
+      markDeviceApproved();
       queryClient.clear();
       navigate({ to: "/dashboard", replace: true });
     } catch (err) {
