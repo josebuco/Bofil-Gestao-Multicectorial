@@ -57,6 +57,13 @@
       "when": 1790530409924,
       "tag": "0007_rental_assets_and_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790536219746,
+      "tag": "0008_rental_stock",
+      "breakpoints": true
     }
   ]
 }

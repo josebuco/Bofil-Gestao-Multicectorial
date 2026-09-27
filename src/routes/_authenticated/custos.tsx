@@ -2,7 +2,7 @@ import { todayAngola } from "@/lib/tz";
 import { sendOrQueue, useQueue } from "@/lib/offline";
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useQuery, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { addCategory, listCategories } from "@/lib/rental.functions";
+import { STOCK_CATEGORY, addCategory, listCategories } from "@/lib/rental.functions";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -150,9 +150,11 @@ function CustosPage() {
         invoicePath = path;
       }
 
+      const isRental = tab === "aluguer";
       const payload = {
         sector: tab,
-        category: String(form.get("category") || "Outros"),
+        category: isRental ? STOCK_CATEGORY : String(form.get("category") || "Outros"),
+        quantity: isRental ? Math.max(1, Number(form.get("quantity") || 1)) : null,
         description: String(form.get("description") || ""),
         amount: Number(form.get("amount") || 0),
         expense_date: String(form.get("expense_date") || ""),
@@ -288,21 +290,41 @@ function CustosPage() {
                 className={`${inputClass} mt-1.5`}
               />
             </div>
-            <div>
-              <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground flex justify-between">
-                Categoria
-                <button type="button" onClick={newCategory} className="normal-case tracking-normal text-primary hover:underline">
-                  + Nova categoria
-                </button>
-              </label>
-              <select name="category" className={`${inputClass} mt-1.5`}>
-                {categories.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {tab === "aluguer" ? (
+              <>
+                <div>
+                  <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                    Categoria
+                  </label>
+                  <div className={`${inputClass} mt-1.5 flex items-center justify-between`}>
+                    <span>{STOCK_CATEGORY}</span>
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">única</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                    Quantidade comprada
+                  </label>
+                  <input name="quantity" type="number" min="1" defaultValue={1} required className={`${inputClass} mt-1.5`} />
+                </div>
+              </>
+            ) : (
+              <div>
+                <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground flex justify-between">
+                  Categoria
+                  <button type="button" onClick={newCategory} className="normal-case tracking-normal text-primary hover:underline">
+                    + Nova categoria
+                  </button>
+                </label>
+                <select name="category" className={`${inputClass} mt-1.5`}>
+                  {categories.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                 Fornecedor

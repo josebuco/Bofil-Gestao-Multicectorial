@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { Plus, Trash2, Truck, Wrench } from "lucide-react";
 import { addSectorEntry, listSectorEntries } from "@/lib/access.functions";
 import { createExpense, getExpenses } from "@/lib/expenses.functions";
-import { createAsset, deleteAsset, listAssets, listCategories } from "@/lib/rental.functions";
+import { createAsset, createStockUsage, deleteAsset, listAssets, listCategories, listStock } from "@/lib/rental.functions";
+import { Package } from "lucide-react";
 import { Card, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
 import { periodLabel } from "@/lib/period";
 import { useAccess } from "@/lib/use-access";
@@ -48,6 +49,27 @@ function AluguerPage() {
   const expenses = useQuery({ queryKey: ["expenses"], queryFn: () => listX() });
   const cats = useQuery({ queryKey: ["expense-categories"], queryFn: () => listC() });
   const categories = Array.from(new Set([...BASE_CATEGORIES, ...(cats.data || [])]));
+  const listStk = useServerFn(listStock);
+  const addUse = useServerFn(createStockUsage);
+  const stock = useQuery({ queryKey: ["rental-stock"], queryFn: () => listStk() });
+
+  const qUsage = useQueue("stock_usage").map((q) => ({
+    id: q.id,
+    purchase_id: String(q.data["purchase_id"] || ""),
+    asset_id: (q.data["asset_id"] as string) || null,
+    quantity: Number(q.data["quantity"]) || 0,
+    amount: Number(q.data["amount"]) || 0,
+    note: (q.data["note"] as string) || null,
+    used_on: String(q.data["used_on"] || q.at.slice(0, 10)),
+    pending: true,
+  }));
+  const allUsage = [...qUsage, ...(stock.data?.usages || []).map((u) => ({ ...u, pending: false }))];
+  const stockItems = (stock.data?.items || []).map((i) => {
+    const pend = qUsage.filter((u) => u.purchase_id === i.id);
+    const pq = pend.reduce((s, u) => s + u.quantity, 0);
+    const pa = pend.reduce((s, u) => s + u.amount, 0);
+    return { ...i, left_quantity: i.left_quantity - pq, left_amount: i.left_amount - pa };
+  });
 
   const qEntries = useQueue("sector_entry").filter((q) => q.data["sector"] === "aluguer")
     .map((q) => ({ id: q.id, amount: Number(q.data["amount"]) || 0, payment_method: String(q.data["payment_method"]), created_at: q.at, asset_id: (q.data["asset_id"] as string) || null, pending: true }));
@@ -66,7 +88,10 @@ function AluguerPage() {
   const statsFor = (id: string) => {
     const rev = allEntries.filter((e) => e.asset_id === id).reduce((s, e) => s + e.amount, 0);
     const exp = allExp.filter((e) => e.asset_id === id).reduce((s, e) => s + (e.amount || 0), 0);
-    return { rev, exp, bal: rev - exp };
+    const stk = allUsage
+      .filter((u) => u.asset_id === id && u.used_on >= range.from && u.used_on <= range.to)
+      .reduce((s, u) => s + (u.amount || 0), 0);
+    return { rev, exp: exp + stk, bal: rev - exp - stk };
   };
 
   const [showNew, setShowNew] = useState(false);
@@ -129,8 +154,42 @@ function AluguerPage() {
     }
   }
 
+  // Consumo de estoque: abate ao lote comprado, sem somar às despesas gerais.
+  const [usePurchase, setUsePurchase] = useState("");
+  const [useQty, setUseQty] = useState("1");
+  const [useValue, setUseValue] = useState("");
+  const selectedLot = stockItems.find((i) => i.id === usePurchase);
+  const suggested = selectedLot ? selectedLot.unit_price * (Number(useQty) || 0) : 0;
+
+  async function onUsage(ev: React.FormEvent) {
+    ev.preventDefault();
+    if (!current || !selectedLot) return;
+    const qty = Math.round(Number(useQty));
+    if (!qty || qty <= 0) { toast.error("Indique a quantidade."); return; }
+    if (qty > selectedLot.left_quantity) { toast.error("Não há essa quantidade no estoque."); return; }
+    const value = Math.round(Number(useValue) || suggested);
+    const payload = {
+      purchase_id: selectedLot.id,
+      asset_id: current.id,
+      quantity: qty,
+      amount: value,
+      note: null as string | null,
+      used_on: todayAngola(),
+    };
+    try {
+      const r = await sendOrQueue("stock_usage", payload, `${qty}× ${selectedLot.description} → ${current.name}`, () => addUse({ data: payload }));
+      setUseQty("1");
+      setUseValue("");
+      toast.success(r === "queued" ? "Sem internet: guardado no aparelho." : "Estoque aplicado à unidade.");
+      if (r === "sent") await qc.invalidateQueries({ queryKey: ["rental-stock"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível guardar.");
+    }
+  }
+
   const curEntries = current ? allEntries.filter((e) => e.asset_id === current.id) : [];
   const curExp = current ? allExp.filter((e) => e.asset_id === current.id) : [];
+  const curUsage = current ? allUsage.filter((u) => u.asset_id === current.id) : [];
   const badge = <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">No aparelho</span>;
 
   return (
@@ -186,6 +245,39 @@ function AluguerPage() {
           </section>
         )}
 
+        <Card title="Estoque de peças e materiais">
+          <ul className="divide-y divide-edge/60 max-h-80 overflow-auto">
+            {stockItems.length === 0 && (
+              <li className="p-5 text-sm text-muted-foreground">
+                Ainda não há compras de estoque. Registe-as no Centro de Custos, no separador Aluguer.
+              </li>
+            )}
+            {stockItems.map((i) => (
+              <li key={i.id} className="px-5 py-3 flex items-center justify-between gap-3 text-sm">
+                <div className="min-w-0">
+                  <p className="text-foreground truncate flex items-center gap-2">
+                    <Package className="size-3.5 text-primary shrink-0" />
+                    {i.description}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {new Date(i.purchase_date).toLocaleDateString("pt-AO")} · {formatMoney(i.unit_price)} Kz por unidade
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className={`font-display ${i.left_quantity > 0 ? "text-success" : "text-muted-foreground"}`}>
+                    {i.left_quantity} de {i.quantity}
+                  </p>
+                  {access.isAdmin && (
+                    <p className="text-[11px] text-muted-foreground">
+                      Resta {formatMoney(Math.max(0, i.left_amount))} de {formatMoney(i.amount)} Kz
+                    </p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+
         {current && (
           <>
             <div className="flex items-center justify-between">
@@ -239,6 +331,63 @@ function AluguerPage() {
                       <span className="font-display text-destructive shrink-0">−{formatMoney(e.amount || 0)}</span>
                     </li>
                   ))}
+                </ul>
+              </Card>
+
+              <Card title={`Consumo de estoque — ${current.name}`}>
+                <form onSubmit={onUsage} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
+                  <select
+                    value={usePurchase}
+                    onChange={(e) => { setUsePurchase(e.target.value); setUseValue(""); }}
+                    className={`${inputClass} col-span-2`}
+                  >
+                    <option value="">Escolher item do estoque…</option>
+                    {stockItems.filter((i) => i.left_quantity > 0).map((i) => (
+                      <option key={i.id} value={i.id}>
+                        {i.description} — {i.left_quantity} disponíveis
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={useQty}
+                    onChange={(e) => setUseQty(e.target.value)}
+                    type="number"
+                    min={1}
+                    placeholder="Quantidade"
+                    className={inputClass}
+                  />
+                  <input
+                    value={useValue}
+                    onChange={(e) => setUseValue(e.target.value)}
+                    type="number"
+                    min={0}
+                    placeholder={suggested ? `${formatMoney(suggested)} Kz` : "Valor (Kz)"}
+                    className={inputClass}
+                  />
+                  <p className="col-span-2 text-[11px] text-muted-foreground">
+                    Sai do estoque e fica no custo da unidade. Não entra nas despesas gerais do período.
+                  </p>
+                  <button
+                    disabled={!usePurchase}
+                    className="col-span-2 h-10 rounded-md bg-primary text-primary-foreground font-medium disabled:opacity-50"
+                  >
+                    Aplicar na unidade
+                  </button>
+                </form>
+                <ul className="divide-y divide-edge/60 max-h-80 overflow-auto">
+                  {curUsage.length === 0 && <li className="p-5 text-sm text-muted-foreground">Nada aplicado a esta unidade.</li>}
+                  {curUsage.map((u) => {
+                    const lot = stockItems.find((i) => i.id === u.purchase_id);
+                    return (
+                      <li key={u.id} className="flex justify-between px-5 py-3 text-sm gap-3">
+                        <span className="text-muted-foreground min-w-0 truncate">
+                          {u.used_on} · {u.quantity}× {lot?.description || "Item de estoque"}
+                          {u.pending ? badge : null}
+                        </span>
+                        <span className="font-display text-primary shrink-0">−{formatMoney(u.amount || 0)}</span>
+                      </li>
+                    );
+                  })}
                 </ul>
               </Card>
             </div>

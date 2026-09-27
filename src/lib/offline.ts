@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 const KEY = "bofil_offline_queue";
 export const QUEUE_EVENT = "bofil-queue-changed";
 
-export type QueuedKind = "sector_entry" | "water_sale" | "expense";
+export type QueuedKind = "sector_entry" | "water_sale" | "expense" | "stock_usage";
 export type QueuedItem = { id: string; kind: QueuedKind; data: Record<string, unknown>; at: string; label: string };
 
 export function readQueue(): QueuedItem[] {

@@ -67,6 +67,7 @@ export const createExpense = createServerFn({ method: "POST" })
         payment_method: z.enum(["Numerário", "Banco"]).default("Numerário"),
         recorded_at: z.string().datetime().optional(),
         asset_id: z.string().uuid().nullable().default(null),
+        quantity: z.number().int().min(0).nullable().default(null),
       })
       .parse(data),
   )
