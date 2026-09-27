@@ -13,8 +13,9 @@ export const Route = createFileRoute("/")({
     ],
   }),
   beforeLoad: async () => {
-    const { data } = await supabase.auth.getUser();
-    if (data.user) {
+    // getSession lê o que está guardado no aparelho: funciona sem internet.
+    const { data } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+    if (data.session) {
       throw redirect({ to: "/dashboard" });
     }
     throw redirect({ to: "/auth" });

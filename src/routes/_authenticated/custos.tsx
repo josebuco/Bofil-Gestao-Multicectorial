@@ -37,7 +37,8 @@ export const Route = createFileRoute("/_authenticated/custos")({
     ],
   }),
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(expensesOptions);
+    // Sem internet, segue com a cópia guardada no aparelho.
+    await context.queryClient.ensureQueryData(expensesOptions).catch(() => null);
   },
   component: CustosPage,
 });
