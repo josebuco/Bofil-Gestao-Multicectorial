@@ -10,9 +10,13 @@ export function useDeviceStatus() {
   const [st, setSt] = useState<St | null>(null);
   async function refresh() {
     try {
-      setSt(await deviceStatus({ data: { token: getDeviceToken() } }));
+      const next = await deviceStatus({ data: { token: getDeviceToken() } });
+      setSt(next);
+      if (next.status === "approved") markDeviceApproved();
+      else clearDeviceApproved();
     } catch {
       setSt({ status: "none", code: null });
+      clearDeviceApproved();
     }
   }
   useEffect(() => {
