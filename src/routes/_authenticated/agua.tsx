@@ -44,7 +44,8 @@ export const Route = createFileRoute("/_authenticated/agua")({
     ],
   }),
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(waterOptions);
+    // Sem internet, segue com a cópia guardada no aparelho.
+    await context.queryClient.ensureQueryData(waterOptions).catch(() => null);
   },
   component: AguaPage,
 });
