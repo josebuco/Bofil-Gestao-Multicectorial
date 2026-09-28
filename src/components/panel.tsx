@@ -105,7 +105,7 @@ export function PageHeader({
 
 export function Kpi({ label, value, tone }: { label: string; value: string | number; tone?: string }) {
   return (
-    <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
+    <div className="rounded-xl bg-panel ring-1 ring-edge p-4 shadow-sm transition-shadow hover:shadow-md">
       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
       <p className={`font-display font-semibold text-2xl mt-2 ${tone || "text-foreground"}`}>{value}</p>
     </div>
@@ -122,9 +122,9 @@ export function Card({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-lg bg-panel ring-1 ring-black/5 overflow-hidden">
-      <div className="px-5 py-4 border-b border-edge flex items-center justify-between gap-3">
-        <h2 className="font-display font-semibold text-base uppercase tracking-wide text-foreground">{title}</h2>
+    <div className="rounded-xl bg-panel ring-1 ring-edge overflow-hidden shadow-sm">
+      <div className="px-5 py-4 border-b border-edge bg-gradient-to-r from-primary/5 to-transparent flex items-center justify-between gap-3">
+        <h2 className="font-display font-semibold text-base uppercase tracking-wide text-foreground flex items-center gap-2"><span className="h-4 w-1 rounded-full bg-primary" />{title}</h2>
         {action}
       </div>
       <div className="overflow-x-auto">{children}</div>
@@ -159,7 +159,7 @@ export function FormPanel({
       onSubmit={onSubmit}
       className="rounded-lg bg-panel ring-1 ring-black/5 p-5 space-y-4"
     >
-      <h2 className="font-display font-semibold text-base uppercase tracking-wide text-foreground">{title}</h2>
+      <h2 className="font-display font-semibold text-base uppercase tracking-wide text-foreground flex items-center gap-2"><span className="h-4 w-1 rounded-full bg-primary" />{title}</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{children}</div>
       <button
         type="submit"
