@@ -473,6 +473,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               {!sectorEntryMode && current.kind !== "Equipamento" && (truckMode ? truckCard : entriesCard)}
 
+              {sector !== "lavagem" && (
               <Card title="Centro de custos">
                 <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
                   <input name="description" required placeholder="Descrição" className={`${inputClass} col-span-2`} />
