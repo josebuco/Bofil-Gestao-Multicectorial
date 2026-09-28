@@ -99,6 +99,7 @@ function CustosPage() {
     }
   }
   const [rawTab, setTab] = useState<string>("agua");
+  const [formCat, setFormCat] = useState<string>("");
   const allowedSlugs = SECTORS.filter((s) => access.isAdmin || access.sectors.includes(s.slug)).map((s) => s.slug as string);
   const tab = allowedSlugs.includes(rawTab) ? rawTab : (allowedSlugs[0] ?? rawTab);
   const [open, setOpen] = useState(false);
@@ -150,11 +151,12 @@ function CustosPage() {
         invoicePath = path;
       }
 
-      const isRental = tab === "aluguer" || tab === "transporte";
+      const isRental = tab === "aluguer";
+      const cat = isRental ? STOCK_CATEGORY : String(form.get("category") || "Outros");
       const payload = {
         sector: tab,
-        category: isRental ? STOCK_CATEGORY : String(form.get("category") || "Outros"),
-        quantity: isRental ? Math.max(1, Number(form.get("quantity") || 1)) : null,
+        category: cat,
+        quantity: cat === STOCK_CATEGORY ? Math.max(1, Number(form.get("quantity") || 1)) : null,
         description: String(form.get("description") || ""),
         amount: Number(form.get("amount") || 0),
         expense_date: String(form.get("expense_date") || ""),
@@ -290,7 +292,7 @@ function CustosPage() {
                 className={`${inputClass} mt-1.5`}
               />
             </div>
-            {tab === "aluguer" || tab === "transporte" ? (
+            {tab === "aluguer" ? (
               <>
                 <div>
                   <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
@@ -316,13 +318,19 @@ function CustosPage() {
                     + Nova categoria
                   </button>
                 </label>
-                <select name="category" className={`${inputClass} mt-1.5`}>
-                  {categories.map((c) => (
+                <select name="category" value={formCat || categories[0]} onChange={(e) => setFormCat(e.target.value)} className={`${inputClass} mt-1.5`}>
+                  {(tab === "restaurante" ? categories.filter((c) => c !== STOCK_CATEGORY) : Array.from(new Set([STOCK_CATEGORY, ...categories]))).map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>
                   ))}
                 </select>
+              </div>
+            )}
+            {tab !== "aluguer" && tab !== "restaurante" && formCat === STOCK_CATEGORY && (
+              <div>
+                <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Quantidade comprada</label>
+                <input name="quantity" type="number" min="1" defaultValue={1} required className={`${inputClass} mt-1.5`} />
               </div>
             )}
             <div>
@@ -487,6 +495,24 @@ function CustosPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+          {tab !== "aluguer" && rows.length > 0 && (
+            <div className="border-t border-edge p-5">
+              <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-3">Resumo por categoria</p>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {Object.entries(rows.reduce<Record<string, number>>((acc, e) => { acc[e.category] = (acc[e.category] || 0) + (e.amount || 0); return acc; }, {}))
+                  .sort((x, y) => y[1] - x[1])
+                  .map(([c, v]) => (
+                    <li key={c} className="rounded-lg bg-background/40 ring-1 ring-edge px-4 py-3 flex items-center justify-between gap-3 text-sm">
+                      <span className="text-muted-foreground truncate">{c}</span>
+                      <span className="shrink-0">
+                        <span className="font-display text-destructive">{formatMoney(v)} Kz</span>
+                        <span className="ml-2 text-[11px] text-muted-foreground">{tabTotal ? Math.round((v / tabTotal) * 100) : 0}%</span>
+                      </span>
+                    </li>
+                  ))}
+              </ul>
             </div>
           )}
         </div>

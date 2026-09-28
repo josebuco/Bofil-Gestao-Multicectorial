@@ -155,7 +155,7 @@ export const addSectorEntry = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z
       .object({
-        sector: z.enum(["restaurante", "lavagem", "transporte", "aluguer"]),
+        sector: z.enum(["agua", "restaurante", "lavagem", "transporte", "aluguer"]),
         asset_id: z.string().uuid().nullable().default(null),
         students: z.number().int().min(1).max(100000).nullable().default(null),
         per_student: z.number().int().min(0).max(100_000_000).nullable().default(null),
