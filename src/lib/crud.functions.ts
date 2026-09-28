@@ -40,7 +40,10 @@ export const createWaterSale = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z
       .object({
-        product_id: z.string().uuid(),
+        product_id: z.string().uuid().nullable().optional(),
+        asset_id: z.string().uuid().nullable().optional(),
+        description: z.string().max(200).nullable().optional(),
+        unit_price: z.number().int().min(0).optional(),
         quantity: z.number().int().min(1),
         client_name: z.string().nullable().default(null),
         status: z.string().min(1),
@@ -48,24 +51,33 @@ export const createWaterSale = createServerFn({ method: "POST" })
         offline_total: z.number().int().min(0).optional(),
         recorded_at: z.string().datetime().optional(),
       })
+      .refine((v) => v.product_id || (v.asset_id && v.unit_price !== undefined), "Indique o serviço ou o camião.")
       .parse(d),
   )
   .handler(async ({ context, data }) => {
     const { offline_total: _offlineTotal, ...sale } = data;
-    const { data: product, error: pErr } = await context.supabase
-      .from("water_products")
-      .select("id, name, price, stock")
-      .eq("id", data.product_id)
-      .single();
-    if (pErr || !product) throw new Error("Produto não encontrado.");
+    let name = sale.description || "Serviço";
+    let unit = sale.unit_price ?? 0;
+    if (sale.product_id) {
+      const { data: product, error: pErr } = await context.supabase
+        .from("water_products")
+        .select("id, name, price")
+        .eq("id", sale.product_id)
+        .single();
+      if (pErr || !product) throw new Error("Produto não encontrado.");
+      if (sale.unit_price === undefined) unit = product.price;
+      if (!sale.description) name = product.name;
+    }
 
     const t = sale.recorded_at ? new Date(sale.recorded_at).getTime() : NaN;
     const created_at = t && t <= Date.now() && t > Date.now() - 60 * 864e5 ? new Date(t).toISOString() : undefined;
-    const total = product.price * sale.quantity;
+    const total = unit * sale.quantity;
     const { error } = await context.supabase.from("water_sales").insert({
-      product_id: data.product_id,
+      product_id: sale.product_id || null,
+      asset_id: sale.asset_id || null,
+      description: sale.asset_id ? name : sale.description || null,
       quantity: sale.quantity,
-      unit_price: product.price,
+      unit_price: unit,
       total,
       client_name: sale.client_name,
       status: sale.status,
@@ -74,8 +86,23 @@ export const createWaterSale = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
 
-    await log(context.supabase as never, `Entrega de ${product.name} × ${sale.quantity}`, "agua", total);
+    await log(context.supabase as never, `Entrega de ${name} × ${sale.quantity}`, "agua", total);
     return { ok: true, total };
+  });
+
+export const listTruckSales = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ from: z.string(), to: z.string() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { data: rows, error } = await context.supabase
+      .from("water_sales")
+      .select("id, asset_id, description, quantity, unit_price, total, client_name, status, payment_method, created_at")
+      .not("asset_id", "is", null)
+      .gte("created_at", `${data.from}T00:00:00+01:00`)
+      .lte("created_at", `${data.to}T23:59:59+01:00`)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return rows || [];
   });
 
 export const updateWaterSaleStatus = createServerFn({ method: "POST" })
