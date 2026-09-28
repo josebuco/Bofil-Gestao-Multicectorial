@@ -191,7 +191,13 @@ export function QuickCashPage({
           </button>
         </form>
 
-        {slug !== "lavagem" && totalsBlock}
+        {slug === "lavagem" && (
+          <section className="space-y-3">
+            <h2 className="font-display text-lg uppercase tracking-wide text-foreground">Equipamentos</h2>
+            <FleetPage sector="lavagem" title="Lavagem" subtitle="" dot="bg-wash" embedded />
+          </section>
+        )}
+        {totalsBlock}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <Card title="Entradas">
             <ul className="divide-y divide-edge/60 max-h-96 overflow-auto">
