@@ -85,6 +85,13 @@
       "when": 1790540480194,
       "tag": "0011_fleet_sector_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790577527625,
+      "tag": "0012_water_sales_asset",
+      "breakpoints": true
     }
   ]
 }

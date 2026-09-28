@@ -654,8 +654,10 @@ export type Database = {
       }
       water_sales: {
         Row: {
+          asset_id: string | null
           client_name: string | null
           created_at: string
+          description: string | null
           id: string
           payment_method: string
           product_id: string | null
@@ -665,8 +667,10 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          asset_id?: string | null
           client_name?: string | null
           created_at?: string
+          description?: string | null
           id?: string
           payment_method?: string
           product_id?: string | null
@@ -676,8 +680,10 @@ export type Database = {
           unit_price: number
         }
         Update: {
+          asset_id?: string | null
           client_name?: string | null
           created_at?: string
+          description?: string | null
           id?: string
           payment_method?: string
           product_id?: string | null
@@ -687,6 +693,13 @@ export type Database = {
           unit_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "water_sales_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "rental_assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "water_sales_product_id_fkey"
             columns: ["product_id"]
