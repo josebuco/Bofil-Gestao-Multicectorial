@@ -12,5 +12,5 @@ export const Route = createFileRoute("/_authenticated/lavagem")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => <QuickCashPage slug="lavagem" title="Lavagem" dot="bg-wash" accent="bg-wash" />,
+  component: () => <QuickCashPage slug="lavagem" title="Lavagem" dot="bg-wash" accent="bg-destructive" />,
 });

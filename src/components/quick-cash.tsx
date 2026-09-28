@@ -89,19 +89,19 @@ export function QuickCashPage({
       <>
         <p className="text-[11px] text-muted-foreground">{periodLabel(preset, range)}</p>
 
-        <section className={`grid grid-cols-1 gap-3 ${isAdminView ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+        <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div className="rounded-xl bg-panel ring-1 ring-edge p-5">
             <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-[0.14em]">
               Entradas <ArrowUpRight className="size-4 text-warning" />
             </div>
             <p className="mt-2 font-display text-3xl text-warning">{formatMoney(sector?.revenue || 0)}</p>
           </div>
-          {isAdminView && <div className="rounded-xl bg-panel ring-1 ring-edge p-5">
+          <div className="rounded-xl bg-panel ring-1 ring-edge p-5">
             <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-[0.14em]">
               Saídas (Centro de Custos) <ArrowDownRight className="size-4 text-destructive" />
             </div>
             <p className="mt-2 font-display text-3xl text-destructive">{formatMoney(sector?.expense || 0)}</p>
-          </div>}
+          </div>
           <div
              className={`rounded-xl p-5 ring-1 ${balance >= 0 ? "bg-success/10 ring-success/40" : "bg-destructive/10 ring-destructive/40"}`}
           >
@@ -191,13 +191,13 @@ export function QuickCashPage({
           </button>
         </form>
 
+        {totalsBlock}
         {slug === "lavagem" && (
           <section className="space-y-3">
             <h2 className="font-display text-lg uppercase tracking-wide text-foreground">Equipamentos</h2>
             <FleetPage sector="lavagem" title="Lavagem" subtitle="" dot="bg-wash" embedded />
           </section>
         )}
-        {totalsBlock}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <Card title="Entradas">
             <ul className="divide-y divide-edge/60 max-h-96 overflow-auto">
