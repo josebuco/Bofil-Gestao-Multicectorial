@@ -84,6 +84,64 @@ export function QuickCashPage({
 
   const balance = sector?.balance || 0;
 
+  const totalsBlock = (
+      <>
+        <p className="text-[11px] text-muted-foreground">{periodLabel(preset, range)}</p>
+
+        <section className={`grid grid-cols-1 gap-3 ${isAdminView ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+          <div className="rounded-xl bg-panel ring-1 ring-edge p-5">
+            <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-[0.14em]">
+              Entradas <ArrowUpRight className="size-4 text-warning" />
+            </div>
+            <p className="mt-2 font-display text-3xl text-warning">{formatMoney(sector?.revenue || 0)}</p>
+          </div>
+          {isAdminView && <div className="rounded-xl bg-panel ring-1 ring-edge p-5">
+            <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-[0.14em]">
+              Saídas (Centro de Custos) <ArrowDownRight className="size-4 text-destructive" />
+            </div>
+            <p className="mt-2 font-display text-3xl text-destructive">{formatMoney(sector?.expense || 0)}</p>
+          </div>}
+          <div
+             className={`rounded-xl p-5 ring-1 ${balance >= 0 ? "bg-success/10 ring-success/40" : "bg-destructive/10 ring-destructive/40"}`}
+          >
+            <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-[0.14em]">
+              Saldo <Wallet className="size-4" />
+            </div>
+             <p className={`mt-2 font-display text-4xl ${balance >= 0 ? "text-success" : "text-destructive"}`}>
+              {formatMoney(balance)}
+            </p>
+          </div>
+        </section>
+
+        <Card title="Evolução">
+          <div className="h-60 p-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={sector?.series || []}>
+                <defs>
+                  <linearGradient id={`q-in-${slug}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--warning)" stopOpacity={0.45} />
+                    <stop offset="100%" stopColor="var(--warning)" stopOpacity={0.02} />
+                  </linearGradient>
+                  <linearGradient id={`q-out-${slug}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--destructive)" stopOpacity={0.4} />
+                    <stop offset="100%" stopColor="var(--destructive)" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--edge)" vertical={false} />
+                <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} />
+                <YAxis stroke="var(--muted-foreground)" fontSize={11} width={70} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(v: number) => formatMoney(v)} contentStyle={chartTooltip} />
+                <Area type="monotone" dataKey="receitas" name="Entradas" stroke="var(--warning)" strokeWidth={2} fill={`url(#q-in-${slug})`} />
+                <Area type="monotone" dataKey="despesas" name="Saídas" stroke="var(--destructive)" strokeWidth={2} fill={`url(#q-out-${slug})`} />
+                <Line type="monotone" dataKey="saldo" name="Saldo" stroke="var(--success)" strokeWidth={2} dot={false} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+      </>
+  );
+
   return (
     <div className="flex-1 flex flex-col min-w-0">
       <PageHeader
@@ -96,7 +154,7 @@ export function QuickCashPage({
         {slug === "lavagem" && (
           <section className="space-y-3">
             <h2 className="font-display text-lg uppercase tracking-wide text-foreground">Equipamentos</h2>
-            <FleetPage sector="lavagem" title="Lavagem" subtitle="" dot="bg-wash" embedded />
+            <FleetPage sector="lavagem" title="Lavagem" subtitle="" dot="bg-wash" embedded afterAssets={totalsBlock} />
           </section>
         )}
         <form
@@ -138,59 +196,7 @@ export function QuickCashPage({
           </button>
         </form>
 
-        <p className="text-[11px] text-muted-foreground">{periodLabel(preset, range)}</p>
-
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="rounded-xl bg-panel ring-1 ring-edge p-5">
-            <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-[0.14em]">
-              Entradas <ArrowUpRight className="size-4 text-warning" />
-            </div>
-            <p className="mt-2 font-display text-3xl text-warning">{formatMoney(sector?.revenue || 0)}</p>
-          </div>
-          <div className="rounded-xl bg-panel ring-1 ring-edge p-5">
-            <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-[0.14em]">
-              Saídas (Centro de Custos) <ArrowDownRight className="size-4 text-destructive" />
-            </div>
-            <p className="mt-2 font-display text-3xl text-destructive">{formatMoney(sector?.expense || 0)}</p>
-          </div>
-          <div
-             className={`rounded-xl p-5 ring-1 ${balance >= 0 ? "bg-success/10 ring-success/40" : "bg-destructive/10 ring-destructive/40"}`}
-          >
-            <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-[0.14em]">
-              Saldo <Wallet className="size-4" />
-            </div>
-             <p className={`mt-2 font-display text-4xl ${balance >= 0 ? "text-success" : "text-destructive"}`}>
-              {formatMoney(balance)}
-            </p>
-          </div>
-        </section>
-
-        <Card title="Evolução">
-          <div className="h-60 p-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={sector?.series || []}>
-                <defs>
-                  <linearGradient id={`q-in-${slug}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--warning)" stopOpacity={0.45} />
-                    <stop offset="100%" stopColor="var(--warning)" stopOpacity={0.02} />
-                  </linearGradient>
-                  <linearGradient id={`q-out-${slug}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--destructive)" stopOpacity={0.4} />
-                    <stop offset="100%" stopColor="var(--destructive)" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--edge)" vertical={false} />
-                <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} />
-                <YAxis stroke="var(--muted-foreground)" fontSize={11} width={70} tickLine={false} axisLine={false} />
-                <Tooltip formatter={(v: number) => formatMoney(v)} contentStyle={chartTooltip} />
-                <Area type="monotone" dataKey="receitas" name="Entradas" stroke="var(--warning)" strokeWidth={2} fill={`url(#q-in-${slug})`} />
-                <Area type="monotone" dataKey="despesas" name="Saídas" stroke="var(--destructive)" strokeWidth={2} fill={`url(#q-out-${slug})`} />
-                <Line type="monotone" dataKey="saldo" name="Saldo" stroke="var(--success)" strokeWidth={2} dot={false} />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
+        {slug !== "lavagem" && totalsBlock}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <Card title="Entradas">
             <ul className="divide-y divide-edge/60 max-h-96 overflow-auto">
