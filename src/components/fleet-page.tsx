@@ -183,7 +183,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false }: { 
       setUseQty("1");
       setUseValue("");
       toast.success(r === "queued" ? "Sem internet: guardado no aparelho." : "Estoque aplicado à unidade.");
-      if (r === "sent") await qc.invalidateQueries({ queryKey: ["rental-stock", sector] });
+      if (r === "sent") await qc.invalidateQueries({ queryKey: ["rental-stock"] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível guardar.");
     }
@@ -311,7 +311,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false }: { 
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-0.5">{a.kind}{a.plate ? ` · ${a.plate}` : ""}</p>
                   <div className={`mt-3 grid gap-2 text-xs ${access.isAdmin ? "grid-cols-3" : "grid-cols-1"}`}>
-                    <div><p className="text-muted-foreground">Entradas</p><p className="font-display text-warning">{formatMoney(s.rev)}</p></div>
+                    {a.kind !== "Equipamento" && !sectorEntryMode ? <div><p className="text-muted-foreground">Entradas</p><p className="font-display text-warning">{formatMoney(s.rev)}</p></div> : !access.isAdmin ? <div><p className="text-muted-foreground">Equipamento — só custos</p></div> : null}
                     {access.isAdmin && <>
                     <div><p className="text-muted-foreground">Custos</p><p className="font-display text-destructive">{formatMoney(s.exp)}</p></div>
                     <div><p className="text-muted-foreground">Saldo</p><p className={`font-display ${s.bal >= 0 ? "text-success" : "text-destructive"}`}>{formatMoney(s.bal)}</p></div>
@@ -327,7 +327,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false }: { 
           <ul className="divide-y divide-edge/60 max-h-80 overflow-auto">
             {stockItems.length === 0 && (
               <li className="p-5 text-sm text-muted-foreground">
-                Ainda não há compras de estoque. Registe-as no Centro de Custos, no separador deste setor.
+                Ainda não há compras de estoque. Registe-as no Centro de Custos (Água, Lavagem, Transporte ou Aluguer) — o estoque é partilhado.
               </li>
             )}
             {stockItems.map((i) => (
