@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDownRight, ArrowUpRight, Droplets, Bus, Truck, Car, UtensilsCrossed, Wallet, Building2 } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Droplets, Bus, Truck, Car, UtensilsCrossed, Building2 } from "lucide-react";
 import {
   Area,
   ComposedChart,
