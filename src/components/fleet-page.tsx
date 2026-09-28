@@ -11,12 +11,19 @@ import { periodLabel } from "@/lib/period";
 import { useAccess } from "@/lib/use-access";
 import { readQueue, sendOrQueue, useQueue, writeQueue } from "@/lib/offline";
 import { todayAngola } from "@/lib/tz";
+import { getFinance } from "@/lib/finance.functions";
+import { useMergedFinance } from "@/lib/offline-finance";
+import { chartTooltip } from "@/components/sector-cash";
+import { Area, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const BASE_CATEGORIES = ["Manutenção e Reparação", "Combustível", "Seguro", "Pneus", "Salários", "Impostos", "Outros"];
 const label = "text-[11px] uppercase tracking-[0.14em] text-muted-foreground";
 
-export function FleetPage({ sector, title, subtitle, dot }: { sector: FleetSector; title: string; subtitle: string; dot: string }) {
+export function FleetPage({ sector, title, subtitle, dot, embedded = false }: { sector: FleetSector; title: string; subtitle: string; dot: string; embedded?: boolean }) {
   const perStudentMode = sector === "transporte";
+  // Transporte: entradas são do setor (alunos × valor), nunca de uma viatura.
+  const sectorEntryMode = sector === "transporte";
+  const equipmentOnly = sector === "lavagem";
   const { preset, setPreset, custom, setCustom, range } = usePeriod("mes");
   const qc = useQueryClient();
   const access = useAccess();
@@ -38,7 +45,7 @@ export function FleetPage({ sector, title, subtitle, dot }: { sector: FleetSecto
   const addUse = useServerFn(createStockUsage);
   const stock = useQuery({ queryKey: ["rental-stock", sector], queryFn: () => listStk({ data: { sector } }) });
 
-  const qUsage = useQueue("stock_usage").filter((q) => (q.data["sector"] || "aluguer") === sector).map((q) => ({
+  const qUsageAll = useQueue("stock_usage").map((q) => ({
     id: q.id,
     purchase_id: String(q.data["purchase_id"] || ""),
     asset_id: (q.data["asset_id"] as string) || null,
@@ -46,11 +53,13 @@ export function FleetPage({ sector, title, subtitle, dot }: { sector: FleetSecto
     amount: Number(q.data["amount"]) || 0,
     note: (q.data["note"] as string) || null,
     used_on: String(q.data["used_on"] || q.at.slice(0, 10)),
+    sector: String(q.data["sector"] || "aluguer"),
     pending: true,
   }));
+  const qUsage = qUsageAll.filter((u) => u.sector === sector);
   const allUsage = [...qUsage, ...(stock.data?.usages || []).map((u) => ({ ...u, pending: false }))];
   const stockItems = (stock.data?.items || []).map((i) => {
-    const pend = qUsage.filter((u) => u.purchase_id === i.id);
+    const pend = qUsageAll.filter((u) => u.purchase_id === i.id);
     const pq = pend.reduce((s, u) => s + u.quantity, 0);
     const pa = pend.reduce((s, u) => s + u.amount, 0);
     return { ...i, left_quantity: i.left_quantity - pq, left_amount: i.left_amount - pa };
@@ -84,7 +93,7 @@ export function FleetPage({ sector, title, subtitle, dot }: { sector: FleetSecto
     ev.preventDefault();
     const f = new FormData(ev.currentTarget);
     try {
-      await addA({ data: { name: String(f.get("name")), kind: f.get("kind") === "Equipamento" ? "Equipamento" : "Veículo", plate: String(f.get("plate") || "").trim() || null } });
+      await addA({ data: { name: String(f.get("name")), kind: f.get("kind") === "Equipamento" ? "Equipamento" : "Veículo", plate: String(f.get("plate") || "").trim() || null, sector } });
       toast.success("Registado.");
       setShowNew(false);
       await qc.invalidateQueries({ queryKey: ["rental-assets", sector] });
@@ -100,15 +109,15 @@ export function FleetPage({ sector, title, subtitle, dot }: { sector: FleetSecto
   const [method, setMethod] = useState<"Numerário" | "Banco">("Numerário");
   async function onEntry(ev: React.FormEvent) {
     ev.preventDefault();
-    if (!current) return;
+    if (!sectorEntryMode && (!current || current.kind === "Equipamento")) return;
     const value = perStudentMode ? computed : Math.round(Number(amount));
     if (!value || value <= 0) { toast.error(perStudentMode ? "Indique alunos e valor diário por aluno." : "Indique um valor válido."); return; }
     const payload = {
-      sector, amount: value, payment_method: method, asset_id: current.id,
+      sector, amount: value, payment_method: method, asset_id: sectorEntryMode ? null : current!.id,
       ...(perStudentMode ? { students: Math.round(Number(students)), per_student: Math.round(Number(perStudent)) } : {}),
     };
     try {
-      const r = await sendOrQueue("sector_entry", payload, `${title} ${current.name}: ${formatMoney(value)} Kz`, () => addEntry({ data: payload }));
+      const r = await sendOrQueue("sector_entry", payload, `${title}${sectorEntryMode ? "" : " " + current!.name}: ${formatMoney(value)} Kz`, () => addEntry({ data: payload }));
       setAmount("");
       setStudents("");
       toast.success(r === "queued" ? "Sem internet: guardado no aparelho." : "Entrada registada.");
@@ -180,7 +189,7 @@ export function FleetPage({ sector, title, subtitle, dot }: { sector: FleetSecto
     }
   }
 
-  const curEntries = current ? allEntries.filter((e) => e.asset_id === current.id) : [];
+  const curEntries = sectorEntryMode ? allEntries.filter((e) => !e.asset_id) : current ? allEntries.filter((e) => e.asset_id === current.id) : [];
   const curExp = current ? allExp.filter((e) => e.asset_id === current.id) : [];
   const curUsage = current ? allUsage.filter((u) => u.asset_id === current.id) : [];
   const delEntry = useServerFn(deleteSectorEntry);
@@ -195,16 +204,86 @@ export function FleetPage({ sector, title, subtitle, dot }: { sector: FleetSecto
   }
   const badge = <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">No aparelho</span>;
 
-  return (
-    <div className="flex-1 flex flex-col min-w-0">
-      <PageHeader
+  const listFin = useServerFn(getFinance);
+  const fin = useQuery({ queryKey: ["finance", range.from, range.to], queryFn: () => listFin({ data: range }), enabled: !embedded });
+  const merged = useMergedFinance(fin.data, range);
+  const sectorFin = merged.sectors.find((x) => x.slug === sector);
+
+  const entriesCard = (
+              <Card title={sectorEntryMode ? "Entradas do setor" : "Entradas"}>
+                <form onSubmit={onEntry} className="p-4 flex gap-2 items-end border-b border-edge">
+                  {perStudentMode ? (
+                    <>
+                      <input value={students} onChange={(e) => setStudents(e.target.value)} type="number" min={1} placeholder="Nº alunos" className={`${inputClass} w-24`} />
+                      <input value={perStudent} onChange={(e) => setPerStudent(e.target.value)} type="number" min={0} placeholder="Kz/aluno/dia" className={`${inputClass} flex-1`} />
+                    </>
+                  ) : (
+                    <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" min={1} placeholder="Valor (Kz)" className={`${inputClass} flex-1`} />
+                  )}
+                  <select value={method} onChange={(e) => setMethod(e.target.value as "Numerário" | "Banco")} className={`${inputClass} w-36`}>
+                    <option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option>
+                  </select>
+                  <button className="h-10 px-4 rounded-md bg-warning text-primary-foreground font-medium"><Plus className="size-4" /></button>
+                </form>
+                {perStudentMode && (
+                  <p className="px-4 py-2 text-xs text-muted-foreground border-b border-edge">
+                    Total do dia: <span className="font-display text-warning">{formatMoney(computed)} Kz</span>
+                  </p>
+                )}
+                <ul className="divide-y divide-edge/60 max-h-80 overflow-auto">
+                  {curEntries.length === 0 && <li className="p-5 text-sm text-muted-foreground">Sem entradas neste período.</li>}
+                  {curEntries.map((e) => (
+                    <li key={e.id} className="flex justify-between items-center px-5 py-3 text-sm gap-3">
+                      <span className="text-muted-foreground min-w-0">
+                        {new Date(e.created_at).toLocaleString("pt-AO")}{e.payment_method === "Banco" ? " · VB" : ""}
+                        {e.students ? <span className="text-[11px]"> · {e.students} alunos × {formatMoney(e.per_student || 0)}</span> : null}
+                        {e.pending ? badge : null}
+                      </span>
+                      <span className="flex items-center gap-3 shrink-0">
+                        <span className="font-display text-warning">+{formatMoney(e.amount)}</span>
+                        {(access.isAdmin || e.pending) && (
+                          <button onClick={() => removeEntry(e)} aria-label="Apagar entrada" className="text-muted-foreground hover:text-destructive"><Trash2 className="size-3.5" /></button>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+  );
+
+  const body = (
+      <div className={embedded ? "space-y-5" : "flex-1 overflow-auto p-6 space-y-5"}>
+        {!embedded && sectorFin && (
+          <>
+            <section className="grid grid-cols-3 gap-3">
+              <Stat label="Receita total" value={sectorFin.revenue} tone="text-warning" />
+              <Stat label="Despesa total" value={sectorFin.expense} tone="text-destructive" />
+              <Stat label="Saldo total" value={sectorFin.balance} tone={sectorFin.balance >= 0 ? "text-success" : "text-destructive"} />
+            </section>
+            <Card title="Evolução do setor">
+              <div className="h-64 p-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={sectorFin.series}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--edge)" vertical={false} />
+                    <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} />
+                    <YAxis stroke="var(--muted-foreground)" fontSize={11} width={70} tickLine={false} axisLine={false} />
+                    <Tooltip formatter={(v: number) => formatMoney(v)} contentStyle={chartTooltip} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Area type="monotone" dataKey="receitas" name="Receitas" stroke="var(--warning)" fill="var(--warning)" fillOpacity={0.15} strokeWidth={2} />
+                    <Area type="monotone" dataKey="despesas" name="Despesas" stroke="var(--destructive)" fill="var(--destructive)" fillOpacity={0.1} strokeWidth={2} />
+                    <Line type="monotone" dataKey="saldo" name="Saldo" stroke="var(--success)" strokeWidth={2} dot={false} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </>
+        )}
+        {sectorEntryMode && entriesCard}
+
         dot={dot}
         title={title}
         subtitle={subtitle}
-        action={<PeriodPicker preset={preset} setPreset={setPreset} custom={custom} setCustom={setCustom} />}
-      />
-      <div className="flex-1 overflow-auto p-6 space-y-5">
-        <div className="flex items-center justify-between">
+REPL_HEADER        <div className="flex items-center justify-between">
           <p className="text-[11px] text-muted-foreground">{periodLabel(preset, range)}</p>
           <button onClick={() => setShowNew((v) => !v)} className="h-10 px-4 rounded-md bg-brand text-primary-foreground text-sm font-medium flex items-center gap-2">
             <Plus className="size-4" /> Cadastrar veículo / equipamento
