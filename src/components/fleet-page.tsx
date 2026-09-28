@@ -279,21 +279,17 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false }: { 
           </>
         )}
         {sectorEntryMode && entriesCard}
-
-        dot={dot}
-        title={title}
-        subtitle={subtitle}
-REPL_HEADER        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between">
           <p className="text-[11px] text-muted-foreground">{periodLabel(preset, range)}</p>
           <button onClick={() => setShowNew((v) => !v)} className="h-10 px-4 rounded-md bg-brand text-primary-foreground text-sm font-medium flex items-center gap-2">
-            <Plus className="size-4" /> Cadastrar veículo / equipamento
+            <Plus className="size-4" /> {equipmentOnly ? "Cadastrar equipamento" : "Cadastrar veículo / equipamento"}
           </button>
         </div>
 
         {showNew && (
           <form onSubmit={onNewAsset} className="rounded-xl bg-panel ring-1 ring-edge p-5 grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
             <div className="md:col-span-2"><label className={label}>Nome</label><input name="name" required placeholder="Ex.: Toyota Hilux, Gerador 50kVA" className={`${inputClass} mt-1.5`} /></div>
-            <div><label className={label}>Tipo</label><select name="kind" className={`${inputClass} mt-1.5`}><option>Veículo</option><option>Equipamento</option></select></div>
+            <div><label className={label}>Tipo</label><select name="kind" className={`${inputClass} mt-1.5`}>{!equipmentOnly && <option>Veículo</option>}<option>Equipamento</option></select></div>
             <div><label className={label}>Matrícula / Nº série</label><input name="plate" className={`${inputClass} mt-1.5`} /></div>
             <button className="md:col-span-4 h-11 rounded-md bg-primary text-primary-foreground font-medium">Guardar</button>
           </form>
@@ -377,45 +373,7 @@ REPL_HEADER        <div className="flex items-center justify-between">
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              <Card title="Entradas">
-                <form onSubmit={onEntry} className="p-4 flex gap-2 items-end border-b border-edge">
-                  {perStudentMode ? (
-                    <>
-                      <input value={students} onChange={(e) => setStudents(e.target.value)} type="number" min={1} placeholder="Nº alunos" className={`${inputClass} w-24`} />
-                      <input value={perStudent} onChange={(e) => setPerStudent(e.target.value)} type="number" min={0} placeholder="Kz/aluno/dia" className={`${inputClass} flex-1`} />
-                    </>
-                  ) : (
-                    <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" min={1} placeholder="Valor (Kz)" className={`${inputClass} flex-1`} />
-                  )}
-                  <select value={method} onChange={(e) => setMethod(e.target.value as "Numerário" | "Banco")} className={`${inputClass} w-36`}>
-                    <option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option>
-                  </select>
-                  <button className="h-10 px-4 rounded-md bg-warning text-primary-foreground font-medium"><Plus className="size-4" /></button>
-                </form>
-                {perStudentMode && (
-                  <p className="px-4 py-2 text-xs text-muted-foreground border-b border-edge">
-                    Total do dia: <span className="font-display text-warning">{formatMoney(computed)} Kz</span>
-                  </p>
-                )}
-                <ul className="divide-y divide-edge/60 max-h-80 overflow-auto">
-                  {curEntries.length === 0 && <li className="p-5 text-sm text-muted-foreground">Sem entradas neste período.</li>}
-                  {curEntries.map((e) => (
-                    <li key={e.id} className="flex justify-between items-center px-5 py-3 text-sm gap-3">
-                      <span className="text-muted-foreground min-w-0">
-                        {new Date(e.created_at).toLocaleString("pt-AO")}{e.payment_method === "Banco" ? " · VB" : ""}
-                        {e.students ? <span className="text-[11px]"> · {e.students} alunos × {formatMoney(e.per_student || 0)}</span> : null}
-                        {e.pending ? badge : null}
-                      </span>
-                      <span className="flex items-center gap-3 shrink-0">
-                        <span className="font-display text-warning">+{formatMoney(e.amount)}</span>
-                        {(access.isAdmin || e.pending) && (
-                          <button onClick={() => removeEntry(e)} aria-label="Apagar entrada" className="text-muted-foreground hover:text-destructive"><Trash2 className="size-3.5" /></button>
-                        )}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </Card>
+              {!sectorEntryMode && current.kind !== "Equipamento" && entriesCard}
 
               <Card title="Centro de custos">
                 <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
@@ -497,6 +455,27 @@ REPL_HEADER        <div className="flex items-center justify-between">
           </>
         )}
       </div>
+  );
+
+  if (embedded) return body;
+  return (
+    <div className="flex-1 flex flex-col min-w-0">
+      <PageHeader
+        dot={dot}
+        title={title}
+        subtitle={subtitle}
+        action={<PeriodPicker preset={preset} setPreset={setPreset} custom={custom} setCustom={setCustom} />}
+      />
+      {body}
+    </div>
+  );
+}
+
+function Stat({ label: l, value, tone }: { label: string; value: number; tone: string }) {
+  return (
+    <div className="rounded-xl bg-panel ring-1 ring-edge p-4">
+      <p className={label}>{l}</p>
+      <p className={`mt-1.5 font-display text-2xl ${tone}`}>{formatMoney(value)}</p>
     </div>
   );
 }
