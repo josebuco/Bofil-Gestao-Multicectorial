@@ -68,7 +68,6 @@ export const listStock = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ sector: FLEET }).parse(d ?? {}))
   .handler(async ({ context, data: input }) => {
-    void input;
     // Estoque central partilhado: qualquer setor com frota vê todos os lotes.
     const { data: canSee } = await context.supabase.rpc("can_access", { _user_id: context.userId, _sector: input.sector });
     if (!canSee) throw new Error("Sem acesso.");
