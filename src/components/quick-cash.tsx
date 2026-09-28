@@ -152,12 +152,6 @@ export function QuickCashPage({
         action={<PeriodPicker preset={preset} setPreset={setPreset} custom={custom} setCustom={setCustom} />}
       />
       <div className="flex-1 overflow-auto p-6 space-y-5">
-        {slug === "lavagem" && (
-          <section className="space-y-3">
-            <h2 className="font-display text-lg uppercase tracking-wide text-foreground">Equipamentos</h2>
-            <FleetPage sector="lavagem" title="Lavagem" subtitle="" dot="bg-wash" embedded afterAssets={totalsBlock} />
-          </section>
-        )}
         <form
           onSubmit={onSubmit}
           className="rounded-xl bg-panel ring-1 ring-edge p-5 flex flex-col sm:flex-row gap-3 sm:items-end"
@@ -197,7 +191,13 @@ export function QuickCashPage({
           </button>
         </form>
 
-        {slug !== "lavagem" && totalsBlock}
+        {slug === "lavagem" && (
+          <section className="space-y-3">
+            <h2 className="font-display text-lg uppercase tracking-wide text-foreground">Equipamentos</h2>
+            <FleetPage sector="lavagem" title="Lavagem" subtitle="" dot="bg-wash" embedded />
+          </section>
+        )}
+        {totalsBlock}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <Card title="Entradas">
             <ul className="divide-y divide-edge/60 max-h-96 overflow-auto">

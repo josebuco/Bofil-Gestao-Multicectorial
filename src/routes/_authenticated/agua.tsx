@@ -181,9 +181,10 @@ function AguaPage() {
       />
 
       <div className="flex-1 overflow-auto p-6 space-y-5">
+        <SectorCash slug="agua" />
         <section className="space-y-3">
           <h2 className="font-display text-lg uppercase tracking-wide text-foreground">Camiões e equipamentos</h2>
-          <FleetPage sector="agua" title="Água" subtitle="" dot="bg-water" embedded afterAssets={<SectorCash slug="agua" />} />
+          <FleetPage sector="agua" title="Água" subtitle="" dot="bg-water" embedded />
         </section>
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
            <Kpi label="Receita hoje" value={formatMoney(data.todayRevenue + queuedToday.filter((s) => s.status !== "Pendente").reduce((t, s) => t + s.total, 0))} />
