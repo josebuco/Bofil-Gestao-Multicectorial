@@ -412,9 +412,9 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
 
         {!embedded && sectorFin && (
           <>
-            <section className={`grid gap-3 ${access.isAdmin ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2"}`}>
+            <section className={`grid gap-3 ${"grid-cols-1 md:grid-cols-3"}`}>
               <Stat label="Receita total" value={sectorFin.revenue} tone="text-warning" />
-              {access.isAdmin && <Stat label="Despesa total" value={sectorFin.expense} tone="text-destructive" />}
+              <Stat label="Despesa total" value={sectorFin.expense} tone="text-destructive" />
               <CashBalanceCard total={sectorFin.balance} cash={sectorFin.cash} bank={sectorFin.bank} />
             </section>
             <Card title="Evolução do setor">
