@@ -214,8 +214,9 @@ function CustosPage() {
       </header>
 
       <div className="flex-1 overflow-auto p-6 space-y-5">
+        {access.isAdmin && (
         <section className={`grid grid-cols-1 gap-3 ${access.isAdmin ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
-          <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
+          <div className="rounded-xl bg-panel ring-1 ring-edge shadow-sm p-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
               Despesas do período
             </p>
@@ -223,7 +224,7 @@ function CustosPage() {
               {formatMoney(periodTotal)} Kz
             </p>
           </div>
-          <div className="rounded-lg bg-panel ring-1 ring-black/5 p-4">
+          <div className="rounded-xl bg-panel ring-1 ring-edge shadow-sm p-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
               Por pagar no período
             </p>
@@ -232,6 +233,7 @@ function CustosPage() {
             </p>
           </div>
         </section>
+        )}
 
         <div className="flex flex-wrap gap-1 border-b border-edge">
           {SECTORS.filter((s) => access.isAdmin || access.sectors.includes(s.slug)).map((s) => (
@@ -247,7 +249,7 @@ function CustosPage() {
               <span className={`size-1.5 rounded-full ${s.color}`} />
               {s.label}
               <span className="text-[11px] text-muted-foreground">
-                {formatMoney(periodBySector[s.slug] || 0)} Kz
+                {access.isAdmin ? `${formatMoney(periodBySector[s.slug] || 0)} Kz` : ""}
               </span>
             </button>
           ))}
@@ -256,7 +258,7 @@ function CustosPage() {
         {open && (
           <form
             onSubmit={handleSubmit}
-            className="rounded-lg bg-panel ring-1 ring-black/5 p-5 grid grid-cols-1 md:grid-cols-3 gap-3"
+            className="rounded-xl bg-panel ring-1 ring-edge shadow-sm p-5 grid grid-cols-1 md:grid-cols-3 gap-3"
           >
             <div className="md:col-span-3">
               <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
@@ -387,15 +389,15 @@ function CustosPage() {
           </form>
         )}
 
-        <div className="rounded-lg bg-panel ring-1 ring-black/5 p-5">
+        <div className="rounded-xl bg-panel ring-1 ring-edge shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display font-semibold text-base uppercase tracking-wide text-foreground">
               Despesas — {SECTORS.find((s) => s.slug === tab)?.label}
             </h2>
-            <p className="text-xs text-muted-foreground">
+            {access.isAdmin && <p className="text-xs text-muted-foreground">
               Total {formatMoney(tabTotal)} Kz · Por pagar{" "}
               <span className="text-warning">{formatMoney(tabPending)} Kz</span>
-            </p>
+            </p>}
           </div>
 
           {access.isAdmin && tab !== "aluguer" && rows.length > 0 && (
