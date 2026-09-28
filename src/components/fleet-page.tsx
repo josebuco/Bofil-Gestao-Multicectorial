@@ -6,7 +6,7 @@ import { Plus, Trash2, Truck, Wrench, Package } from "lucide-react";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/access.functions";
 import { createExpense, getExpenses } from "@/lib/expenses.functions";
 import { createAsset, createStockUsage, deleteAsset, listAssets, listCategories, listStock, type FleetSector } from "@/lib/rental.functions";
-import { Card, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
+import { Card, CashBalanceCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
 import { periodLabel } from "@/lib/period";
 import { useAccess } from "@/lib/use-access";
 import { readQueue, sendOrQueue, useQueue, writeQueue } from "@/lib/offline";
@@ -397,10 +397,10 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
 
         {!embedded && sectorFin && (
           <>
-            <section className={`grid gap-3 ${access.isAdmin ? "grid-cols-3" : "grid-cols-2"}`}>
+            <section className={`grid gap-3 ${access.isAdmin ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2"}`}>
               <Stat label="Receita total" value={sectorFin.revenue} tone="text-warning" />
               {access.isAdmin && <Stat label="Despesa total" value={sectorFin.expense} tone="text-destructive" />}
-              <Stat label="Saldo total" value={sectorFin.balance} tone={sectorFin.balance >= 0 ? "text-success" : "text-destructive"} />
+              <CashBalanceCard total={sectorFin.balance} cash={sectorFin.cash} bank={sectorFin.bank} />
             </section>
             <Card title="Evolução do setor">
               <div className="h-64 p-4">

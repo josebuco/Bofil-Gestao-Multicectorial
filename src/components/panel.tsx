@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { Banknote, Landmark, Wallet } from "lucide-react";
 import { PERIOD_OPTIONS, resolvePeriod, type PeriodPreset } from "@/lib/period";
 import { useAccess } from "@/lib/use-access";
 
@@ -108,6 +109,47 @@ export function Kpi({ label, value, tone }: { label: string; value: string | num
     <div className="rounded-xl bg-panel ring-1 ring-edge p-4 shadow-sm transition-shadow hover:shadow-md">
       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
       <p className={`font-display font-semibold text-2xl mt-2 ${tone || "text-foreground"}`}>{value}</p>
+    </div>
+  );
+}
+
+export function CashBalanceCard({
+  total,
+  cash,
+  bank,
+  className,
+}: {
+  total: number;
+  cash: number;
+  bank: number;
+  className?: string;
+}) {
+  return (
+    <div className={`rounded-xl bg-success/10 ring-1 ring-success/40 p-5 shadow-sm ${className || ""}`}>
+      <div className="flex items-center justify-between text-xs uppercase tracking-[0.14em] text-muted-foreground">
+        Saldo total do período <Wallet className="size-4 text-success" />
+      </div>
+      <p className={`mt-2 font-display text-3xl font-semibold ${total >= 0 ? "text-success" : "text-destructive"}`}>
+        {formatMoney(total)}
+      </p>
+      <div className="mt-4 grid grid-cols-2 divide-x divide-success/25 border-t border-success/25 pt-3">
+        <div className="pr-3 min-w-0">
+          <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+            <Banknote className="size-3.5 shrink-0" /> Numerário
+          </p>
+          <p className={`mt-1 font-display text-lg font-semibold break-words ${cash >= 0 ? "text-success" : "text-destructive"}`}>
+            {formatMoney(cash)}
+          </p>
+        </div>
+        <div className="pl-3 min-w-0">
+          <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+            <Landmark className="size-3.5 shrink-0" /> Banco
+          </p>
+          <p className={`mt-1 font-display text-lg font-semibold break-words ${bank >= 0 ? "text-success" : "text-destructive"}`}>
+            {formatMoney(bank)}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

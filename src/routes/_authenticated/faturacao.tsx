@@ -27,6 +27,7 @@ import {
 import { periodLabel } from "@/lib/period";
 import {
   Card,
+  CashBalanceCard,
   Kpi,
   PageHeader,
   PeriodPicker,
@@ -188,13 +189,8 @@ function FaturacaoPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <Kpi label="Receitas do período" value={formatMoney(revenue)} tone="text-warning" />
-          <Kpi label="Saldo via banco (VB)" value={formatMoney(bankTotal)} tone="text-brand" />
           <Kpi label="Despesas do período" value={formatMoney(expense)} tone="text-destructive" />
-          <Kpi
-            label="Saldo de caixa (numerário)"
-            value={formatMoney(cashBalance)}
-            tone={cashBalance >= 0 ? "text-success" : "text-destructive"}
-          />
+          <CashBalanceCard total={cashBalance + bankTotal} cash={cashBalance} bank={bankTotal} className="sm:col-span-2 lg:col-span-2" />
           <Kpi label="Despesas por pagar" value={formatMoney(pending)} tone="text-warning" />
         </div>
 

@@ -19,7 +19,7 @@ import {
 } from "recharts";
 import { getFinance } from "@/lib/finance.functions";
 import { periodLabel } from "@/lib/period";
-import { Card, PageHeader, PeriodPicker, formatMoney, usePeriod } from "@/components/panel";
+import { Card, CashBalanceCard, PageHeader, PeriodPicker, formatMoney, usePeriod } from "@/components/panel";
 import { chartTooltip } from "@/components/sector-cash";
 import { useMergedFinance } from "@/lib/offline-finance";
 
@@ -77,13 +77,7 @@ function DashboardPage() {
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <Big label="Receitas totais" value={totals.revenue} tone="text-warning" icon={<ArrowUpRight className="size-4 text-warning" />} />
           <Big label="Despesas totais" value={totals.expense} tone="text-destructive" icon={<ArrowDownRight className="size-4 text-destructive" />} />
-          <Big
-            label="Saldo global"
-            value={totals.balance}
-            tone={totals.balance >= 0 ? "text-success" : "text-destructive"}
-            icon={<Wallet className="size-4 text-success" />}
-            highlight
-          />
+          <CashBalanceCard total={totals.balance} cash={totals.cash} bank={totals.bank} />
           <Big label="Por pagar" value={totals.pendingExpense} tone="text-warning" />
         </section>
 
@@ -101,9 +95,13 @@ function DashboardPage() {
                    <Row k="Receitas" v={s.revenue} tone="text-warning" />
                   <Row k="Despesas" v={s.expense} tone="text-destructive" />
                 </dl>
-                 <p className={`mt-3 font-display text-2xl ${s.balance >= 0 ? "text-success" : "text-destructive"}`}>
-                  {formatMoney(s.balance)}
-                </p>
+                 <div className="mt-3 border-t border-edge pt-2">
+                   <p className={`font-display text-2xl ${s.balance >= 0 ? "text-success" : "text-destructive"}`}>{formatMoney(s.balance)}</p>
+                   <div className="mt-1 grid grid-cols-2 gap-2 text-[10px] text-muted-foreground">
+                     <span>Numerário <strong className="block text-foreground font-medium">{formatMoney(s.cash)}</strong></span>
+                     <span>Banco <strong className="block text-foreground font-medium">{formatMoney(s.bank)}</strong></span>
+                   </div>
+                 </div>
               </div>
             );
           })}
