@@ -2,8 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const FLEET = z.enum(["aluguer", "transporte"]).default("aluguer");
-export type FleetSector = "aluguer" | "transporte";
+const FLEET = z.enum(["aluguer", "transporte", "agua", "lavagem"]).default("aluguer");
+export type FleetSector = "aluguer" | "transporte" | "agua" | "lavagem";
+/** Setores que partilham o estoque central (o Restaurante fica de fora). */
+export const STOCK_SECTORS = ["aluguer", "transporte", "agua", "lavagem"] as const;
 
 export const listAssets = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -66,25 +68,30 @@ export const listStock = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ sector: FLEET }).parse(d ?? {}))
   .handler(async ({ context, data: input }) => {
-    const { data: purchases, error } = await context.supabase
+    void input;
+    // Estoque central partilhado: qualquer setor com frota vê todos os lotes.
+    const { data: canSee } = await context.supabase.rpc("can_access", { _user_id: context.userId, _sector: input.sector });
+    if (!canSee) throw new Error("Sem acesso.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: purchases, error } = await supabaseAdmin
       .from("expenses")
-      .select("id, description, amount, quantity, expense_date, supplier")
-      .eq("sector", input.sector)
+      .select("id, description, amount, quantity, expense_date, supplier, sector")
+      .in("sector", [...STOCK_SECTORS])
       .eq("category", STOCK_CATEGORY)
       .order("expense_date", { ascending: false })
-      .limit(200);
+      .limit(300);
     if (error) throw new Error(error.message);
 
-    const { data: usage } = await context.supabase
+    const { data: usage } = await supabaseAdmin
       .from("rental_stock_usage")
       .select("*")
-      .eq("sector", input.sector)
       .order("created_at", { ascending: false })
-      .limit(500);
+      .limit(1000);
 
-    const usages = usage || [];
+    const all = usage || [];
+    const usages = all.filter((u) => u.sector === input.sector);
     const items = (purchases || []).map((p) => {
-      const mine = usages.filter((u) => u.purchase_id === p.id);
+      const mine = all.filter((u) => u.purchase_id === p.id);
       const usedQty = mine.reduce((s, u) => s + (u.quantity || 0), 0);
       const usedAmount = mine.reduce((s, u) => s + (u.amount || 0), 0);
       const qty = p.quantity && p.quantity > 0 ? p.quantity : 1;
@@ -92,6 +99,7 @@ export const listStock = createServerFn({ method: "GET" })
         id: p.id,
         description: p.description,
         supplier: p.supplier,
+        sector: p.sector,
         purchase_date: p.expense_date,
         quantity: qty,
         amount: p.amount || 0,
