@@ -21,7 +21,7 @@ import { Area, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, 
 const BASE_CATEGORIES = ["Manutenção e Reparação", "Combustível", "Seguro", "Pneus", "Salários", "Impostos", "Outros"];
 const label = "text-[11px] uppercase tracking-[0.14em] text-muted-foreground";
 
-export function FleetPage({ sector, title, subtitle, dot, embedded = false }: { sector: FleetSector; title: string; subtitle: string; dot: string; embedded?: boolean }) {
+export function FleetPage({ sector, title, subtitle, dot, embedded = false, afterAssets }: { sector: FleetSector; title: string; subtitle: string; dot: string; embedded?: boolean; afterAssets?: React.ReactNode }) {
   const perStudentMode = sector === "transporte";
   const sectorEntryMode = false; // entradas sempre por veículo (no Transporte: alunos × valor diário)
   const equipmentOnly = sector === "lavagem";
@@ -393,11 +393,13 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false }: { 
           </section>
         )}
 
+        {afterAssets}
+
         {!embedded && sectorFin && (
           <>
-            <section className="grid grid-cols-3 gap-3">
+            <section className={`grid gap-3 ${access.isAdmin ? "grid-cols-3" : "grid-cols-2"}`}>
               <Stat label="Receita total" value={sectorFin.revenue} tone="text-warning" />
-              <Stat label="Despesa total" value={sectorFin.expense} tone="text-destructive" />
+              {access.isAdmin && <Stat label="Despesa total" value={sectorFin.expense} tone="text-destructive" />}
               <Stat label="Saldo total" value={sectorFin.balance} tone={sectorFin.balance >= 0 ? "text-success" : "text-destructive"} />
             </section>
             <Card title="Evolução do setor">
