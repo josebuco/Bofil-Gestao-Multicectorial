@@ -46,12 +46,12 @@ export function SectorCash({ slug }: { slug: string }) {
         <p className="text-[11px] text-muted-foreground">{periodLabel(preset, range)}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <Kpi label="Receitas" value={formatMoney(sector?.revenue || 0)} tone="text-warning" />
-          {isAdmin && <Kpi label="Despesas" value={formatMoney(sector?.expense || 0)} tone="text-destructive" />}
+          <Kpi label="Despesas" value={formatMoney(sector?.expense || 0)} tone="text-destructive" />
           <CashBalanceCard
             total={sector?.balance || 0}
             cash={sector?.cash || 0}
             bank={sector?.bank || 0}
-            className={isAdmin ? "lg:col-span-1" : "sm:col-span-1 lg:col-span-2"}
+            className={isAdmin ? "lg:col-span-1" : "lg:col-span-2"}
           />
           {isAdmin && <Kpi label="Por pagar" value={formatMoney(sector?.pendingExpense || 0)} tone="text-warning" />}
         </div>
