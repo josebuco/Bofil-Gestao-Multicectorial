@@ -86,7 +86,7 @@ function AguaPage() {
       client_name: (q.data["client_name"] as string | null) ?? null,
       total: Number(q.data["offline_total"]) || (p?.price || 0) * qty,
       status: String(q.data["status"]),
-      water_products: { name: p?.name || "Serviço" },
+      water_products: { name: (q.data["description"] as string) || p?.name || "Serviço" },
       pending: true,
     };
   });
@@ -101,6 +101,7 @@ function AguaPage() {
     await qc.invalidateQueries({ queryKey: ["sector", "agua"] });
     await qc.invalidateQueries({ queryKey: ["finance"] });
     await qc.invalidateQueries({ queryKey: ["dashboard"] });
+    await qc.invalidateQueries({ queryKey: ["truck-sales"] });
   }
 
   async function run(fn: () => Promise<unknown>, message: string) {
@@ -288,7 +289,7 @@ function AguaPage() {
                   <tr key={s.id} className="hover:bg-white/[0.02]">
                     <Td>{new Date(s.created_at).toLocaleString("pt-AO", { dateStyle: "short", timeStyle: "short" })}</Td>
                     <Td>
-                      {(s.water_products as unknown as { name: string })?.name} × {s.quantity}
+                      {("description" in s && s.description) || (s.water_products as unknown as { name: string } | null)?.name || "Serviço"} × {s.quantity}
                     </Td>
                     <Td>{s.client_name || "—"}</Td>
                     <Td>{formatMoney(s.total)}</Td>
