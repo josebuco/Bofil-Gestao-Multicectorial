@@ -497,7 +497,7 @@ function CustosPage() {
               </table>
             </div>
           )}
-          {tab !== "aluguer" && rows.length > 0 && (
+          {access.isAdmin && tab !== "aluguer" && rows.length > 0 && (
             <div className="border-t border-edge p-5">
               <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-3">Resumo por categoria</p>
               <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
