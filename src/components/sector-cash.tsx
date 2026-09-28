@@ -14,6 +14,7 @@ import { getFinance } from "@/lib/finance.functions";
 import { periodLabel } from "@/lib/period";
 import { Card, Kpi, PeriodPicker, formatMoney, usePeriod } from "@/components/panel";
 import { useMergedFinance } from "@/lib/offline-finance";
+import { useAccess } from "@/lib/use-access";
 
 export const chartTooltip = {
   background: "var(--panel)",
@@ -31,6 +32,7 @@ export function SectorCash({ slug }: { slug: string }) {
   });
 
   const finance = useMergedFinance(data, range);
+  const { isAdmin } = useAccess();
   const sector = finance.sectors.find((s) => s.slug === slug);
 
   return (
@@ -44,13 +46,13 @@ export function SectorCash({ slug }: { slug: string }) {
         <p className="text-[11px] text-muted-foreground">{periodLabel(preset, range)}</p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <Kpi label="Receitas" value={formatMoney(sector?.revenue || 0)} tone="text-warning" />
-          <Kpi label="Despesas" value={formatMoney(sector?.expense || 0)} tone="text-destructive" />
+          {isAdmin && <Kpi label="Despesas" value={formatMoney(sector?.expense || 0)} tone="text-destructive" />}
           <Kpi
             label="Saldo total"
             value={formatMoney(sector?.balance || 0)}
             tone={(sector?.balance || 0) >= 0 ? "text-success" : "text-destructive"}
           />
-          <Kpi label="Por pagar" value={formatMoney(sector?.pendingExpense || 0)} tone="text-warning" />
+          {isAdmin && <Kpi label="Por pagar" value={formatMoney(sector?.pendingExpense || 0)} tone="text-warning" />}
         </div>
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">

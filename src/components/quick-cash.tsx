@@ -33,6 +33,7 @@ export function QuickCashPage({
   const remove = useServerFn(deleteSectorEntry);
   const list = useServerFn(listSectorEntries);
   const access = useAccess();
+  const isAdminView = access.isAdmin;
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<"Numerário" | "Banco">("Numerário");
   const [saving, setSaving] = useState(false);
