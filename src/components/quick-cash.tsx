@@ -234,6 +234,12 @@ export function QuickCashPage({
             </ul>
           </Card>
         </div>
+        {slug === "lavagem" && (
+          <section className="space-y-3">
+            <h2 className="font-display text-lg uppercase tracking-wide text-foreground">Equipamentos</h2>
+            <FleetPage sector="lavagem" title="Lavagem" subtitle="" dot="bg-wash" embedded />
+          </section>
+        )}
       </div>
     </div>
   );

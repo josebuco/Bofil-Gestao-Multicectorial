@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FleetPage } from "@/components/fleet-page";
 import { queryOptions, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { sendOrQueue, useQueue } from "@/lib/offline";
@@ -328,6 +329,10 @@ function AguaPage() {
             </table>
           </Card>
         </div>
+        <section className="space-y-3">
+          <h2 className="font-display text-lg uppercase tracking-wide text-foreground">Camiões e equipamentos</h2>
+          <FleetPage sector="agua" title="Água" subtitle="" dot="bg-water" embedded />
+        </section>
       </div>
     </div>
   );
