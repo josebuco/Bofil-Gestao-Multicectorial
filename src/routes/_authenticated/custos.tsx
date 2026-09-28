@@ -55,7 +55,6 @@ const CATEGORIES = [
   "Casa",
   "Combustível",
   "Salários",
-  "Compras / Stock",
   "Impostos",
   "Outros",
 ];
@@ -102,6 +101,8 @@ function CustosPage() {
   const [formCat, setFormCat] = useState<string>("");
   const allowedSlugs = SECTORS.filter((s) => access.isAdmin || access.sectors.includes(s.slug)).map((s) => s.slug as string);
   const tab = allowedSlugs.includes(rawTab) ? rawTab : (allowedSlugs[0] ?? rawTab);
+  const catOptions = tab === "restaurante" ? categories.filter((c) => c !== STOCK_CATEGORY) : Array.from(new Set([STOCK_CATEGORY, ...categories]));
+  const curCat = catOptions.includes(formCat) ? formCat : catOptions[0];
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -318,8 +319,8 @@ function CustosPage() {
                     + Nova categoria
                   </button>
                 </label>
-                <select name="category" value={formCat || categories[0]} onChange={(e) => setFormCat(e.target.value)} className={`${inputClass} mt-1.5`}>
-                  {(tab === "restaurante" ? categories.filter((c) => c !== STOCK_CATEGORY) : Array.from(new Set([STOCK_CATEGORY, ...categories]))).map((c) => (
+                <select name="category" value={curCat} onChange={(e) => setFormCat(e.target.value)} className={`${inputClass} mt-1.5`}>
+                  {catOptions.map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>
@@ -327,7 +328,7 @@ function CustosPage() {
                 </select>
               </div>
             )}
-            {tab !== "aluguer" && tab !== "restaurante" && formCat === STOCK_CATEGORY && (
+            {tab !== "aluguer" && curCat === STOCK_CATEGORY && (
               <div>
                 <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Quantidade comprada</label>
                 <input name="quantity" type="number" min="1" defaultValue={1} required className={`${inputClass} mt-1.5`} />
@@ -397,6 +398,24 @@ function CustosPage() {
             </p>
           </div>
 
+          {access.isAdmin && tab !== "aluguer" && rows.length > 0 && (
+            <div className="mb-5 rounded-lg ring-1 ring-edge p-4">
+              <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-3">Resumo das saídas por categoria</p>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {Object.entries(rows.reduce<Record<string, number>>((acc, e) => { acc[e.category] = (acc[e.category] || 0) + (e.amount || 0); return acc; }, {}))
+                  .sort((x, y) => y[1] - x[1])
+                  .map(([c, v]) => (
+                    <li key={c} className="rounded-lg bg-background/40 ring-1 ring-edge px-4 py-3 flex items-center justify-between gap-3 text-sm">
+                      <span className="text-muted-foreground truncate">{c}</span>
+                      <span className="shrink-0">
+                        <span className="font-display text-destructive">{formatMoney(v)} Kz</span>
+                        <span className="ml-2 text-[11px] text-muted-foreground">{tabTotal ? Math.round((v / tabTotal) * 100) : 0}%</span>
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          )}
           {rows.length === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">
               Ainda não há despesas registadas neste setor.
@@ -495,24 +514,6 @@ function CustosPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
-          {access.isAdmin && tab !== "aluguer" && rows.length > 0 && (
-            <div className="border-t border-edge p-5">
-              <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-3">Resumo por categoria</p>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {Object.entries(rows.reduce<Record<string, number>>((acc, e) => { acc[e.category] = (acc[e.category] || 0) + (e.amount || 0); return acc; }, {}))
-                  .sort((x, y) => y[1] - x[1])
-                  .map(([c, v]) => (
-                    <li key={c} className="rounded-lg bg-background/40 ring-1 ring-edge px-4 py-3 flex items-center justify-between gap-3 text-sm">
-                      <span className="text-muted-foreground truncate">{c}</span>
-                      <span className="shrink-0">
-                        <span className="font-display text-destructive">{formatMoney(v)} Kz</span>
-                        <span className="ml-2 text-[11px] text-muted-foreground">{tabTotal ? Math.round((v / tabTotal) * 100) : 0}%</span>
-                      </span>
-                    </li>
-                  ))}
-              </ul>
             </div>
           )}
         </div>

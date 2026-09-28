@@ -21,8 +21,7 @@ const label = "text-[11px] uppercase tracking-[0.14em] text-muted-foreground";
 
 export function FleetPage({ sector, title, subtitle, dot, embedded = false }: { sector: FleetSector; title: string; subtitle: string; dot: string; embedded?: boolean }) {
   const perStudentMode = sector === "transporte";
-  // Transporte: entradas são do setor (alunos × valor), nunca de uma viatura.
-  const sectorEntryMode = sector === "transporte";
+  const sectorEntryMode = false; // entradas sempre por veículo (no Transporte: alunos × valor diário)
   const equipmentOnly = sector === "lavagem";
   const { preset, setPreset, custom, setCustom, range } = usePeriod("mes");
   const qc = useQueryClient();
@@ -211,19 +210,19 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false }: { 
 
   const entriesCard = (
               <Card title={sectorEntryMode ? "Entradas do setor" : "Entradas"}>
-                <form onSubmit={onEntry} className="p-4 flex gap-2 items-end border-b border-edge">
+                <form onSubmit={onEntry} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
                   {perStudentMode ? (
                     <>
-                      <input value={students} onChange={(e) => setStudents(e.target.value)} type="number" min={1} placeholder="Nº alunos" className={`${inputClass} w-24`} />
-                      <input value={perStudent} onChange={(e) => setPerStudent(e.target.value)} type="number" min={0} placeholder="Kz/aluno/dia" className={`${inputClass} flex-1`} />
+                      <input value={students} onChange={(e) => setStudents(e.target.value)} type="number" min={1} placeholder="Nº alunos" className={`${inputClass} h-12 text-lg font-display`} />
+                      <input value={perStudent} onChange={(e) => setPerStudent(e.target.value)} type="number" min={0} placeholder="Kz/aluno/dia" className={`${inputClass} h-12 text-lg font-display`} />
                     </>
                   ) : (
-                    <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" min={1} placeholder="Valor (Kz)" className={`${inputClass} flex-1`} />
+                    <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" min={1} placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
                   )}
-                  <select value={method} onChange={(e) => setMethod(e.target.value as "Numerário" | "Banco")} className={`${inputClass} w-36`}>
+                  <select value={method} onChange={(e) => setMethod(e.target.value as "Numerário" | "Banco")} className={`${inputClass} h-12`}>
                     <option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option>
                   </select>
-                  <button className="h-10 px-4 rounded-md bg-warning text-primary-foreground font-medium"><Plus className="size-4" /></button>
+                  <button className="h-12 rounded-md bg-warning text-primary-foreground font-medium flex items-center justify-center gap-2"><Plus className="size-4" /> Registar</button>
                 </form>
                 {perStudentMode && (
                   <p className="px-4 py-2 text-xs text-muted-foreground border-b border-edge">
@@ -253,32 +252,6 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false }: { 
 
   const body = (
       <div className={embedded ? "space-y-5" : "flex-1 overflow-auto p-6 space-y-5"}>
-        {!embedded && sectorFin && (
-          <>
-            <section className="grid grid-cols-3 gap-3">
-              <Stat label="Receita total" value={sectorFin.revenue} tone="text-warning" />
-              <Stat label="Despesa total" value={sectorFin.expense} tone="text-destructive" />
-              <Stat label="Saldo total" value={sectorFin.balance} tone={sectorFin.balance >= 0 ? "text-success" : "text-destructive"} />
-            </section>
-            <Card title="Evolução do setor">
-              <div className="h-64 p-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={sectorFin.series}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--edge)" vertical={false} />
-                    <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} />
-                    <YAxis stroke="var(--muted-foreground)" fontSize={11} width={70} tickLine={false} axisLine={false} />
-                    <Tooltip formatter={(v: number) => formatMoney(v)} contentStyle={chartTooltip} />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Area type="monotone" dataKey="receitas" name="Receitas" stroke="var(--warning)" fill="var(--warning)" fillOpacity={0.15} strokeWidth={2} />
-                    <Area type="monotone" dataKey="despesas" name="Despesas" stroke="var(--destructive)" fill="var(--destructive)" fillOpacity={0.1} strokeWidth={2} />
-                    <Line type="monotone" dataKey="saldo" name="Saldo" stroke="var(--success)" strokeWidth={2} dot={false} />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-          </>
-        )}
-        {sectorEntryMode && entriesCard}
         <div className="flex items-center justify-between">
           <p className="text-[11px] text-muted-foreground">{periodLabel(preset, range)}</p>
           <button onClick={() => setShowNew((v) => !v)} className="h-10 px-4 rounded-md bg-brand text-primary-foreground text-sm font-medium flex items-center gap-2">
@@ -323,6 +296,32 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false }: { 
           </section>
         )}
 
+        {!embedded && sectorFin && (
+          <>
+            <section className="grid grid-cols-3 gap-3">
+              <Stat label="Receita total" value={sectorFin.revenue} tone="text-warning" />
+              <Stat label="Despesa total" value={sectorFin.expense} tone="text-destructive" />
+              <Stat label="Saldo total" value={sectorFin.balance} tone={sectorFin.balance >= 0 ? "text-success" : "text-destructive"} />
+            </section>
+            <Card title="Evolução do setor">
+              <div className="h-64 p-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={sectorFin.series}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--edge)" vertical={false} />
+                    <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} />
+                    <YAxis stroke="var(--muted-foreground)" fontSize={11} width={70} tickLine={false} axisLine={false} />
+                    <Tooltip formatter={(v: number) => formatMoney(v)} contentStyle={chartTooltip} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Area type="monotone" dataKey="receitas" name="Receitas" stroke="var(--warning)" fill="var(--warning)" fillOpacity={0.15} strokeWidth={2} />
+                    <Area type="monotone" dataKey="despesas" name="Despesas" stroke="var(--destructive)" fill="var(--destructive)" fillOpacity={0.1} strokeWidth={2} />
+                    <Line type="monotone" dataKey="saldo" name="Saldo" stroke="var(--success)" strokeWidth={2} dot={false} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </>
+        )}
+        {sectorEntryMode && entriesCard}
         <Card title="Estoque de peças e materiais">
           <ul className="divide-y divide-edge/60 max-h-80 overflow-auto">
             {stockItems.length === 0 && (
@@ -378,7 +377,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false }: { 
               <Card title="Centro de custos">
                 <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
                   <input name="description" required placeholder="Descrição" className={`${inputClass} col-span-2`} />
-                  <input name="amount" type="number" min={1} required placeholder="Valor (Kz)" className={inputClass} />
+                  <input name="amount" type="number" min={1} required placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
                   <select name="category" className={inputClass}>{categories.map((c) => <option key={c}>{c}</option>)}</select>
                   <select name="payment_method" className={inputClass}><option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option></select>
                   <select name="status" className={inputClass}><option>Pendente</option><option>Pago</option></select>
@@ -415,7 +414,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false }: { 
                     type="number"
                     min={1}
                     placeholder="Quantidade"
-                    className={inputClass}
+                    className={`${inputClass} h-12 text-lg font-display`}
                   />
                   <input
                     value={useValue}
@@ -423,7 +422,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false }: { 
                     type="number"
                     min={0}
                     placeholder={suggested ? `${formatMoney(suggested)} Kz` : "Valor (Kz)"}
-                    className={inputClass}
+                    className={`${inputClass} h-12 text-lg font-display`}
                   />
                   <p className="col-span-2 text-[11px] text-muted-foreground">
                     Sai do estoque e fica no custo da unidade. Não entra nas despesas gerais do período.
