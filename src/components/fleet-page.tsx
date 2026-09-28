@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Plus, Trash2, Truck, Wrench, Package } from "lucide-react";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/access.functions";
 import { createExpense, getExpenses } from "@/lib/expenses.functions";
-import { createAsset, createStockUsage, deleteAsset, listAssets, listCategories, listStock, type FleetSector } from "@/lib/rental.functions";
+import { addCategory, createAsset, createStockUsage, deleteAsset, listAssets, listCategories, listStock, type FleetSector } from "@/lib/rental.functions";
 import { Card, CashBalanceCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
 import { periodLabel } from "@/lib/period";
 import { useAccess } from "@/lib/use-access";
@@ -33,6 +33,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   const listX = useServerFn(getExpenses);
   const listC = useServerFn(listCategories);
   const addA = useServerFn(createAsset);
+  const addC = useServerFn(addCategory);
   const delA = useServerFn(deleteAsset);
   const addEntry = useServerFn(addSectorEntry);
   const addExp = useServerFn(createExpense);
@@ -121,6 +122,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   }
 
   const [amount, setAmount] = useState("");
+  const [expenseCategory, setExpenseCategory] = useState("");
   const [students, setStudents] = useState("");
   const [perStudent, setPerStudent] = useState("");
   const computed = (Math.round(Number(students)) || 0) * (Math.round(Number(perStudent)) || 0);
@@ -170,6 +172,19 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
       if (r === "sent") await Promise.all([qc.invalidateQueries({ queryKey: ["expenses"] }), qc.invalidateQueries({ queryKey: ["finance"] })]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível guardar.");
+    }
+  }
+
+  async function onNewCategory() {
+    const name = window.prompt("Nome da nova categoria de custo:")?.trim();
+    if (!name) return;
+    try {
+      await addC({ data: { name } });
+      setExpenseCategory(name);
+      await qc.invalidateQueries({ queryKey: ["expense-categories"] });
+      toast.success(`Categoria "${name}" criada e selecionada.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível criar a categoria (precisa de internet).");
     }
   }
 
@@ -478,7 +493,24 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                 <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
                   <input name="description" required placeholder="Descrição" className={`${inputClass} col-span-2`} />
                   <input name="amount" type="number" min={1} required placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
-                  <select name="category" className={inputClass}>{categories.map((c) => <option key={c}>{c}</option>)}</select>
+                  <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                    <select
+                      name="category"
+                      value={categories.includes(expenseCategory) ? expenseCategory : categories[0]}
+                      onChange={(e) => setExpenseCategory(e.target.value)}
+                      aria-label="Categoria da despesa"
+                      className={inputClass}
+                    >
+                      {categories.map((c) => <option key={c}>{c}</option>)}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={onNewCategory}
+                      className="h-10 px-3 rounded-md ring-1 ring-edge bg-panel text-sm font-medium text-primary hover:bg-primary/10"
+                    >
+                      <Plus className="size-4 inline-block mr-1" /> Nova categoria
+                    </button>
+                  </div>
                   <select name="payment_method" className={inputClass}><option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option></select>
                   <select name="status" className={inputClass}><option>Pendente</option><option>Pago</option></select>
                   <button className="col-span-2 h-10 rounded-md bg-destructive text-primary-foreground font-medium">Registar despesa</button>
