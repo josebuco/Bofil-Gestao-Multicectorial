@@ -3,12 +3,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowDownRight, ArrowUpRight, Plus, Trash2, Wallet } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Plus, Trash2 } from "lucide-react";
 import { Area, ComposedChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/access.functions";
 import { getFinance } from "@/lib/finance.functions";
 import { periodLabel } from "@/lib/period";
-import { Card, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
+import { Card, CashBalanceCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
 import { chartTooltip } from "@/components/sector-cash";
 import { useAccess } from "@/lib/use-access";
 import { sendOrQueue, useQueue } from "@/lib/offline";
@@ -102,16 +102,7 @@ export function QuickCashPage({
             </div>
             <p className="mt-2 font-display text-3xl text-destructive">{formatMoney(sector?.expense || 0)}</p>
           </div>
-          <div
-             className={`rounded-xl p-5 ring-1 ${balance >= 0 ? "bg-success/10 ring-success/40" : "bg-destructive/10 ring-destructive/40"}`}
-          >
-            <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-[0.14em]">
-              Saldo <Wallet className="size-4" />
-            </div>
-             <p className={`mt-2 font-display text-4xl ${balance >= 0 ? "text-success" : "text-destructive"}`}>
-              {formatMoney(balance)}
-            </p>
-          </div>
+          <CashBalanceCard total={balance} cash={sector?.cash || 0} bank={sector?.bank || 0} />
         </section>
 
         <Card title="Evolução">

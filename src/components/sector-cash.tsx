@@ -12,7 +12,7 @@ import {
 } from "recharts";
 import { getFinance } from "@/lib/finance.functions";
 import { periodLabel } from "@/lib/period";
-import { Card, Kpi, PeriodPicker, formatMoney, usePeriod } from "@/components/panel";
+import { Card, CashBalanceCard, Kpi, PeriodPicker, formatMoney, usePeriod } from "@/components/panel";
 import { useMergedFinance } from "@/lib/offline-finance";
 import { useAccess } from "@/lib/use-access";
 
@@ -44,13 +44,14 @@ export function SectorCash({ slug }: { slug: string }) {
     >
       <div className="p-5 space-y-4">
         <p className="text-[11px] text-muted-foreground">{periodLabel(preset, range)}</p>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <Kpi label="Receitas" value={formatMoney(sector?.revenue || 0)} tone="text-warning" />
           {isAdmin && <Kpi label="Despesas" value={formatMoney(sector?.expense || 0)} tone="text-destructive" />}
-          <Kpi
-            label="Saldo total"
-            value={formatMoney(sector?.balance || 0)}
-            tone={(sector?.balance || 0) >= 0 ? "text-success" : "text-destructive"}
+          <CashBalanceCard
+            total={sector?.balance || 0}
+            cash={sector?.cash || 0}
+            bank={sector?.bank || 0}
+            className={isAdmin ? "lg:col-span-1" : "sm:col-span-1 lg:col-span-2"}
           />
           {isAdmin && <Kpi label="Por pagar" value={formatMoney(sector?.pendingExpense || 0)} tone="text-warning" />}
         </div>
