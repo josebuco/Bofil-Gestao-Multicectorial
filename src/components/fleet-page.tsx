@@ -14,6 +14,8 @@ import { todayAngola } from "@/lib/tz";
 import { getFinance } from "@/lib/finance.functions";
 import { useMergedFinance } from "@/lib/offline-finance";
 import { chartTooltip } from "@/components/sector-cash";
+import { createWaterSale, listTruckSales, updateWaterSaleStatus, deleteRecord } from "@/lib/crud.functions";
+import { getWaterData } from "@/lib/sectors.functions";
 import { Area, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const BASE_CATEGORIES = ["Manutenção e Reparação", "Combustível", "Seguro", "Pneus", "Salários", "Impostos", "Outros"];
@@ -75,11 +77,28 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false }: { 
     ...(expenses.data?.expenses || []).filter((e) => e.sector === sector).map((e) => ({ ...e, pending: false })),
   ].filter((e) => e.expense_date >= range.from && e.expense_date <= range.to);
 
+  const truckMode = sector === "agua";
+  const listTS = useServerFn(listTruckSales);
+  const addTS = useServerFn(createWaterSale);
+  const setTS = useServerFn(updateWaterSaleStatus);
+  const delRec = useServerFn(deleteRecord);
+  const getW = useServerFn(getWaterData);
+  const truckSales = useQuery({ queryKey: ["truck-sales", range.from, range.to], queryFn: () => listTS({ data: range }), enabled: truckMode });
+  const waterData = useQuery({ queryKey: ["sector", "agua"], queryFn: () => getW(), enabled: truckMode });
+  const qTruck = useQueue("water_sale").filter((q) => q.data["asset_id"]).map((q) => ({
+    id: q.id, asset_id: String(q.data["asset_id"]), description: String(q.data["description"] || "Serviço"),
+    quantity: Number(q.data["quantity"]) || 0, unit_price: Number(q.data["unit_price"]) || 0,
+    total: Number(q.data["offline_total"]) || 0, client_name: (q.data["client_name"] as string) || null,
+    status: String(q.data["status"] || "Entregue"), payment_method: String(q.data["payment_method"] || "Numerário"), created_at: q.at, pending: true,
+  }));
+  const allTruck = [...qTruck, ...(truckSales.data || []).map((t) => ({ ...t, asset_id: String(t.asset_id), description: t.description || "Serviço", pending: false }))];
+
   const [selected, setSelected] = useState<string | null>(null);
   const list = assets.data || [];
   const current = list.find((a) => a.id === selected) || list[0];
   const statsFor = (id: string) => {
-    const rev = allEntries.filter((e) => e.asset_id === id).reduce((s, e) => s + e.amount, 0);
+    const rev = allEntries.filter((e) => e.asset_id === id).reduce((s, e) => s + e.amount, 0)
+      + allTruck.filter((t) => t.asset_id === id && t.status !== "Pendente").reduce((s, t) => s + t.total, 0);
     const exp = allExp.filter((e) => e.asset_id === id).reduce((s, e) => s + (e.amount || 0), 0);
     const stk = allUsage
       .filter((u) => u.asset_id === id && u.used_on >= range.from && u.used_on <= range.to)
@@ -207,6 +226,84 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false }: { 
   const fin = useQuery({ queryKey: ["finance", range.from, range.to], queryFn: () => listFin({ data: range }), enabled: !embedded });
   const merged = useMergedFinance(fin.data, range);
   const sectorFin = merged.sectors.find((x) => x.slug === sector);
+
+  const [tService, setTService] = useState("");
+  const [tPrice, setTPrice] = useState("");
+  const [tTrips, setTTrips] = useState("1");
+  const [tClient, setTClient] = useState("");
+  const [tStatus, setTStatus] = useState("Entregue");
+  const tTotal = (Math.round(Number(tPrice)) || 0) * (Math.round(Number(tTrips)) || 0);
+  async function refreshTruck() {
+    await Promise.all(["truck-sales", "sector", "finance", "dashboard"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
+  }
+  async function onTruck(ev: React.FormEvent) {
+    ev.preventDefault();
+    if (!current || current.kind === "Equipamento") return;
+    const price = Math.round(Number(tPrice)); const trips = Math.round(Number(tTrips));
+    if (!tService.trim()) { toast.error("Indique o serviço."); return; }
+    if (!price || price <= 0 || !trips || trips < 1) { toast.error("Indique o valor por viagem e o nº de viagens."); return; }
+    const payload = {
+      asset_id: current.id, description: tService.trim(), unit_price: price, quantity: trips,
+      client_name: tClient.trim() || null, status: tStatus, payment_method: method, offline_total: price * trips,
+    };
+    try {
+      const r = await sendOrQueue("water_sale", payload, `${current.name}: ${payload.description} × ${trips}`, () => addTS({ data: payload }));
+      toast[r === "queued" ? "info" : "success"](r === "queued" ? "Sem internet: guardado no aparelho." : "Entrada registada.");
+      setTPrice(""); setTTrips("1"); setTClient("");
+      if (r !== "queued") await refreshTruck();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Erro ao guardar."); }
+  }
+  async function truckAction(t: { id: string; pending: boolean; total: number }, action: "deliver" | "delete") {
+    if (action === "delete") {
+      if (!confirm(`Apagar a entrada de ${formatMoney(t.total)} Kz?`)) return;
+      if (t.pending) { writeQueue(readQueue().filter((q) => q.id !== t.id)); toast.success("Entrada apagada."); return; }
+    }
+    try {
+      if (action === "deliver") await setTS({ data: { id: t.id, status: "Entregue" } });
+      else await delRec({ data: { table: "water_sales", id: t.id } });
+      toast.success(action === "deliver" ? "Marcado como entregue." : "Entrada apagada.");
+      await refreshTruck();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Precisa de internet."); }
+  }
+  const curTruck = current ? allTruck.filter((t) => t.asset_id === current.id) : [];
+  const truckCard = (
+              <Card title="Entradas do camião (serviços)">
+                <form onSubmit={onTruck} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
+                  <input value={tService} onChange={(e) => setTService(e.target.value)} list="truck-services" placeholder="Serviço (ex.: Carregamento cisterna)" className={`${inputClass} h-12 col-span-2`} />
+                  <datalist id="truck-services">{(waterData.data?.products || []).map((p) => <option key={p.id} value={p.name} />)}</datalist>
+                  <input value={tPrice} onChange={(e) => setTPrice(e.target.value)} type="number" min={1} placeholder="Kz por viagem" className={`${inputClass} h-12 text-lg font-display`} />
+                  <input value={tTrips} onChange={(e) => setTTrips(e.target.value)} type="number" min={1} placeholder="Nº de viagens" className={`${inputClass} h-12 text-lg font-display`} />
+                  <input value={tClient} onChange={(e) => setTClient(e.target.value)} placeholder="Nome do cliente" className={`${inputClass} h-12 col-span-2`} />
+                  <select value={tStatus} onChange={(e) => setTStatus(e.target.value)} className={`${inputClass} h-12`}><option>Entregue</option><option>Pendente</option></select>
+                  <select value={method} onChange={(e) => setMethod(e.target.value as "Numerário" | "Banco")} className={`${inputClass} h-12`}>
+                    <option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option>
+                  </select>
+                  <button className="col-span-2 h-12 rounded-md bg-warning text-primary-foreground font-medium flex items-center justify-center gap-2"><Plus className="size-4" /> Registar · {formatMoney(tTotal)} Kz</button>
+                </form>
+                <ul className="divide-y divide-edge/60 max-h-80 overflow-auto">
+                  {curTruck.length === 0 && <li className="p-5 text-sm text-muted-foreground">Sem entradas neste período.</li>}
+                  {curTruck.map((t) => (
+                    <li key={t.id} className="flex justify-between items-center px-5 py-3 text-sm gap-3">
+                      <span className="text-muted-foreground min-w-0">
+                        <span className="text-foreground">{t.description} × {t.quantity}</span>
+                        <span className="text-[11px]"> · {t.client_name || "—"} · {new Date(t.created_at).toLocaleString("pt-AO", { dateStyle: "short", timeStyle: "short" })}{t.payment_method === "Banco" ? " · VB" : ""}</span>
+                        <span className={`ml-2 text-[11px] ${t.status === "Pendente" ? "text-warning" : ""}`}>{t.status}</span>
+                        {t.pending ? badge : null}
+                      </span>
+                      <span className="flex items-center gap-3 shrink-0">
+                        <span className="font-display text-warning">+{formatMoney(t.total)}</span>
+                        {t.status === "Pendente" && !t.pending && (
+                          <button onClick={() => truckAction(t, "deliver")} className="text-xs px-2 py-1 rounded bg-success/15 text-success">Entregue</button>
+                        )}
+                        {(access.isAdmin || t.pending) && (
+                          <button onClick={() => truckAction(t, "delete")} aria-label="Apagar entrada" className="text-muted-foreground hover:text-destructive"><Trash2 className="size-3.5" /></button>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+  );
 
   const entriesCard = (
               <Card title={sectorEntryMode ? "Entradas do setor" : "Entradas"}>
@@ -372,7 +469,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false }: { 
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              {!sectorEntryMode && current.kind !== "Equipamento" && entriesCard}
+              {!sectorEntryMode && current.kind !== "Equipamento" && (truckMode ? truckCard : entriesCard)}
 
               <Card title="Centro de custos">
                 <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
