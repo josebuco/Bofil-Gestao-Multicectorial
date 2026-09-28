@@ -493,6 +493,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                   ))}
                 </ul>
               </Card>
+              )}
 
               <Card title={`Consumo de estoque — ${current.name}`}>
                 <form onSubmit={onUsage} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
