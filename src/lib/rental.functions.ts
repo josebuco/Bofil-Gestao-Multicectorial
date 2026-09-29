@@ -74,7 +74,7 @@ export const listStock = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: purchases, error } = await supabaseAdmin
       .from("expenses")
-      .select("id, description, amount, quantity, expense_date, supplier, sector")
+      .select("id, description, amount, quantity, expense_date, supplier, sector, stock_unit")
       .in("sector", [...STOCK_SECTORS])
       .eq("category", STOCK_CATEGORY)
       .order("expense_date", { ascending: false })
@@ -99,6 +99,7 @@ export const listStock = createServerFn({ method: "GET" })
         description: p.description,
         supplier: p.supplier,
         sector: p.sector,
+        fuel: p.stock_unit === "litro",
         purchase_date: p.expense_date,
         quantity: qty,
         amount: p.amount || 0,

@@ -99,6 +99,7 @@ function CustosPage() {
   }
   const [rawTab, setTab] = useState<string>("agua");
   const [formCat, setFormCat] = useState<string>("");
+  const [stockKind, setStockKind] = useState<"litro" | "unidade">("litro");
   const allowedSlugs = SECTORS.filter((s) => access.isAdmin || access.sectors.includes(s.slug)).map((s) => s.slug as string);
   const tab = allowedSlugs.includes(rawTab) ? rawTab : (allowedSlugs[0] ?? rawTab);
   const catOptions = tab === "restaurante" ? categories.filter((c) => c !== STOCK_CATEGORY) : Array.from(new Set([STOCK_CATEGORY, ...categories]));
@@ -158,6 +159,7 @@ function CustosPage() {
         sector: tab,
         category: cat,
         quantity: cat === STOCK_CATEGORY ? Math.max(1, Number(form.get("quantity") || 1)) : null,
+        stock_unit: (cat === STOCK_CATEGORY ? (stockKind === "litro" ? "litro" : "unidade") : null) as "litro" | "unidade" | null,
         description: String(form.get("description") || ""),
         amount: Number(form.get("amount") || 0),
         expense_date: String(form.get("expense_date") || ""),
@@ -296,23 +298,15 @@ function CustosPage() {
               />
             </div>
             {tab === "aluguer" ? (
-              <>
-                <div>
-                  <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                    Categoria
-                  </label>
-                  <div className={`${inputClass} mt-1.5 flex items-center justify-between`}>
-                    <span>{STOCK_CATEGORY}</span>
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">única</span>
-                  </div>
+              <div>
+                <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                  Categoria
+                </label>
+                <div className={`${inputClass} mt-1.5 flex items-center justify-between`}>
+                  <span>{STOCK_CATEGORY}</span>
+                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">única</span>
                 </div>
-                <div>
-                  <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                    Quantidade comprada
-                  </label>
-                  <input name="quantity" type="number" min="1" defaultValue={1} required className={`${inputClass} mt-1.5`} />
-                </div>
-              </>
+              </div>
             ) : (
               <div>
                 <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground flex justify-between">
@@ -330,11 +324,22 @@ function CustosPage() {
                 </select>
               </div>
             )}
-            {tab !== "aluguer" && curCat === STOCK_CATEGORY && (
-              <div>
-                <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Quantidade comprada</label>
-                <input name="quantity" type="number" min="1" defaultValue={1} required className={`${inputClass} mt-1.5`} />
-              </div>
+            {(tab === "aluguer" || curCat === STOCK_CATEGORY) && (
+              <>
+                <div>
+                  <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Tipo de estoque</label>
+                  <select value={stockKind} onChange={(e) => setStockKind(e.target.value as "litro" | "unidade")} className={`${inputClass} mt-1.5`}>
+                    <option value="litro">Combustível (litros)</option>
+                    <option value="unidade">Peças e materiais (quantidade)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                    {stockKind === "litro" ? "Litros comprados" : "Quantidade comprada"}
+                  </label>
+                  <input name="quantity" type="number" min="1" defaultValue={1} required className={`${inputClass} mt-1.5`} />
+                </div>
+              </>
             )}
             <div>
               <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
