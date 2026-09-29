@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Truck, Wrench, Package } from "lucide-react";
+import { Plus, Trash2, Truck, Wrench, Package, Fuel } from "lucide-react";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/access.functions";
 import { createExpense, getExpenses } from "@/lib/expenses.functions";
 import { addCategory, createAsset, createStockUsage, deleteAsset, listAssets, listCategories, listStock, type FleetSector } from "@/lib/rental.functions";
