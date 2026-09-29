@@ -99,6 +99,13 @@
       "when": 1790624248779,
       "tag": "0013_restrict_expense_categories_read",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790708777444,
+      "tag": "0014_expenses_stock_unit",
+      "breakpoints": true
     }
   ]
 }

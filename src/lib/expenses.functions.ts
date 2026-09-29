@@ -68,6 +68,7 @@ export const createExpense = createServerFn({ method: "POST" })
         recorded_at: z.string().datetime().optional(),
         asset_id: z.string().uuid().nullable().default(null),
         quantity: z.number().int().min(0).nullable().default(null),
+        stock_unit: z.enum(["litro", "unidade"]).nullable().default(null),
       })
       .parse(data),
   )

@@ -132,6 +132,7 @@ export type Database = {
           quantity: number | null
           sector: string
           status: string
+          stock_unit: string | null
           supplier: string | null
           updated_at: string
         }
@@ -150,6 +151,7 @@ export type Database = {
           quantity?: number | null
           sector: string
           status?: string
+          stock_unit?: string | null
           supplier?: string | null
           updated_at?: string
         }
@@ -168,6 +170,7 @@ export type Database = {
           quantity?: number | null
           sector?: string
           status?: string
+          stock_unit?: string | null
           supplier?: string | null
           updated_at?: string
         }
