@@ -101,10 +101,13 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
     const rev = allEntries.filter((e) => e.asset_id === id).reduce((s, e) => s + e.amount, 0)
       + allTruck.filter((t) => t.asset_id === id && t.status !== "Pendente").reduce((s, t) => s + t.total, 0);
     const exp = allExp.filter((e) => e.asset_id === id).reduce((s, e) => s + (e.amount || 0), 0);
-    const stk = allUsage
-      .filter((u) => u.asset_id === id && u.used_on >= range.from && u.used_on <= range.to)
-      .reduce((s, u) => s + (u.amount || 0), 0);
-    return { rev, exp: exp + stk, bal: rev - exp - stk };
+    const used = allUsage.filter((u) => u.asset_id === id && u.used_on >= range.from && u.used_on <= range.to);
+    const stk = used.reduce((s, u) => s + (u.amount || 0), 0);
+    const fuelIds = new Set(stockItems.filter((i) => i.fuel).map((i) => i.id));
+    const fuel = used.filter((u) => fuelIds.has(u.purchase_id));
+    const fuelL = fuel.reduce((s, u) => s + (u.quantity || 0), 0);
+    const fuelKz = fuel.reduce((s, u) => s + (u.amount || 0), 0);
+    return { rev, exp: exp + stk, bal: rev - exp - stk, fuelL, fuelKz };
   };
 
   const [showNew, setShowNew] = useState(false);
@@ -395,6 +398,13 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                     <p className="font-display uppercase tracking-wide text-foreground truncate">{a.name}</p>
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-0.5">{a.kind}{a.plate ? ` · ${a.plate}` : ""}</p>
+                  <div className="mt-3 rounded-md bg-primary/10 ring-1 ring-primary/30 px-3 py-2 flex items-center justify-between gap-2 text-xs">
+                    <span className="flex items-center gap-1.5 text-muted-foreground"><Fuel className="size-3.5 text-primary" /> Combustível</span>
+                    <span className="text-right">
+                      <span className="font-display text-foreground text-sm">{s.fuelL.toLocaleString("pt-AO")} L</span>
+                      {access.isAdmin && <span className="block text-[11px] text-muted-foreground">{formatMoney(s.fuelKz)} Kz{s.rev > 0 ? ` · ${Math.round((s.fuelKz / s.rev) * 100)}% da receita` : ""}</span>}
+                    </span>
+                  </div>
                   <div className={`mt-3 grid gap-2 text-xs ${access.isAdmin ? "grid-cols-3" : "grid-cols-1"}`}>
                     {a.kind !== "Equipamento" && !sectorEntryMode ? <div><p className="text-muted-foreground">Entradas</p><p className="font-display text-warning">{formatMoney(s.rev)}</p></div> : !access.isAdmin ? <div><p className="text-muted-foreground">Equipamento — só custos</p></div> : null}
                     {access.isAdmin && <>
@@ -449,14 +459,15 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                   <p className="text-foreground truncate flex items-center gap-2">
                     <Package className="size-3.5 text-primary shrink-0" />
                     {i.description}
+                    {i.fuel && <span className="text-[10px] uppercase tracking-wide rounded bg-primary/15 text-primary px-1.5 py-0.5">Combustível</span>}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
-                    {new Date(i.purchase_date).toLocaleDateString("pt-AO")} · {formatMoney(i.unit_price)} Kz por unidade
+                    {new Date(i.purchase_date).toLocaleDateString("pt-AO")} · {formatMoney(i.unit_price)} Kz por {i.fuel ? "litro" : "unidade"}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
                   <p className={`font-display ${i.left_quantity > 0 ? "text-success" : "text-muted-foreground"}`}>
-                    {i.left_quantity} de {i.quantity}
+                    {i.left_quantity} de {i.quantity}{i.fuel ? " L" : ""}
                   </p>
                   {access.isAdmin && (
                     <p className="text-[11px] text-muted-foreground">
@@ -537,7 +548,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                     <option value="">Escolher item do estoque…</option>
                     {stockItems.filter((i) => i.left_quantity > 0).map((i) => (
                       <option key={i.id} value={i.id}>
-                        {i.description} — {i.left_quantity} disponíveis
+                        {i.fuel ? "⛽ " : ""}{i.description} — {i.left_quantity} {i.fuel ? "L" : ""} disponíveis
                       </option>
                     ))}
                   </select>
@@ -546,7 +557,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                     onChange={(e) => setUseQty(e.target.value)}
                     type="number"
                     min={1}
-                    placeholder="Quantidade"
+                    placeholder={selectedLot?.fuel ? "Litros" : "Quantidade"}
                     className={`${inputClass} h-12 text-lg font-display`}
                   />
                   <input
@@ -574,7 +585,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                     return (
                       <li key={u.id} className="flex justify-between px-5 py-3 text-sm gap-3">
                         <span className="text-muted-foreground min-w-0 truncate">
-                          {u.used_on} · {u.quantity}× {lot?.description || "Item de estoque"}
+                          {u.used_on} · {lot?.fuel ? `${u.quantity} L de` : `${u.quantity}×`} {lot?.description || "Item de estoque"}
                           {u.pending ? badge : null}
                         </span>
                         <span className="font-display text-primary shrink-0">−{formatMoney(u.amount || 0)}</span>
