@@ -10,3 +10,8 @@
   - [x] Entradas, saídas e saldos por setor
   - [x] Gráficos do setor, Painel e Faturação
   - [x] Verificar compilação e apresentação
+
+- [x] Cópia de segurança dos registos (botão para a administração)
+  - [x] ZIP com JSON + CSV de todas as tabelas e lista das faturas
+  - [x] Ficheiros das faturas em ZIP separado
+  - [x] Verificado: build OK, tsgo OK, descarga comprovada no navegador (47 KB, 39 ficheiros)
