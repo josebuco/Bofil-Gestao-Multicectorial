@@ -8,6 +8,7 @@ import { PERMISSION_OPTIONS, createStaff, deleteStaff, listStaff, updateAdminCre
 import { applyBofilAdminCredentials } from "@/lib/admin-setup.functions";
 import { generateDeviceCode, listDevices, manageDevice } from "@/lib/devices.functions";
 import { Field, inputClass } from "@/components/panel";
+import { BackupPanel } from "@/components/backup-panel";
 
 export const Route = createFileRoute("/_authenticated/utilizadores")({
   head: () => ({
@@ -166,6 +167,8 @@ function UsersPage() {
             </div>
           </form>
         </div>
+
+        <BackupPanel />
 
         {error ? <p className="text-destructive text-sm">{(error as Error).message}</p> : null}
 
