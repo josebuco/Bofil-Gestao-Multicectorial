@@ -6,7 +6,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
    administração poder guardar uma cópia fora da nuvem.
 ------------------------------------------------------------------- */
 
-type Result = { data: Record<string, unknown>[] | null; error: { message: string } | null };
+export type BackupRow = { [key: string]: string | number | boolean | null };
+
+type Result = { data: BackupRow[] | null; error: { message: string } | null };
 type Builder = PromiseLike<Result> & {
   range: (a: number, b: number) => Builder;
   order: (c: string) => Builder;
@@ -30,7 +32,7 @@ const PAGE = 1000;
 
 async function allRows(client: unknown, table: string, order: string) {
   const sb = client as unknown as Client;
-  const rows: Record<string, unknown>[] = [];
+  const rows: BackupRow[] = [];
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await sb.from(table).select("*").range(from, from + PAGE - 1).order(order);
     if (error) throw new Error(`${table}: ${error.message}`);
@@ -79,7 +81,7 @@ const TABLES: { table: string; order: string }[] = [
   { table: "user_roles", order: "id" },
 ];
 
-export type BackupTable = { name: string; rows: Record<string, unknown>[] };
+export type BackupTable = { name: string; rows: BackupRow[] };
 export type BackupInvoice = { path: string; url: string; updated_at: string | null };
 
 export const getBackup = createServerFn({ method: "POST" })
