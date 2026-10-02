@@ -210,6 +210,11 @@ function AguaPage() {
           <Field label="Cliente">
             <input name="client_name" placeholder="Opcional" className={inputClass} />
           </Field>
+          {isAdmin ? (
+            <Field label="Data (vazio = hoje)">
+              <input name="entry_date" type="date" className={inputClass} />
+            </Field>
+          ) : null}
           <Field label="Estado">
             <select name="status" className={inputClass} defaultValue="Entregue">
               <option>Entregue</option>
