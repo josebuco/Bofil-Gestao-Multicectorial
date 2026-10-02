@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Truck, Wrench, Package, Fuel } from "lucide-react";
+import { CalendarDays, Plus, Trash2, Truck, Wrench, Package, Fuel } from "lucide-react";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/access.functions";
 import { createExpense, getExpenses } from "@/lib/expenses.functions";
 import { addCategory, createAsset, createStockUsage, deleteAsset, listAssets, listCategories, listStock, type FleetSector } from "@/lib/rental.functions";
@@ -131,6 +131,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   const computed = (Math.round(Number(students)) || 0) * (Math.round(Number(perStudent)) || 0);
   const [method, setMethod] = useState<"Numerário" | "Banco">("Numerário");
   const [entryDate, setEntryDate] = useState("");
+  const [showEntryDate, setShowEntryDate] = useState(false);
   const [expenseDate, setExpenseDate] = useState("");
   async function onEntry(ev: React.FormEvent) {
     ev.preventDefault();
@@ -267,6 +268,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
     const payload = {
       asset_id: current.id, description: tService.trim(), unit_price: price, quantity: trips,
       client_name: tClient.trim() || null, status: tStatus, payment_method: method, offline_total: price * trips,
+      ...(access.isAdmin && entryDate ? { entry_date: entryDate } : {}),
     };
     try {
       const r = await sendOrQueue("water_sale", payload, `${current.name}: ${payload.description} × ${trips}`, () => addTS({ data: payload }));
@@ -288,8 +290,33 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
     } catch (e) { toast.error(e instanceof Error ? e.message : "Precisa de internet."); }
   }
   const curTruck = current ? allTruck.filter((t) => t.asset_id === current.id) : [];
+  const entryDateAction = access.isAdmin ? (
+    <div className="flex items-center gap-2">
+      {showEntryDate ? (
+        <input
+          type="date"
+          value={entryDate}
+          max={todayAngola()}
+          onChange={(e) => setEntryDate(e.target.value)}
+          aria-label="Data da entrada"
+          className={`${inputClass} h-8 w-36 px-2 text-xs`}
+        />
+      ) : null}
+      <button
+        type="button"
+        onClick={() => {
+          setShowEntryDate((open) => !open);
+          if (!entryDate) setEntryDate(todayAngola());
+        }}
+        className="h-8 rounded-md bg-primary px-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5"
+        aria-expanded={showEntryDate}
+      >
+        <CalendarDays className="size-3.5" /> Data
+      </button>
+    </div>
+  ) : null;
   const truckCard = (
-              <Card title="Entradas do camião (serviços)">
+              <Card title="Entradas do camião (serviços)" action={entryDateAction}>
                 <form onSubmit={onTruck} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
                   <input value={tService} onChange={(e) => setTService(e.target.value)} list="truck-services" placeholder="Serviço (ex.: Carregamento cisterna)" className={`${inputClass} h-12 col-span-2`} />
                   <datalist id="truck-services">{(waterData.data?.products || []).map((p) => <option key={p.id} value={p.name} />)}</datalist>
@@ -328,7 +355,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   );
 
   const entriesCard = (
-              <Card title={sectorEntryMode ? "Entradas do setor" : "Entradas"}>
+              <Card title={sectorEntryMode ? "Entradas do setor" : "Entradas"} action={entryDateAction}>
                 <form onSubmit={onEntry} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
                   {perStudentMode ? (
                     <>
@@ -342,12 +369,6 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                     <option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option>
                   </select>
                   <button className="h-12 rounded-md bg-warning text-primary-foreground font-medium flex items-center justify-center gap-2"><Plus className="size-4" /> Registar</button>
-                  {access.isAdmin && (
-                    <label className="col-span-2 flex items-center gap-2 text-[11px] text-muted-foreground">
-                      Data (vazio = hoje)
-                      <input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} className={`${inputClass} h-8 w-auto text-xs`} />
-                    </label>
-                  )}
                 </form>
                 {perStudentMode && (
                   <p className="px-4 py-2 text-xs text-muted-foreground border-b border-edge">
