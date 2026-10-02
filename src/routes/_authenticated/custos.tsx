@@ -5,6 +5,7 @@ import { queryOptions, useQuery, useSuspenseQuery, useQueryClient } from "@tanst
 import { STOCK_CATEGORY, addCategory, listCategories } from "@/lib/rental.functions";
 import { useState } from "react";
 import { toast } from "sonner";
+import { CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   SECTORS,
@@ -108,6 +109,8 @@ function CustosPage() {
   const [saving, setSaving] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [paying, setPaying] = useState<string | null>(null);
+  const [expenseDate, setExpenseDate] = useState("");
+  const [showExpenseDate, setShowExpenseDate] = useState(false);
 
   const { preset, setPreset, custom, setCustom, range } = usePeriod("mes");
 
@@ -162,7 +165,7 @@ function CustosPage() {
         stock_unit: (cat === STOCK_CATEGORY ? (stockKind === "litro" ? "litro" : "unidade") : null) as "litro" | "unidade" | null,
         description: String(form.get("description") || ""),
         amount: Number(form.get("amount") || 0),
-        expense_date: String(form.get("expense_date") || ""),
+        expense_date: access.isAdmin && expenseDate ? expenseDate : todayAngola(),
         supplier: (String(form.get("supplier") || "").trim() || null) as string | null,
         status: String(form.get("status") || "Pendente"),
         invoice_path: invoicePath,
@@ -196,6 +199,29 @@ function CustosPage() {
 
   const inputClass =
     "w-full rounded-md bg-ink ring-1 ring-edge px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-primary";
+
+  const dateChip = access.isAdmin ? (
+    <div className="flex items-center gap-2">
+      {showExpenseDate ? (
+        <input
+          type="date"
+          value={expenseDate}
+          max={todayAngola()}
+          onChange={(e) => setExpenseDate(e.target.value)}
+          aria-label="Data da despesa"
+          className="h-8 w-36 rounded-md bg-ink ring-1 ring-edge px-2 text-xs text-foreground focus:outline-none focus:ring-primary"
+        />
+      ) : null}
+      <button
+        type="button"
+        onClick={() => { setShowExpenseDate((v) => !v); if (!expenseDate) setExpenseDate(todayAngola()); }}
+        className="h-8 rounded-md bg-primary px-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5"
+        aria-expanded={showExpenseDate}
+      >
+        <CalendarDays className="size-3.5" /> Data
+      </button>
+    </div>
+  ) : null;
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
