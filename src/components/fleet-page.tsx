@@ -174,6 +174,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
     try {
       const r = await sendOrQueue("expense", payload, `Despesa ${current.name}: ${payload.description}`, () => addExp({ data: payload }));
       form.reset();
+      setExpenseDate("");
       toast.success(r === "queued" ? "Sem internet: despesa guardada no aparelho." : "Despesa registada.");
       if (r === "sent") await Promise.all([qc.invalidateQueries({ queryKey: ["expenses"] }), qc.invalidateQueries({ queryKey: ["finance"] })]);
     } catch (e) {
@@ -533,6 +534,12 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                   </div>
                   <select name="payment_method" className={inputClass}><option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option></select>
                   <select name="status" className={inputClass}><option>Pendente</option><option>Pago</option></select>
+                  {access.isAdmin && (
+                    <label className="col-span-2 flex items-center gap-2 text-xs text-muted-foreground">
+                      Data da despesa
+                      <input type="date" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} className={`${inputClass} h-8 w-auto text-xs`} />
+                    </label>
+                  )}
                   <button className="col-span-2 h-10 rounded-md bg-destructive text-primary-foreground font-medium">Registar despesa</button>
                 </form>
                 <ul className="divide-y divide-edge/60 max-h-80 overflow-auto">
