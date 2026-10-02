@@ -74,6 +74,7 @@ const TABLES: { table: string; order: string }[] = [
   { table: "expenses", order: "id" },
   { table: "rental_stock_usage", order: "id" },
   { table: "bank_deposits", order: "id" },
+  { table: "sector_transfers", order: "id" },
   { table: "activity_logs", order: "id" },
   { table: "devices", order: "id" },
   { table: "staff_accounts", order: "user_id" },

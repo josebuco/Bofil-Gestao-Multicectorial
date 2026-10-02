@@ -37,6 +37,7 @@ export function QuickCashPage({
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<"Numerário" | "Banco">("Numerário");
   const [saving, setSaving] = useState(false);
+  const [entryDate, setEntryDate] = useState("");
 
   const finance = useQuery({
     queryKey: ["finance", range.from, range.to],
@@ -68,7 +69,7 @@ export function QuickCashPage({
     if (!value || value <= 0) { toast.error("Indique um valor válido."); return; }
     setSaving(true);
     try {
-      const payload = { sector: slug, amount: value, payment_method: method };
+      const payload = { sector: slug, amount: value, payment_method: method, ...(isAdminView && entryDate ? { entry_date: entryDate } : {}) };
       const r = await sendOrQueue("sector_entry", payload, `${title}: ${formatMoney(value)} Kz`, () => add({ data: payload }));
       setAmount("");
       if (r === "queued") toast.success(`Sem internet: ${formatMoney(value)} Kz guardado no aparelho. Envia ao sincronizar.`);
@@ -160,7 +161,14 @@ export function QuickCashPage({
               placeholder="0"
               className={`${inputClass} mt-1.5 text-2xl font-display h-14`}
             />
-            <p className="text-[11px] text-muted-foreground mt-1.5">Data e hora são registadas automaticamente.</p>
+            {isAdminView ? (
+              <label className="mt-1.5 flex items-center gap-2 text-[11px] text-muted-foreground">
+                Data (vazio = hoje)
+                <input type="date" value={entryDate} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setEntryDate(e.target.value)} className={`${inputClass} h-8 w-auto text-xs`} />
+              </label>
+            ) : (
+              <p className="text-[11px] text-muted-foreground mt-1.5">Data e hora são registadas automaticamente.</p>
+            )}
           </div>
           <div className="flex rounded-md ring-1 ring-edge overflow-hidden h-14">
             {(["Numerário", "Banco"] as const).map((m) => (

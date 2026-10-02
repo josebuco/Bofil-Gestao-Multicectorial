@@ -482,6 +482,56 @@ export type Database = {
           },
         ]
       }
+      sector_transfers: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          from_sector: string
+          id: string
+          kind: string
+          note: string | null
+          parent_id: string | null
+          payment_method: string
+          to_sector: string
+          transfer_date: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          from_sector: string
+          id?: string
+          kind?: string
+          note?: string | null
+          parent_id?: string | null
+          payment_method?: string
+          to_sector: string
+          transfer_date?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          from_sector?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          parent_id?: string | null
+          payment_method?: string
+          to_sector?: string
+          transfer_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sector_transfers_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "sector_transfers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sectors: {
         Row: {
           color: string

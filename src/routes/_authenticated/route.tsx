@@ -54,6 +54,7 @@ const allSectors = [
   { id: "/transporte", label: "Transporte Escolar", color: "bg-transport", perm: "transporte" },
   { id: "/aluguer", label: "Aluguer de Veículos", color: "bg-primary", perm: "aluguer" },
   { id: "/custos", label: "Centro de Custos", color: "bg-brand", perm: "custos" },
+  { id: "/cedencias", label: "Cedências entre Setores", color: "bg-success", perm: "admin" },
   { id: "/faturacao", label: "Faturação", color: "bg-wash", perm: "admin" },
   { id: "/utilizadores", label: "Utilizadores", color: "bg-muted-foreground", perm: "admin" },
 ] as const;

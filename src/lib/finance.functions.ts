@@ -44,7 +44,7 @@ export const getFinance = createServerFn({ method: "GET" })
     );
     const granularity: "day" | "month" = spanDays <= 62 ? "day" : "month";
 
-    const [sales, quick, expenses, deposits] = await Promise.all([
+    const [sales, quick, expenses, deposits, transfers] = await Promise.all([
       context.supabase
         .from("water_sales")
         .select("total, created_at, client_name, status, payment_method")
@@ -65,6 +65,11 @@ export const getFinance = createServerFn({ method: "GET" })
         .select("id, sector, amount, created_at")
         .gte("created_at", fromIso)
         .lte("created_at", toIso),
+      context.supabase
+        .from("sector_transfers")
+        .select("id, from_sector, to_sector, amount, kind, payment_method, transfer_date")
+        .gte("transfer_date", data.from)
+        .lte("transfer_date", data.to),
     ]);
 
     // build buckets
@@ -168,6 +173,29 @@ export const getFinance = createServerFn({ method: "GET" })
       });
     }
 
+    // Cedências/devoluções entre setores: sai como saída num setor e entra como entrada no outro.
+    for (const t of transfers.data || []) {
+      const ret = t.kind === "devolucao";
+      add(expense, t.from_sector, t.transfer_date, t.amount || 0);
+      add(revenue, t.to_sector, t.transfer_date, t.amount || 0);
+      if (t.payment_method === "Banco") {
+        bankExp[t.from_sector] = (bankExp[t.from_sector] || 0) + (t.amount || 0);
+        bank[t.to_sector] = (bank[t.to_sector] || 0) + (t.amount || 0);
+      }
+      const toL = SECTOR_LABELS[t.to_sector] || t.to_sector;
+      const fromL = SECTOR_LABELS[t.from_sector] || t.from_sector;
+      entries.push({
+        sector: t.from_sector, kind: "despesa", date: t.transfer_date,
+        description: ret ? `Devolução para ${toL}` : `Cedência para ${toL}`,
+        amount: t.amount || 0, status: "Pago", category: ret ? "Devolução" : "Cedência", payment: t.payment_method,
+      });
+      entries.push({
+        sector: t.to_sector, kind: "receita", date: t.transfer_date,
+        description: ret ? `Devolução recebida de ${fromL}` : `Cedência recebida de ${fromL}`,
+        amount: t.amount || 0, status: "Recebido", payment: t.payment_method,
+      });
+    }
+
     const dep: Record<string, number> = Object.fromEntries(slugs.map((s) => [s, 0]));
     for (const d of deposits.data || []) {
       dep[d.sector] = (dep[d.sector] || 0) + (d.amount || 0);
@@ -237,14 +265,18 @@ async function sectorCashOnHand(
   supabase: { from: (t: string) => any },
   sector: string,
 ) {
-  const [sales, entries, expenses, deposits] = await Promise.all([
+  const [sales, entries, expenses, deposits, tOut, tIn] = await Promise.all([
     sector === "agua"
       ? supabase.from("water_sales").select("total, payment_method").neq("status", "Pendente")
       : Promise.resolve({ data: [] }),
     supabase.from("sector_entries").select("amount, payment_method").eq("sector", sector),
     supabase.from("expenses").select("amount, payment_method").eq("sector", sector),
     supabase.from("bank_deposits").select("amount").eq("sector", sector),
+    supabase.from("sector_transfers").select("amount, payment_method").eq("from_sector", sector),
+    supabase.from("sector_transfers").select("amount, payment_method").eq("to_sector", sector),
   ]);
+  for (const t of tIn.data || []) if (t.payment_method !== "Banco") entries.data = [...(entries.data || []), { amount: t.amount, payment_method: "Numerário" }];
+  for (const t of tOut.data || []) if (t.payment_method !== "Banco") expenses.data = [...(expenses.data || []), { amount: t.amount, payment_method: "Numerário" }];
   let rev = 0;
   let bankRev = 0;
   for (const s of sales.data || []) {

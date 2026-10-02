@@ -130,6 +130,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   const [perStudent, setPerStudent] = useState("");
   const computed = (Math.round(Number(students)) || 0) * (Math.round(Number(perStudent)) || 0);
   const [method, setMethod] = useState<"Numerário" | "Banco">("Numerário");
+  const [entryDate, setEntryDate] = useState("");
   async function onEntry(ev: React.FormEvent) {
     ev.preventDefault();
     if (!sectorEntryMode && (!current || current.kind === "Equipamento")) return;
@@ -137,6 +138,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
     if (!value || value <= 0) { toast.error(perStudentMode ? "Indique alunos e valor diário por aluno." : "Indique um valor válido."); return; }
     const payload = {
       sector, amount: value, payment_method: method, asset_id: sectorEntryMode ? null : current!.id,
+      ...(access.isAdmin && entryDate ? { entry_date: entryDate } : {}),
       ...(perStudentMode ? { students: Math.round(Number(students)), per_student: Math.round(Number(perStudent)) } : {}),
     };
     try {
@@ -338,6 +340,12 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                     <option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option>
                   </select>
                   <button className="h-12 rounded-md bg-warning text-primary-foreground font-medium flex items-center justify-center gap-2"><Plus className="size-4" /> Registar</button>
+                  {access.isAdmin && (
+                    <label className="col-span-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+                      Data (vazio = hoje)
+                      <input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} className={`${inputClass} h-8 w-auto text-xs`} />
+                    </label>
+                  )}
                 </form>
                 {perStudentMode && (
                   <p className="px-4 py-2 text-xs text-muted-foreground border-b border-edge">
