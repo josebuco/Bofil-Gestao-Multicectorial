@@ -314,18 +314,6 @@ function CustosPage() {
                 className={`${inputClass} mt-1.5`}
               />
             </div>
-            <div>
-              <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                Data
-              </label>
-              <input
-                name="expense_date"
-                type="date"
-                required
-                defaultValue={todayAngola()}
-                className={`${inputClass} mt-1.5`}
-              />
-            </div>
             {tab === "aluguer" ? (
               <div>
                 <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
