@@ -133,6 +133,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   const [entryDate, setEntryDate] = useState("");
   const [showEntryDate, setShowEntryDate] = useState(false);
   const [expenseDate, setExpenseDate] = useState("");
+  const [showExpenseDate, setShowExpenseDate] = useState(false);
   async function onEntry(ev: React.FormEvent) {
     ev.preventDefault();
     if (!sectorEntryMode && (!current || current.kind === "Equipamento")) return;
@@ -310,6 +311,31 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
         }}
         className="h-8 rounded-md bg-primary px-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5"
         aria-expanded={showEntryDate}
+      >
+        <CalendarDays className="size-3.5" /> Data
+      </button>
+    </div>
+  ) : null;
+  const expenseDateAction = access.isAdmin ? (
+    <div className="flex items-center gap-2">
+      {showExpenseDate ? (
+        <input
+          type="date"
+          value={expenseDate}
+          max={todayAngola()}
+          onChange={(e) => setExpenseDate(e.target.value)}
+          aria-label="Data da despesa"
+          className={`${inputClass} h-8 w-36 px-2 text-xs`}
+        />
+      ) : null}
+      <button
+        type="button"
+        onClick={() => {
+          setShowExpenseDate((open) => !open);
+          if (!expenseDate) setExpenseDate(todayAngola());
+        }}
+        className="h-8 rounded-md bg-primary px-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5"
+        aria-expanded={showExpenseDate}
       >
         <CalendarDays className="size-3.5" /> Data
       </button>
@@ -531,7 +557,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
               {!sectorEntryMode && current.kind !== "Equipamento" && (truckMode ? truckCard : entriesCard)}
 
               {sector !== "lavagem" && (
-              <Card title="Centro de custos">
+              <Card title="Centro de custos" action={expenseDateAction}>
                 <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
                   <input name="description" required placeholder="Descrição" className={`${inputClass} col-span-2`} />
                   <input name="amount" type="number" min={1} required placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
