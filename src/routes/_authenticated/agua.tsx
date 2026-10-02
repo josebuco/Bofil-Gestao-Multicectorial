@@ -127,6 +127,7 @@ function AguaPage() {
       client_name: String(f.get("client_name") || "").trim() || null,
       status: String(f.get("status")),
       payment_method: (f.get("payment_method") === "Banco" ? "Banco" : "Numerário") as "Banco" | "Numerário",
+      ...(isAdmin && f.get("entry_date") ? { entry_date: String(f.get("entry_date")) } : {}),
       offline_total: (data.products.find((product) => product.id === String(f.get("product_id")))?.price || 0) * Number(f.get("quantity")),
     };
     let queued = false;

@@ -50,12 +50,13 @@ export const createWaterSale = createServerFn({ method: "POST" })
         payment_method: z.enum(["Numerário", "Banco"]).default("Numerário"),
         offline_total: z.number().int().min(0).optional(),
         recorded_at: z.string().datetime().optional(),
+        entry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
       })
       .refine((v) => v.product_id || (v.asset_id && v.unit_price !== undefined), "Indique o serviço ou o camião.")
       .parse(d),
   )
   .handler(async ({ context, data }) => {
-    const { offline_total: _offlineTotal, ...sale } = data;
+    const { offline_total: _offlineTotal, entry_date, ...sale } = data;
     let name = sale.description || "Serviço";
     let unit = sale.unit_price ?? 0;
     if (sale.product_id) {
@@ -70,7 +71,11 @@ export const createWaterSale = createServerFn({ method: "POST" })
     }
 
     const t = sale.recorded_at ? new Date(sale.recorded_at).getTime() : NaN;
-    const created_at = t && t <= Date.now() && t > Date.now() - 60 * 864e5 ? new Date(t).toISOString() : undefined;
+    let created_at = t && t <= Date.now() && t > Date.now() - 60 * 864e5 ? new Date(t).toISOString() : undefined;
+    if (entry_date) {
+      const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+      if (isAdmin) created_at = new Date(`${entry_date}T12:00:00+01:00`).toISOString();
+    }
     const total = unit * sale.quantity;
     const { error } = await context.supabase.from("water_sales").insert({
       product_id: sale.product_id || null,

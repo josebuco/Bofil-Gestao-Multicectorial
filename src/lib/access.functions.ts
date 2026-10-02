@@ -162,14 +162,20 @@ export const addSectorEntry = createServerFn({ method: "POST" })
         amount: z.number().int().positive().max(1_000_000_000),
         payment_method: z.enum(["Numerário", "Banco"]).default("Numerário"),
         recorded_at: z.string().datetime().optional(),
+        entry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
       })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
-    const { recorded_at, ...row } = data;
+    const { recorded_at, entry_date, ...row } = data;
     const t = recorded_at ? new Date(recorded_at).getTime() : NaN;
     // Registos feitos sem internet mantêm a hora real (até 60 dias atrás, nunca no futuro).
-    const created_at = t && t <= Date.now() && t > Date.now() - 60 * 864e5 ? new Date(t).toISOString() : undefined;
+    let created_at = t && t <= Date.now() && t > Date.now() - 60 * 864e5 ? new Date(t).toISOString() : undefined;
+    // Só a administração pode escolher outra data.
+    if (entry_date) {
+      const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+      if (isAdmin) created_at = new Date(`${entry_date}T12:00:00+01:00`).toISOString();
+    }
     const { error } = await context.supabase
       .from("sector_entries")
       .insert({ ...row, created_by: context.userId, ...(created_at ? { created_at } : {}) });
