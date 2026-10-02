@@ -289,9 +289,12 @@ function CustosPage() {
             className="rounded-xl bg-panel ring-1 ring-edge shadow-sm p-5 grid grid-cols-1 md:grid-cols-3 gap-3"
           >
             <div className="md:col-span-3">
-              <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                Descrição da despesa
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                  Descrição da despesa
+                </label>
+                {dateChip}
+              </div>
               <input
                 name="description"
                 required
