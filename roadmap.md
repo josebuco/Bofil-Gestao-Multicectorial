@@ -20,3 +20,7 @@
   - [x] Botão azul compacto “Data” no canto superior direito do cartão
   - [x] Visível apenas à administração e aplicado à entrada guardada
   - [x] Verificar no ecrã da Água
+
+- [x] Uniformizar a data nas entradas de Restaurante e Lavagem
+  - [x] Substituir o campo antigo pelo botão azul compacto no canto superior direito
+  - [x] Manter o calendário exclusivo da administração

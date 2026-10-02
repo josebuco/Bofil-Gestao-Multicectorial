@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowDownRight, ArrowUpRight, Plus, Trash2 } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, CalendarDays, Plus, Trash2 } from "lucide-react";
 import { Area, ComposedChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/access.functions";
 import { getFinance } from "@/lib/finance.functions";
@@ -13,6 +13,8 @@ import { chartTooltip } from "@/components/sector-cash";
 import { useAccess } from "@/lib/use-access";
 import { sendOrQueue, useQueue } from "@/lib/offline";
 import { useMergedFinance } from "@/lib/offline-finance";
+import { todayAngola } from "@/lib/tz";
+import { Button } from "@/components/ui/button";
 
 type Slug = "restaurante" | "lavagem" | "transporte";
 
@@ -38,6 +40,7 @@ export function QuickCashPage({
   const [method, setMethod] = useState<"Numerário" | "Banco">("Numerário");
   const [saving, setSaving] = useState(false);
   const [entryDate, setEntryDate] = useState("");
+  const [showEntryDate, setShowEntryDate] = useState(false);
 
   const finance = useQuery({
     queryKey: ["finance", range.from, range.to],
@@ -146,8 +149,33 @@ export function QuickCashPage({
       <div className="flex-1 overflow-auto p-6 space-y-5">
         <form
           onSubmit={onSubmit}
-          className="rounded-xl bg-panel ring-1 ring-edge p-5 flex flex-col sm:flex-row gap-3 sm:items-end"
+          className="relative rounded-xl bg-panel ring-1 ring-edge p-5 pt-16 sm:pt-14 flex flex-col sm:flex-row gap-3 sm:items-end"
         >
+          {isAdminView ? (
+            <div className="absolute right-5 top-4 flex items-center gap-2">
+              {showEntryDate ? (
+                <input
+                  type="date"
+                  value={entryDate}
+                  max={todayAngola()}
+                  onChange={(e) => setEntryDate(e.target.value)}
+                  aria-label="Data da entrada"
+                  className="h-8 w-36 rounded-md bg-ink ring-1 ring-edge px-2 text-xs text-foreground focus:outline-none focus:ring-primary"
+                />
+              ) : null}
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  setShowEntryDate((open) => !open);
+                  if (!entryDate) setEntryDate(todayAngola());
+                }}
+                aria-expanded={showEntryDate}
+              >
+                <CalendarDays /> Data
+              </Button>
+            </div>
+          ) : null}
           <div className="flex-1">
             <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
               Nova entrada (Kz)
@@ -161,14 +189,9 @@ export function QuickCashPage({
               placeholder="0"
               className={`${inputClass} mt-1.5 text-2xl font-display h-14`}
             />
-            {isAdminView ? (
-              <label className="mt-1.5 flex items-center gap-2 text-[11px] text-muted-foreground">
-                Data (vazio = hoje)
-                <input type="date" value={entryDate} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setEntryDate(e.target.value)} className={`${inputClass} h-8 w-auto text-xs`} />
-              </label>
-            ) : (
+            {!isAdminView ? (
               <p className="text-[11px] text-muted-foreground mt-1.5">Data e hora são registadas automaticamente.</p>
-            )}
+            ) : null}
           </div>
           <div className="flex rounded-md ring-1 ring-edge overflow-hidden h-14">
             {(["Numerário", "Banco"] as const).map((m) => (
