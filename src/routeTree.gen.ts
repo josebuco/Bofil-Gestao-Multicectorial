@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAguaRouteImport } from './routes/_authenticated/agua'
 import { Route as AuthenticatedAluguerRouteImport } from './routes/_authenticated/aluguer'
+import { Route as AuthenticatedCedenciasRouteImport } from './routes/_authenticated/cedencias'
 import { Route as AuthenticatedCustosRouteImport } from './routes/_authenticated/custos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFaturacaoRouteImport } from './routes/_authenticated/faturacao'
@@ -44,6 +45,11 @@ const AuthenticatedAguaRoute = AuthenticatedAguaRouteImport.update({
 const AuthenticatedAluguerRoute = AuthenticatedAluguerRouteImport.update({
   id: '/aluguer',
   path: '/aluguer',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCedenciasRoute = AuthenticatedCedenciasRouteImport.update({
+  id: '/cedencias',
+  path: '/cedencias',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCustosRoute = AuthenticatedCustosRouteImport.update({
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/agua': typeof AuthenticatedAguaRoute
   '/aluguer': typeof AuthenticatedAluguerRoute
+  '/cedencias': typeof AuthenticatedCedenciasRoute
   '/custos': typeof AuthenticatedCustosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/faturacao': typeof AuthenticatedFaturacaoRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/agua': typeof AuthenticatedAguaRoute
   '/aluguer': typeof AuthenticatedAluguerRoute
+  '/cedencias': typeof AuthenticatedCedenciasRoute
   '/custos': typeof AuthenticatedCustosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/faturacao': typeof AuthenticatedFaturacaoRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/agua': typeof AuthenticatedAguaRoute
   '/_authenticated/aluguer': typeof AuthenticatedAluguerRoute
+  '/_authenticated/cedencias': typeof AuthenticatedCedenciasRoute
   '/_authenticated/custos': typeof AuthenticatedCustosRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/faturacao': typeof AuthenticatedFaturacaoRoute
@@ -132,6 +141,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/agua'
     | '/aluguer'
+    | '/cedencias'
     | '/custos'
     | '/dashboard'
     | '/faturacao'
@@ -145,6 +155,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/agua'
     | '/aluguer'
+    | '/cedencias'
     | '/custos'
     | '/dashboard'
     | '/faturacao'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/agua'
     | '/_authenticated/aluguer'
+    | '/_authenticated/cedencias'
     | '/_authenticated/custos'
     | '/_authenticated/dashboard'
     | '/_authenticated/faturacao'
@@ -209,6 +221,13 @@ declare module '@tanstack/react-router' {
       path: '/aluguer'
       fullPath: '/aluguer'
       preLoaderRoute: typeof AuthenticatedAluguerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cedencias': {
+      id: '/_authenticated/cedencias'
+      path: '/cedencias'
+      fullPath: '/cedencias'
+      preLoaderRoute: typeof AuthenticatedCedenciasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/custos': {
@@ -266,6 +285,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAguaRoute: typeof AuthenticatedAguaRoute
   AuthenticatedAluguerRoute: typeof AuthenticatedAluguerRoute
+  AuthenticatedCedenciasRoute: typeof AuthenticatedCedenciasRoute
   AuthenticatedCustosRoute: typeof AuthenticatedCustosRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFaturacaoRoute: typeof AuthenticatedFaturacaoRoute
@@ -278,6 +298,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAguaRoute: AuthenticatedAguaRoute,
   AuthenticatedAluguerRoute: AuthenticatedAluguerRoute,
+  AuthenticatedCedenciasRoute: AuthenticatedCedenciasRoute,
   AuthenticatedCustosRoute: AuthenticatedCustosRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFaturacaoRoute: AuthenticatedFaturacaoRoute,
