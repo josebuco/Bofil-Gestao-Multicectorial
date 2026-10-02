@@ -131,6 +131,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   const computed = (Math.round(Number(students)) || 0) * (Math.round(Number(perStudent)) || 0);
   const [method, setMethod] = useState<"Numerário" | "Banco">("Numerário");
   const [entryDate, setEntryDate] = useState("");
+  const [expenseDate, setExpenseDate] = useState("");
   async function onEntry(ev: React.FormEvent) {
     ev.preventDefault();
     if (!sectorEntryMode && (!current || current.kind === "Equipamento")) return;
@@ -162,7 +163,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
       category: String(f.get("category") || "Outros"),
       description: String(f.get("description") || ""),
       amount: Number(f.get("amount") || 0),
-      expense_date: todayAngola(),
+      expense_date: access.isAdmin && expenseDate ? expenseDate : todayAngola(),
       supplier: null,
       status: String(f.get("status") || "Pendente"),
       invoice_path: null,
