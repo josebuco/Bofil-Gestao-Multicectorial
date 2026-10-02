@@ -15,3 +15,8 @@
   - [x] ZIP com JSON + CSV de todas as tabelas e lista das faturas
   - [x] Ficheiros das faturas em ZIP separado
   - [x] Verificado: build OK, tsgo OK, descarga comprovada no navegador (47 KB, 39 ficheiros)
+
+- [ ] Corrigir seletor de data nas entradas dos veículos da Água
+  - [ ] Botão azul compacto “Data” no canto superior direito do cartão
+  - [ ] Visível apenas à administração e aplicado à entrada guardada
+  - [ ] Verificar no ecrã da Água
