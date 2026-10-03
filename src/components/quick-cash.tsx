@@ -10,6 +10,7 @@ import { getFinance } from "@/lib/finance.functions";
 import { periodLabel } from "@/lib/period";
 import { Card, CashBalanceCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
 import { chartTooltip } from "@/components/sector-cash";
+import { DebtCard } from "@/components/debt-card";
 import { useAccess } from "@/lib/use-access";
 import { sendOrQueue, useQueue } from "@/lib/offline";
 import { useMergedFinance } from "@/lib/offline-finance";
@@ -37,6 +38,7 @@ export function QuickCashPage({
   const access = useAccess();
   const isAdminView = access.isAdmin;
   const [amount, setAmount] = useState("");
+  const [cost, setCost] = useState("");
   const [method, setMethod] = useState<"Numerário" | "Banco">("Numerário");
   const [saving, setSaving] = useState(false);
   const [entryDate, setEntryDate] = useState("");
@@ -53,8 +55,10 @@ export function QuickCashPage({
 
   const queued = useQueue("sector_entry")
     .filter((q) => q.data["sector"] === slug)
-    .map((q) => ({ id: q.id, amount: Number(q.data["amount"]) || 0, payment_method: String(q.data["payment_method"]), created_at: q.at, pending: true }));
-  const allEntries = [...queued, ...(entries.data || []).map((e) => ({ ...e, pending: false }))];
+    .map((q) => ({ id: q.id, amount: Number(q.data["amount"]) || 0, cost: Number(q.data["cost"]) || 0, payment_method: String(q.data["payment_method"]), created_at: q.at, pending: true }));
+  const allEntries = [...queued, ...(entries.data || []).map((e) => ({ ...e, cost: e.cost || 0, pending: false }))];
+  const entTotal = allEntries.reduce((s, e) => s + e.amount, 0);
+  const costTotal = allEntries.reduce((s, e) => s + e.cost, 0);
   const mergedFinance = useMergedFinance(finance.data, range);
   const sector = mergedFinance.sectors.find((s) => s.slug === slug);
   const outs = mergedFinance.entries.filter((e) => e.sector === slug && e.kind === "despesa");
@@ -72,9 +76,12 @@ export function QuickCashPage({
     if (!value || value <= 0) { toast.error("Indique um valor válido."); return; }
     setSaving(true);
     try {
-      const payload = { sector: slug, amount: value, payment_method: method, ...(isAdminView && entryDate ? { entry_date: entryDate } : {}) };
+      const c = Math.max(0, Math.round(Number(cost) || 0));
+      if (c > value) { toast.error("O custo não pode ser maior que a entrada."); setSaving(false); return; }
+      const payload = { sector: slug, amount: value, cost: c, payment_method: method, ...(isAdminView && entryDate ? { entry_date: entryDate } : {}) };
       const r = await sendOrQueue("sector_entry", payload, `${title}: ${formatMoney(value)} Kz`, () => add({ data: payload }));
       setAmount("");
+      setCost("");
       if (r === "queued") toast.success(`Sem internet: ${formatMoney(value)} Kz guardado no aparelho. Envia ao sincronizar.`);
       else {
         toast.success(`Entrada de ${formatMoney(value)} Kz registada.`);
@@ -108,6 +115,17 @@ export function QuickCashPage({
           </div>
           <CashBalanceCard total={balance} cash={sector?.cash || 0} bank={sector?.bank || 0} />
         </section>
+
+        <DebtCard sector={slug} />
+
+        <Card title="Custo e Lucro">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-5">
+            <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Entradas</p><p className="font-display text-2xl text-warning">{formatMoney(entTotal)}</p></div>
+            <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Custo total</p><p className="font-display text-2xl text-foreground">{formatMoney(costTotal)}</p></div>
+            <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Lucro</p><p className="font-display text-2xl text-success">{formatMoney(entTotal - costTotal)}</p></div>
+            <p className="sm:col-span-3 text-[11px] text-muted-foreground">Custo {formatMoney(costTotal)} + Lucro {formatMoney(entTotal - costTotal)} = Entradas {formatMoney(entTotal)} Kz</p>
+          </div>
+        </Card>
 
         <Card title="Evolução">
           <div className="h-60 p-4">
@@ -193,6 +211,19 @@ export function QuickCashPage({
               <p className="text-[11px] text-muted-foreground mt-1.5">Data e hora são registadas automaticamente.</p>
             ) : null}
           </div>
+          <div className="sm:w-44">
+            <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Custo da entrada (Kz)</label>
+            <input
+              value={cost}
+              onChange={(e) => setCost(e.target.value)}
+              type="number"
+              min={0}
+              inputMode="numeric"
+              placeholder="0"
+              className={`${inputClass} mt-1.5 text-2xl font-display h-14`}
+            />
+            <p className="text-[11px] text-success mt-1.5">Lucro: {formatMoney((Number(amount) || 0) - (Number(cost) || 0))} Kz</p>
+          </div>
           <div className="flex rounded-md ring-1 ring-edge overflow-hidden h-14">
             {(["Numerário", "Banco"] as const).map((m) => (
               <button
@@ -234,7 +265,10 @@ export function QuickCashPage({
                     {e.pending ? <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">No aparelho</span> : null}
                   </span>
                   <span className="flex items-center gap-3">
-                    <span className="font-display text-warning">+{formatMoney(e.amount)}</span>
+                    <span className="text-right">
+                      <span className="font-display text-warning">+{formatMoney(e.amount)}</span>
+                      <span className="block text-[10px] text-muted-foreground">Custo {formatMoney(e.cost)} · Lucro {formatMoney(e.amount - e.cost)}</span>
+                    </span>
                     {access.isAdmin && !e.pending ? (
                       <button
                         aria-label="Apagar entrada"
