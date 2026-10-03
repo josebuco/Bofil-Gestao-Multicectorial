@@ -127,6 +127,13 @@
       "when": 1791066586490,
       "tag": "0017_transfer_expense_cascade",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791070099682,
+      "tag": "0018_entry_cost",
+      "breakpoints": true
     }
   ]
 }

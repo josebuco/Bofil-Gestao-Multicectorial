@@ -97,6 +97,33 @@ export const returnTransfer = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Valor que o setor ainda tem de devolver (cedências recebidas menos devoluções) e o que tem a receber.
+export const getSectorDebt = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ sector: SECTOR }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { data: ok } = await context.supabase.rpc("can_access", { _user_id: context.userId, _sector: data.sector });
+    if (!ok) return { owes: [], receives: [] };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows } = await supabaseAdmin
+      .from("sector_transfers")
+      .select("id, from_sector, to_sector, amount, kind, parent_id")
+      .or(`from_sector.eq.${data.sector},to_sector.eq.${data.sector}`);
+    const all = rows || [];
+    const owes: Record<string, number> = {};
+    const receives: Record<string, number> = {};
+    for (const l of all.filter((r) => r.kind === "cedencia")) {
+      const rem = l.amount - all.filter((r) => r.parent_id === l.id).reduce((s, r) => s + r.amount, 0);
+      if (rem <= 0) continue;
+      if (l.to_sector === data.sector) owes[l.from_sector] = (owes[l.from_sector] || 0) + rem;
+      if (l.from_sector === data.sector) receives[l.to_sector] = (receives[l.to_sector] || 0) + rem;
+    }
+    return {
+      owes: Object.entries(owes).map(([sector, amount]) => ({ sector, amount })),
+      receives: Object.entries(receives).map(([sector, amount]) => ({ sector, amount })),
+    };
+  });
+
 export const deleteTransfer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))

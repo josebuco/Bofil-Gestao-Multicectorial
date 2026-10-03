@@ -7,6 +7,7 @@ import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/acce
 import { createExpense, getExpenses } from "@/lib/expenses.functions";
 import { addCategory, createAsset, createStockUsage, deleteAsset, listAssets, listCategories, listStock, listAssetContributions, type FleetSector } from "@/lib/rental.functions";
 import { Card, CashBalanceCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
+import { DebtCard } from "@/components/debt-card";
 import { periodLabel } from "@/lib/period";
 import { useAccess } from "@/lib/use-access";
 import { readQueue, sendOrQueue, useQueue, writeQueue } from "@/lib/offline";
@@ -492,6 +493,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
               <Stat label="Despesa total" value={sectorFin.expense} tone="text-destructive" />
               <CashBalanceCard total={sectorFin.balance} cash={sectorFin.cash} bank={sectorFin.bank} />
             </section>
+            <DebtCard sector={sector} />
             <Card title="Evolução do setor">
               <div className="h-64 p-4">
                 <ResponsiveContainer width="100%" height="100%">
