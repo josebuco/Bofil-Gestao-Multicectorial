@@ -423,19 +423,19 @@ function CustosPage() {
                     return (
                       <div key={s.slug} className="text-xs text-muted-foreground">
                         {s.label}
-                        <div className="flex gap-1 mt-1">
+                        <div className="grid grid-cols-1 gap-1 mt-1">
                           <input
                             type="number"
                             min="0"
                             value={contribs[s.slug] || ""}
                             onChange={(e) => setContribs({ ...contribs, [s.slug]: e.target.value })}
-                            className={`${inputClass} w-24 shrink-0`}
-                            placeholder="0"
+                            className={`${inputClass} w-full`}
+                            placeholder="Valor (Kz)"
                           />
                           <select
                             value={contribAsset[s.slug] || ""}
                             onChange={(e) => setContribAsset({ ...contribAsset, [s.slug]: e.target.value })}
-                            className={`${inputClass} min-w-0 flex-1`}
+                            className={`${inputClass} w-full`}
                           >
                             <option value="">Caixa do setor</option>
                             {opts.length === 0 && <option disabled>Sem veículos/equipamentos</option>}
