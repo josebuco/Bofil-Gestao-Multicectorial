@@ -1,0 +1,1 @@
+ALTER TABLE public.sector_transfers ADD COLUMN asset_id uuid REFERENCES public.rental_assets(id) ON DELETE SET NULL;
