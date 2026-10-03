@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { CalendarDays, Plus, Trash2, Truck, Wrench, Package, Fuel } from "lucide-react";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/access.functions";
 import { createExpense, getExpenses } from "@/lib/expenses.functions";
-import { addCategory, createAsset, createStockUsage, deleteAsset, listAssets, listCategories, listStock, type FleetSector } from "@/lib/rental.functions";
+import { addCategory, createAsset, createStockUsage, deleteAsset, listAssets, listCategories, listStock, listAssetContributions, type FleetSector } from "@/lib/rental.functions";
 import { Card, CashBalanceCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
 import { periodLabel } from "@/lib/period";
 import { useAccess } from "@/lib/use-access";
@@ -97,10 +97,14 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   const [selected, setSelected] = useState<string | null>(null);
   const list = assets.data || [];
   const current = list.find((a) => a.id === selected) || list[0];
+  const listCtb = useServerFn(listAssetContributions);
+  const contribQ = useQuery({ queryKey: ["asset-contribs", sector], queryFn: () => listCtb({ data: { sector } }) });
+  const allContrib = (contribQ.data || []).filter((c) => c.transfer_date >= range.from && c.transfer_date <= range.to);
   const statsFor = (id: string) => {
     const rev = allEntries.filter((e) => e.asset_id === id).reduce((s, e) => s + e.amount, 0)
       + allTruck.filter((t) => t.asset_id === id && t.status !== "Pendente").reduce((s, t) => s + t.total, 0);
-    const exp = allExp.filter((e) => e.asset_id === id).reduce((s, e) => s + (e.amount || 0), 0);
+    const exp = allExp.filter((e) => e.asset_id === id).reduce((s, e) => s + (e.amount || 0), 0)
+      + allContrib.filter((c) => c.asset_id === id).reduce((s, c) => s + (c.amount || 0), 0);
     const used = allUsage.filter((u) => u.asset_id === id && u.used_on >= range.from && u.used_on <= range.to);
     const stk = used.reduce((s, u) => s + (u.amount || 0), 0);
     const fuelIds = new Set(stockItems.filter((i) => i.fuel).map((i) => i.id));

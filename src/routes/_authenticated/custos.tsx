@@ -2,7 +2,7 @@ import { todayAngola } from "@/lib/tz";
 import { sendOrQueue, useQueue } from "@/lib/offline";
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useQuery, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { STOCK_CATEGORY, addCategory, listCategories } from "@/lib/rental.functions";
+import { STOCK_CATEGORY, addCategory, listCategories, listAllAssets } from "@/lib/rental.functions";
 import { useState } from "react";
 import { toast } from "sonner";
 import { CalendarDays } from "lucide-react";
@@ -102,6 +102,8 @@ function CustosPage() {
   const [formCat, setFormCat] = useState<string>("");
   const [stockKind, setStockKind] = useState<"litro" | "unidade">("litro");
   const [contribs, setContribs] = useState<Record<string, string>>({});
+  const [contribAsset, setContribAsset] = useState<Record<string, string>>({});
+  const allAssets = useQuery({ queryKey: ["all-assets"], queryFn: () => listAllAssets(), enabled: access.isAdmin });
   const allowedSlugs = SECTORS.filter((s) => access.isAdmin || access.sectors.includes(s.slug)).map((s) => s.slug as string);
   const tab = allowedSlugs.includes(rawTab) ? rawTab : (allowedSlugs[0] ?? rawTab);
   const catOptions = tab === "restaurante" ? categories.filter((c) => c !== STOCK_CATEGORY) : Array.from(new Set([STOCK_CATEGORY, ...categories]));
@@ -175,7 +177,7 @@ function CustosPage() {
         contributions:
           access.isAdmin && tab === "geral"
             ? Object.entries(contribs)
-                .map(([sector, v]) => ({ sector, amount: Math.round(Number(v) || 0) }))
+                .map(([sector, v]) => ({ sector, amount: Math.round(Number(v) || 0), asset_id: contribAsset[sector] || null }))
                 .filter((c) => c.amount > 0)
             : undefined,
       };
@@ -189,6 +191,7 @@ function CustosPage() {
       setOpen(false);
       setFile(null);
       setContribs({});
+      setContribAsset({});
       if (r === "sent") await queryClient.invalidateQueries();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao guardar a despesa.");
@@ -414,20 +417,37 @@ function CustosPage() {
                 <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">
                   Contribuições por setor (opcional) — uma única fatura, cada setor paga a sua parte
                 </p>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                  {SECTORS.filter((s) => s.slug !== "geral").map((s) => (
-                    <label key={s.slug} className="text-xs text-muted-foreground">
-                      {s.label}
-                      <input
-                        type="number"
-                        min="0"
-                        value={contribs[s.slug] || ""}
-                        onChange={(e) => setContribs({ ...contribs, [s.slug]: e.target.value })}
-                        className={`${inputClass} mt-1`}
-                        placeholder="0"
-                      />
-                    </label>
-                  ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  {SECTORS.filter((s) => s.slug !== "geral").map((s) => {
+                    const opts = (allAssets.data || []).filter((a) => a.sector === s.slug);
+                    return (
+                      <div key={s.slug} className="text-xs text-muted-foreground">
+                        {s.label}
+                        <div className="flex gap-1 mt-1">
+                          <input
+                            type="number"
+                            min="0"
+                            value={contribs[s.slug] || ""}
+                            onChange={(e) => setContribs({ ...contribs, [s.slug]: e.target.value })}
+                            className={`${inputClass} w-24 shrink-0`}
+                            placeholder="0"
+                          />
+                          {opts.length > 0 && (
+                            <select
+                              value={contribAsset[s.slug] || ""}
+                              onChange={(e) => setContribAsset({ ...contribAsset, [s.slug]: e.target.value })}
+                              className={`${inputClass} min-w-0 flex-1`}
+                            >
+                              <option value="">Caixa do setor</option>
+                              {opts.map((a) => (
+                                <option key={a.id} value={a.id}>{a.name}</option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   Total das contribuições: {formatMoney(Object.values(contribs).reduce((a, v) => a + (Number(v) || 0), 0))} Kz

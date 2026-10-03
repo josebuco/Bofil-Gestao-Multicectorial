@@ -70,7 +70,7 @@ export const createExpense = createServerFn({ method: "POST" })
         quantity: z.number().int().min(0).nullable().default(null),
         stock_unit: z.enum(["litro", "unidade"]).nullable().default(null),
         contributions: z
-          .array(z.object({ sector: z.string().min(1), amount: z.number().int().min(1) }))
+          .array(z.object({ sector: z.string().min(1), amount: z.number().int().min(1), asset_id: z.string().uuid().nullable().optional() }))
           .optional(),
       })
       .parse(data),
@@ -103,6 +103,7 @@ export const createExpense = createServerFn({ method: "POST" })
           from_sector: c.sector,
           to_sector: row.sector,
           amount: c.amount,
+          asset_id: c.asset_id ?? null,
           kind: "contribuicao",
           payment_method: row.payment_method,
           note: `Contribuição: ${row.description}`,

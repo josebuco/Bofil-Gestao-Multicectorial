@@ -485,6 +485,7 @@ export type Database = {
       sector_transfers: {
         Row: {
           amount: number
+          asset_id: string | null
           created_at: string
           created_by: string | null
           from_sector: string
@@ -498,6 +499,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          asset_id?: string | null
           created_at?: string
           created_by?: string | null
           from_sector: string
@@ -511,6 +513,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          asset_id?: string | null
           created_at?: string
           created_by?: string | null
           from_sector?: string
@@ -523,6 +526,13 @@ export type Database = {
           transfer_date?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "sector_transfers_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "rental_assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sector_transfers_parent_id_fkey"
             columns: ["parent_id"]
