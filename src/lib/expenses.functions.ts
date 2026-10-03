@@ -69,23 +69,49 @@ export const createExpense = createServerFn({ method: "POST" })
         asset_id: z.string().uuid().nullable().default(null),
         quantity: z.number().int().min(0).nullable().default(null),
         stock_unit: z.enum(["litro", "unidade"]).nullable().default(null),
+        contributions: z
+          .array(z.object({ sector: z.string().min(1), amount: z.number().int().min(1) }))
+          .optional(),
       })
       .parse(data),
   )
   .handler(async ({ context, data }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
     const { todayAngola } = await import("@/lib/tz");
-    const { recorded_at, ...rest } = data;
+    const { recorded_at, contributions, ...rest } = data;
     const t = recorded_at ? new Date(recorded_at).getTime() : NaN;
     const offlineDay =
       t && t <= Date.now() && t > Date.now() - 60 * 864e5
         ? new Date(t + 3600e3).toISOString().slice(0, 10) // dia em Angola (UTC+1)
         : null;
     const row = { ...rest, expense_date: isAdmin ? data.expense_date : offlineDay || todayAngola() };
+    const contribs = (contributions || []).filter((c) => c.sector !== row.sector);
+    if (contribs.length) {
+      if (!isAdmin) throw new Error("Só a administração pode dividir faturas entre setores.");
+      const sum = contribs.reduce((s, c) => s + c.amount, 0);
+      if (sum > row.amount) throw new Error("As contribuições ultrapassam o valor da fatura.");
+    }
     const { error } = await context.supabase
       .from("expenses")
       .insert({ ...row, created_by: context.userId });
     if (error) throw new Error(error.message);
+    if (contribs.length) {
+      // Cada setor transfere a sua parte para o setor da fatura: sai do caixa do setor,
+      // entra no setor pagador — a fatura fica registada uma única vez.
+      const { error: tErr } = await context.supabase.from("sector_transfers").insert(
+        contribs.map((c) => ({
+          from_sector: c.sector,
+          to_sector: row.sector,
+          amount: c.amount,
+          kind: "contribuicao",
+          payment_method: row.payment_method,
+          note: `Contribuição: ${row.description}`,
+          transfer_date: row.expense_date,
+          created_by: context.userId,
+        })),
+      );
+      if (tErr) throw new Error(tErr.message);
+    }
     return { ok: true };
   });
 
