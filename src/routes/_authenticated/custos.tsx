@@ -166,8 +166,8 @@ function CustosPage() {
       const payload = {
         sector: tab,
         category: cat,
-        quantity: cat === STOCK_CATEGORY ? Math.max(1, Number(form.get("quantity") || 1)) : null,
-        stock_unit: (cat === STOCK_CATEGORY ? (stockKind === "litro" ? "litro" : "unidade") : null) as "litro" | "unidade" | null,
+        quantity: cat === STOCK_CATEGORY || cat === "Combustível" ? Math.max(1, Number(form.get("quantity") || 1)) : null,
+        stock_unit: (cat === STOCK_CATEGORY ? (stockKind === "litro" ? "litro" : "unidade") : cat === "Combustível" ? "litro" : null) as "litro" | "unidade" | null,
         description: String(form.get("description") || ""),
         amount: Number(form.get("amount") || 0),
         expense_date: access.isAdmin && expenseDate ? expenseDate : todayAngola(),
@@ -358,8 +358,9 @@ function CustosPage() {
                 </select>
               </div>
             )}
-            {(tab === "aluguer" || curCat === STOCK_CATEGORY) && (
+            {(tab === "aluguer" || curCat === STOCK_CATEGORY || curCat === "Combustível") && (
               <>
+                {curCat !== "Combustível" && (
                 <div>
                   <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Tipo de estoque</label>
                   <select value={stockKind} onChange={(e) => setStockKind(e.target.value as "litro" | "unidade")} className={`${inputClass} mt-1.5`}>
@@ -367,11 +368,15 @@ function CustosPage() {
                     <option value="unidade">Peças e materiais (quantidade)</option>
                   </select>
                 </div>
+                )}
                 <div>
                   <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                    {stockKind === "litro" ? "Litros comprados" : "Quantidade comprada"}
+                    {curCat === "Combustível" || stockKind === "litro" ? "Litros comprados" : "Quantidade comprada"}
                   </label>
                   <input name="quantity" type="number" min="1" defaultValue={1} required className={`${inputClass} mt-1.5`} />
+                  {(curCat === "Combustível" || stockKind === "litro") && litros(amt) && (
+                    <p className="text-[11px] text-muted-foreground mt-1">Conferência: {formatMoney(Number(amt) || 0)} Kz{litros(amt)} a 420 Kz/L</p>
+                  )}
                 </div>
               </>
             )}
