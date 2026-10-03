@@ -432,18 +432,17 @@ function CustosPage() {
                             className={`${inputClass} w-24 shrink-0`}
                             placeholder="0"
                           />
-                          {opts.length > 0 && (
-                            <select
-                              value={contribAsset[s.slug] || ""}
-                              onChange={(e) => setContribAsset({ ...contribAsset, [s.slug]: e.target.value })}
-                              className={`${inputClass} min-w-0 flex-1`}
-                            >
-                              <option value="">Caixa do setor</option>
-                              {opts.map((a) => (
-                                <option key={a.id} value={a.id}>{a.name}</option>
-                              ))}
-                            </select>
-                          )}
+                          <select
+                            value={contribAsset[s.slug] || ""}
+                            onChange={(e) => setContribAsset({ ...contribAsset, [s.slug]: e.target.value })}
+                            className={`${inputClass} min-w-0 flex-1`}
+                          >
+                            <option value="">Caixa do setor</option>
+                            {opts.length === 0 && <option disabled>Sem veículos/equipamentos</option>}
+                            {opts.map((a) => (
+                              <option key={a.id} value={a.id}>{a.name}</option>
+                            ))}
+                          </select>
                         </div>
                       </div>
                     );
