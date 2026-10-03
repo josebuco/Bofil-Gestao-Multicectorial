@@ -120,6 +120,13 @@
       "when": 1791038013984,
       "tag": "0016_transfer_asset",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791066586490,
+      "tag": "0017_transfer_expense_cascade",
+      "breakpoints": true
     }
   ]
 }

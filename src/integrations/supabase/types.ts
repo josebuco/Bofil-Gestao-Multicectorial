@@ -488,6 +488,7 @@ export type Database = {
           asset_id: string | null
           created_at: string
           created_by: string | null
+          expense_id: string | null
           from_sector: string
           id: string
           kind: string
@@ -502,6 +503,7 @@ export type Database = {
           asset_id?: string | null
           created_at?: string
           created_by?: string | null
+          expense_id?: string | null
           from_sector: string
           id?: string
           kind?: string
@@ -516,6 +518,7 @@ export type Database = {
           asset_id?: string | null
           created_at?: string
           created_by?: string | null
+          expense_id?: string | null
           from_sector?: string
           id?: string
           kind?: string
@@ -531,6 +534,13 @@ export type Database = {
             columns: ["asset_id"]
             isOneToOne: false
             referencedRelation: "rental_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sector_transfers_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
             referencedColumns: ["id"]
           },
           {
