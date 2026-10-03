@@ -160,6 +160,7 @@ export const addSectorEntry = createServerFn({ method: "POST" })
         students: z.number().int().min(1).max(100000).nullable().default(null),
         per_student: z.number().int().min(0).max(100_000_000).nullable().default(null),
         amount: z.number().int().positive().max(1_000_000_000),
+        cost: z.number().int().min(0).max(1_000_000_000).default(0),
         payment_method: z.enum(["Numerário", "Banco"]).default("Numerário"),
         recorded_at: z.string().datetime().optional(),
         entry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -189,7 +190,7 @@ export const listSectorEntries = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     const { data: rows, error } = await context.supabase
       .from("sector_entries")
-      .select("id, amount, created_at, payment_method, asset_id, students, per_student")
+      .select("id, amount, cost, created_at, payment_method, asset_id, students, per_student")
       .eq("sector", data.sector)
       .gte("created_at", dayStartIso(data.from))
       .lte("created_at", dayEndIso(data.to))
