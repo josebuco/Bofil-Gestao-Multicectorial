@@ -503,136 +503,86 @@ function CustosPage() {
           </form>
         )}
 
+        {tab !== "categorias" && (
         <div className="rounded-xl bg-panel ring-1 ring-edge shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display font-semibold text-base uppercase tracking-wide text-foreground">
               Despesas — {SECTORS.find((s) => s.slug === tab)?.label}
-            </h2>
-            {access.isAdmin && <p className="text-xs text-muted-foreground">
-              Total {formatMoney(tabTotal)} Kz · Por pagar{" "}
-              <span className="text-warning">{formatMoney(tabPending)} Kz</span>
-            </p>}
-          </div>
-
-          {access.isAdmin && tab !== "aluguer" && rows.length > 0 && (
-            <div className="mb-5 rounded-lg ring-1 ring-edge p-4">
-              <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-3">Resumo das saídas por categoria</p>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {Object.entries(rows.reduce<Record<string, number>>((acc, e) => { acc[e.category] = (acc[e.category] || 0) + (e.amount || 0); return acc; }, {}))
-                  .sort((x, y) => y[1] - x[1])
-                  .map(([c, v]) => (
-                    <li key={c} className="rounded-lg bg-background/40 ring-1 ring-edge px-4 py-3 flex items-center justify-between gap-3 text-sm">
-                      <span className="text-muted-foreground truncate">{c}</span>
-                      <span className="shrink-0">
-                        <span className="font-display text-destructive">{formatMoney(v)} Kz</span>
-                        <span className="ml-2 text-[11px] text-muted-foreground">{tabTotal ? Math.round((v / tabTotal) * 100) : 0}%</span>
-                      </span>
-                    </li>
-                  ))}
-              </ul>
-            </div>
-          )}
-          {rows.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">
-              Ainda não há despesas registadas neste setor.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground border-b border-edge text-left">
-                    <th className="px-3 py-2.5">Data</th>
-                    <th className="px-3 py-2.5">Descrição</th>
-                    <th className="px-3 py-2.5">Categoria</th>
-                    <th className="px-3 py-2.5">Fornecedor</th>
-                    <th className="px-3 py-2.5">Valor</th>
-                    <th className="px-3 py-2.5">Estado</th>
-                    <th className="px-3 py-2.5">Fatura</th>
-                    <th className="px-3 py-2.5" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-edge/60">
-                  {rows.map((e) => (
-                    <tr key={e.id} className="hover:bg-white/[0.02]">
-                      <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">
-                        {new Date(e.expense_date).toLocaleDateString("pt-AO")}
-                      </td>
-                      <td className="px-3 py-3 text-foreground">
-                        {e.description}
-                        {e.notes && (
-                          <span className="block text-[11px] text-muted-foreground">{e.notes}</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3 text-muted-foreground">{e.category}</td>
-                      <td className="px-3 py-3 text-muted-foreground">{e.supplier || "—"}</td>
-                      <td className="px-3 py-3 text-foreground/80 whitespace-nowrap">
-                        {formatMoney(e.amount)} Kz
-                      </td>
-                      <td className="px-3 py-3">
-                        <span
-                          className={`text-xs font-medium ${
-                            e.status === "Pago" ? "text-success" : "text-warning"
-                          }`}
-                        >
-                          {e.status}
-                        </span>
-                        {e.pending ? (
-                          <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">
-                            No aparelho
-                          </span>
-                        ) : null}
-                        {e.status === "Pendente" && !e.pending ? (
-                          <button
-                            onClick={() => setPaying(paying === e.id ? null : e.id)}
-                            className="ml-2 text-xs font-medium text-primary hover:underline"
-                          >
-                            Marcar pago
-                          </button>
-                        ) : null}
-                        {paying === e.id ? (
-                          <PayForm
-                            id={e.id}
-                            sector={e.sector}
-                            onDone={async () => {
-                              setPaying(null);
-                              await queryClient.invalidateQueries({ queryKey: ["expenses"] });
-                            }}
-                          />
-                        ) : null}
-                      </td>
-                      <td className="px-3 py-3">
-                        {e.invoice_path && !e.pending ? (
-                          <button
-                            onClick={() => {
-                              if (e.invoice_path) void openInvoice(e.invoice_path);
-                            }}
-                            className="text-xs font-medium text-primary hover:underline"
-                          >
-                            Ver fatura
-                          </button>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Sem fatura</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3 text-right">
-                        {access.isAdmin && !e.pending ? (
-                          <button
-                            onClick={() => {
-                              if (confirm("Apagar esta despesa?")) void handleDelete(e.id);
-                            }}
-                            className="text-xs text-muted-foreground hover:text-destructive"
-                          >
-                            Apagar
-                          </button>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+...
           )}
         </div>
+        )}
+
+        {tab === "categorias" && (
+          <div className="space-y-5">
+            {inRange.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">
+                Ainda não há despesas registadas neste período.
+              </p>
+            ) : (
+              Object.entries(
+                inRange.reduce<Record<string, typeof inRange>>((acc, e) => {
+                  (acc[e.category] ||= []).push(e);
+                  return acc;
+                }, {}),
+              )
+                .map(([c, list]) => ({ c, list, total: list.reduce((s, e) => s + (e.amount || 0), 0) }))
+                .sort((a, b) => b.total - a.total)
+                .map(({ c, list, total }) => (
+                  <div key={c} className="rounded-xl bg-panel ring-1 ring-edge shadow-sm p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                      <h2 className="font-display font-semibold text-base uppercase tracking-wide text-foreground flex items-center gap-2">
+                        <span className="h-4 w-1 rounded-full bg-destructive" />
+                        {c}
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        {list.length} {list.length === 1 ? "fatura" : "faturas"} · Total registado{" "}
+                        <span className="font-display font-semibold text-destructive">{formatMoney(total)} Kz</span>
+                      </p>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <tbody className="divide-y divide-edge/60">
+                          {list.map((e) => (
+                            <tr key={e.id} className="hover:bg-white/[0.02]">
+                              <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap text-xs">
+                                {new Date(e.expense_date).toLocaleDateString("pt-AO")}
+                              </td>
+                              <td className="px-3 py-2.5 text-muted-foreground text-xs whitespace-nowrap">
+                                {SECTORS.find((s) => s.slug === e.sector)?.label || e.sector}
+                              </td>
+                              <td className="px-3 py-2.5 text-muted-foreground">
+                                {e.description}
+                                {e.pending ? (
+                                  <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">
+                                    No aparelho
+                                  </span>
+                                ) : null}
+                              </td>
+                              <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                                {e.invoice_path && !e.pending ? (
+                                  <button
+                                    onClick={() => {
+                                      if (e.invoice_path) void openInvoice(e.invoice_path);
+                                    }}
+                                    className="text-xs font-medium text-primary hover:underline"
+                                  >
+                                    Ver fatura
+                                  </button>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Sem fatura</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
