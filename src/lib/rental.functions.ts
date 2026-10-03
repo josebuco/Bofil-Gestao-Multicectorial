@@ -87,7 +87,10 @@ export const listAssetContributions = createServerFn({ method: "GET" })
 export const listAllAssets = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data } = await context.supabase.from("rental_assets").select("id, name, sector").eq("active", true).order("name");
+    const { data: role } = await context.supabase.from("user_roles").select("role").eq("user_id", context.userId).eq("role", "admin").maybeSingle();
+    if (!role) return [];
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin.from("rental_assets").select("id, name, sector").eq("active", true).order("name");
     return data || [];
   });
 
