@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { CalendarDays, Plus, Trash2, Truck, Wrench, Package, Fuel } from "lucide-react";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/access.functions";
 import { createExpense, getExpenses } from "@/lib/expenses.functions";
-import { addCategory, createAsset, createStockUsage, deleteAsset, listAssets, listCategories, listStock, type FleetSector } from "@/lib/rental.functions";
+import { addCategory, createAsset, createStockUsage, deleteAsset, listAssets, listCategories, listStock, listAssetContributions, type FleetSector } from "@/lib/rental.functions";
 import { Card, CashBalanceCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
 import { periodLabel } from "@/lib/period";
 import { useAccess } from "@/lib/use-access";
