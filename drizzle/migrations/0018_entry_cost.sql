@@ -1,0 +1,1 @@
+ALTER TABLE public.sector_entries ADD COLUMN IF NOT EXISTS cost integer NOT NULL DEFAULT 0;
