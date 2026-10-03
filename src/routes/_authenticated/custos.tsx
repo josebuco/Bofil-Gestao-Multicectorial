@@ -108,7 +108,7 @@ function CustosPage() {
   const [extra, setExtra] = useState<Record<string, number>>({});
   const allAssets = useQuery({ queryKey: ["all-assets"], queryFn: () => listAllAssets(), enabled: access.isAdmin });
   const allowedSlugs = SECTORS.filter((s) => access.isAdmin || access.sectors.includes(s.slug)).map((s) => s.slug as string);
-  const tab = allowedSlugs.includes(rawTab) ? rawTab : (allowedSlugs[0] ?? rawTab);
+  const tab = rawTab === "categorias" && access.isAdmin ? "categorias" : allowedSlugs.includes(rawTab) ? rawTab : (allowedSlugs[0] ?? rawTab);
   const catOptions = tab === "restaurante" ? categories.filter((c) => c !== STOCK_CATEGORY) : Array.from(new Set([STOCK_CATEGORY, ...categories]));
   const curCat = catOptions.includes(formCat) ? formCat : catOptions[0];
   const [open, setOpen] = useState(false);
@@ -249,12 +249,14 @@ function CustosPage() {
           <p className="text-[11px] text-muted-foreground">{periodLabel(preset, range)}</p>
         </div>
         <PeriodPicker preset={preset} setPreset={setPreset} custom={custom} setCustom={setCustom} />
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="px-3 py-1.5 text-sm font-medium text-primary-foreground bg-brand rounded-md hover:bg-brand/90"
-        >
-          {open ? "Fechar" : "+ Nova despesa"}
-        </button>
+        {tab !== "categorias" && (
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className="px-3 py-1.5 text-sm font-medium text-primary-foreground bg-brand rounded-md hover:bg-brand/90"
+          >
+            {open ? "Fechar" : "+ Nova despesa"}
+          </button>
+        )}
       </header>
 
       <div className="flex-1 overflow-auto p-6 space-y-5">
