@@ -63,6 +63,34 @@ export const addCategory = createServerFn({ method: "POST" })
 
 export const STOCK_CATEGORY = "Compra de estoque";
 
+/** Contribuições da fatura geral imputadas a um veículo/equipamento do setor. */
+export const listAssetContributions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ sector: FLEET }).parse(d ?? {}))
+  .handler(async ({ context, data: input }) => {
+    const { data: canSee } = await context.supabase.rpc("can_access", { _user_id: context.userId, _sector: input.sector });
+    if (!canSee) throw new Error("Sem acesso.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("sector_transfers")
+      .select("id, asset_id, amount, note, transfer_date")
+      .eq("from_sector", input.sector)
+      .eq("kind", "contribuicao")
+      .not("asset_id", "is", null)
+      .order("transfer_date", { ascending: false })
+      .limit(500);
+    if (error) throw new Error(error.message);
+    return data || [];
+  });
+
+/** Lista simples de ativos de todos os setores (para o quadro de contribuições). */
+export const listAllAssets = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data } = await context.supabase.from("rental_assets").select("id, name, sector").eq("active", true).order("name");
+    return data || [];
+  });
+
 /** Lotes de estoque comprados no Centro de Custos e o que já foi aplicado nos veículos. */
 export const listStock = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
