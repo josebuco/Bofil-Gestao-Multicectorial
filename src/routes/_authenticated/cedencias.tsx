@@ -8,6 +8,7 @@ import { Card, Field, PageHeader, formatMoney, inputClass } from "@/components/p
 import { SECTOR_LABELS } from "@/lib/finance.functions";
 import { createTransfer, deleteTransfer, listTransfers, returnTransfer } from "@/lib/transfers.functions";
 import { todayAngola } from "@/lib/tz";
+import { listAllAssets } from "@/lib/rental.functions";
 
 export const Route = createFileRoute("/_authenticated/cedencias")({
   head: () => ({
@@ -33,8 +34,13 @@ function CedenciasPage() {
   const giveBack = useServerFn(returnTransfer);
   const remove = useServerFn(deleteTransfer);
   const q = useQuery({ queryKey: ["transfers"], queryFn: () => list() });
+  const assetsFn = useServerFn(listAllAssets);
+  const assets = useQuery({ queryKey: ["all-assets"], queryFn: () => assetsFn() });
   const [saving, setSaving] = useState(false);
   const [retFor, setRetFor] = useState<string | null>(null);
+  const [from, setFrom] = useState(slugs[0]);
+  const fromAssets = (assets.data || []).filter((a) => a.sector === from);
+  const assetName = Object.fromEntries((assets.data || []).map((a) => [a.id, a.name]));
 
   async function refresh() {
     await Promise.all([qc.invalidateQueries({ queryKey: ["transfers"] }), qc.invalidateQueries({ queryKey: ["finance"] }), qc.invalidateQueries({ queryKey: ["dashboard"] })]);
@@ -54,6 +60,7 @@ function CedenciasPage() {
           payment_method: String(f.get("method")) as Method,
           note: String(f.get("note") || "").trim() || null,
           transfer_date: String(f.get("date") || todayAngola()),
+          asset_id: String(f.get("asset") || "") || null,
         },
       });
       toast.success("Cedência registada.");
@@ -111,7 +118,11 @@ function CedenciasPage() {
       <div className="flex-1 overflow-auto p-6 space-y-5">
         <form onSubmit={onCreate} className="rounded-xl bg-panel ring-1 ring-edge p-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Field label="Sai de (cede)">
-            <select name="from" className={inputClass} required>{slugs.map((s) => <option key={s} value={s}>{SECTOR_LABELS[s]}</option>)}</select>
+            <select name="from" value={from} onChange={(e) => setFrom(e.target.value)} className={inputClass} required>{slugs.map((s) => <option key={s} value={s}>{SECTOR_LABELS[s]}</option>)}</select>
+            <select name="asset" key={from} className={`${inputClass} mt-1 h-8 text-xs ring-brand/40`} title="Veículo/equipamento que cede">
+              <option value="">Caixa do setor</option>
+              {fromAssets.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
           </Field>
           <Field label="Vai para (recebe)">
             <select name="to" className={inputClass} required defaultValue={slugs[1]}>{slugs.map((s) => <option key={s} value={s}>{SECTOR_LABELS[s]}</option>)}</select>
@@ -160,7 +171,7 @@ function CedenciasPage() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="flex items-center gap-2">
                     <span className="text-muted-foreground">{l.transfer_date.split("-").reverse().join("/")}</span>
-                    {SECTOR_LABELS[l.from_sector]} <ArrowRight className="size-3.5" /> {SECTOR_LABELS[l.to_sector]}
+                    {SECTOR_LABELS[l.from_sector]}{l.asset_id && assetName[l.asset_id] ? ` (${assetName[l.asset_id]})` : ""} <ArrowRight className="size-3.5" /> {SECTOR_LABELS[l.to_sector]}
                     {l.payment_method === "Banco" ? <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-brand/15 text-brand">VB</span> : null}
                   </span>
                   <span className="flex items-center gap-3">

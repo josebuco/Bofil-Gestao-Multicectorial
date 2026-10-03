@@ -75,7 +75,7 @@ export const listAssetContributions = createServerFn({ method: "GET" })
       .from("sector_transfers")
       .select("id, asset_id, amount, note, transfer_date")
       .eq("from_sector", input.sector)
-      .eq("kind", "contribuicao")
+      .in("kind", ["contribuicao", "cedencia"])
       .not("asset_id", "is", null)
       .order("transfer_date", { ascending: false })
       .limit(500);

@@ -42,6 +42,7 @@ export const createTransfer = createServerFn({ method: "POST" })
         payment_method: z.enum(["Numerário", "Banco"]),
         note: z.string().max(200).nullable().default(null),
         transfer_date: DATE,
+        asset_id: z.string().uuid().nullable().default(null),
       })
       .refine((v) => v.from_sector !== v.to_sector, "Escolha setores diferentes.")
       .parse(d),
