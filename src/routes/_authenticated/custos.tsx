@@ -108,7 +108,7 @@ function CustosPage() {
   const [extra, setExtra] = useState<Record<string, number>>({});
   const allAssets = useQuery({ queryKey: ["all-assets"], queryFn: () => listAllAssets(), enabled: access.isAdmin });
   const allowedSlugs = SECTORS.filter((s) => access.isAdmin || access.sectors.includes(s.slug)).map((s) => s.slug as string);
-  const tab = allowedSlugs.includes(rawTab) ? rawTab : (allowedSlugs[0] ?? rawTab);
+  const tab = rawTab === "categorias" && access.isAdmin ? "categorias" : allowedSlugs.includes(rawTab) ? rawTab : (allowedSlugs[0] ?? rawTab);
   const catOptions = tab === "restaurante" ? categories.filter((c) => c !== STOCK_CATEGORY) : Array.from(new Set([STOCK_CATEGORY, ...categories]));
   const curCat = catOptions.includes(formCat) ? formCat : catOptions[0];
   const [open, setOpen] = useState(false);
@@ -249,12 +249,14 @@ function CustosPage() {
           <p className="text-[11px] text-muted-foreground">{periodLabel(preset, range)}</p>
         </div>
         <PeriodPicker preset={preset} setPreset={setPreset} custom={custom} setCustom={setCustom} />
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="px-3 py-1.5 text-sm font-medium text-primary-foreground bg-brand rounded-md hover:bg-brand/90"
-        >
-          {open ? "Fechar" : "+ Nova despesa"}
-        </button>
+        {tab !== "categorias" && (
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className="px-3 py-1.5 text-sm font-medium text-primary-foreground bg-brand rounded-md hover:bg-brand/90"
+          >
+            {open ? "Fechar" : "+ Nova despesa"}
+          </button>
+        )}
       </header>
 
       <div className="flex-1 overflow-auto p-6 space-y-5">
@@ -297,6 +299,19 @@ function CustosPage() {
               </span>
             </button>
           ))}
+          {access.isAdmin && (
+            <button
+              onClick={() => setTab("categorias")}
+              className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                tab === "categorias"
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <span className="size-1.5 rounded-full bg-destructive" />
+              Por Categorias
+            </button>
+          )}
         </div>
 
         {open && (
@@ -488,6 +503,7 @@ function CustosPage() {
           </form>
         )}
 
+        {tab !== "categorias" && (
         <div className="rounded-xl bg-panel ring-1 ring-edge shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display font-semibold text-base uppercase tracking-wide text-foreground">
@@ -618,6 +634,78 @@ function CustosPage() {
             </div>
           )}
         </div>
+        )}
+
+        {tab === "categorias" && (
+          <div className="space-y-5">
+            {inRange.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">
+                Ainda não há despesas registadas neste período.
+              </p>
+            ) : (
+              Object.entries(
+                inRange.reduce<Record<string, typeof inRange>>((acc, e) => {
+                  (acc[e.category] ||= []).push(e);
+                  return acc;
+                }, {}),
+              )
+                .map(([c, list]) => ({ c, list, total: list.reduce((s, e) => s + (e.amount || 0), 0) }))
+                .sort((a, b) => b.total - a.total)
+                .map(({ c, list, total }) => (
+                  <div key={c} className="rounded-xl bg-panel ring-1 ring-edge shadow-sm p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                      <h2 className="font-display font-semibold text-base uppercase tracking-wide text-foreground flex items-center gap-2">
+                        <span className="h-4 w-1 rounded-full bg-destructive" />
+                        {c}
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        {list.length} {list.length === 1 ? "fatura" : "faturas"} · Total registado{" "}
+                        <span className="font-display font-semibold text-destructive">{formatMoney(total)} Kz</span>
+                      </p>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <tbody className="divide-y divide-edge/60">
+                          {list.map((e) => (
+                            <tr key={e.id} className="hover:bg-white/[0.02]">
+                              <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap text-xs">
+                                {new Date(e.expense_date).toLocaleDateString("pt-AO")}
+                              </td>
+                              <td className="px-3 py-2.5 text-muted-foreground text-xs whitespace-nowrap">
+                                {SECTORS.find((s) => s.slug === e.sector)?.label || e.sector}
+                              </td>
+                              <td className="px-3 py-2.5 text-muted-foreground">
+                                {e.description}
+                                {e.pending ? (
+                                  <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">
+                                    No aparelho
+                                  </span>
+                                ) : null}
+                              </td>
+                              <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                                {e.invoice_path && !e.pending ? (
+                                  <button
+                                    onClick={() => {
+                                      if (e.invoice_path) void openInvoice(e.invoice_path);
+                                    }}
+                                    className="text-xs font-medium text-primary hover:underline"
+                                  >
+                                    Ver fatura
+                                  </button>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Sem fatura</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
