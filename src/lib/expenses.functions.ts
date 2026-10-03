@@ -91,15 +91,19 @@ export const createExpense = createServerFn({ method: "POST" })
       const sum = contribs.reduce((s, c) => s + c.amount, 0);
       if (sum > row.amount) throw new Error("As contribuições ultrapassam o valor da fatura.");
     }
-    const { error } = await context.supabase
+    const { data: created, error } = await context.supabase
       .from("expenses")
-      .insert({ ...row, created_by: context.userId });
+      .insert({ ...row, created_by: context.userId })
+      .select("id")
+      .single();
     if (error) throw new Error(error.message);
     if (contribs.length) {
       // Cada setor transfere a sua parte para o setor da fatura: sai do caixa do setor,
       // entra no setor pagador — a fatura fica registada uma única vez.
+      // expense_id liga a contribuição à fatura: apagar a fatura apaga-as em cascata.
       const { error: tErr } = await context.supabase.from("sector_transfers").insert(
         contribs.map((c) => ({
+          expense_id: created.id,
           from_sector: c.sector,
           to_sector: row.sector,
           amount: c.amount,

@@ -1,0 +1,2 @@
+ALTER TABLE public.sector_transfers ADD COLUMN IF NOT EXISTS expense_id uuid REFERENCES public.expenses(id) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS sector_transfers_expense_id_idx ON public.sector_transfers(expense_id);
