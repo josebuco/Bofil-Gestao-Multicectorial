@@ -101,6 +101,8 @@ function CustosPage() {
   const [rawTab, setTab] = useState<string>("agua");
   const [formCat, setFormCat] = useState<string>("");
   const [stockKind, setStockKind] = useState<"litro" | "unidade">("litro");
+  const [amt, setAmt] = useState("");
+  const litros = (v: string) => (Number(v) || 0) > 0 ? ` ≈ ${((Number(v) || 0) / 420).toLocaleString("pt-PT", { maximumFractionDigits: 1 })} L` : "";
   const [contribs, setContribs] = useState<Record<string, string>>({});
   const [contribAsset, setContribAsset] = useState<Record<string, string>>({});
   const allAssets = useQuery({ queryKey: ["all-assets"], queryFn: () => listAllAssets(), enabled: access.isAdmin });
@@ -324,8 +326,10 @@ function CustosPage() {
                 type="number"
                 min="0"
                 required
+                onChange={(e) => setAmt(e.target.value)}
                 className={`${inputClass} mt-1.5`}
               />
+              {litros(amt) && <p className="text-[11px] text-muted-foreground mt-1">Combustível{litros(amt)} (420 Kz/L)</p>}
             </div>
             {tab === "aluguer" ? (
               <div>
@@ -422,7 +426,7 @@ function CustosPage() {
                     const opts = (allAssets.data || []).filter((a) => a.sector === s.slug);
                     return (
                       <div key={s.slug} className="text-xs text-muted-foreground">
-                        {s.label}
+                        {s.label}<span className="text-primary">{litros(contribs[s.slug] || "")}</span>
                         <div className="grid grid-cols-1 gap-1 mt-1">
                           <input
                             type="number"
@@ -449,7 +453,7 @@ function CustosPage() {
                   })}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Total das contribuições: {formatMoney(Object.values(contribs).reduce((a, v) => a + (Number(v) || 0), 0))} Kz
+                  Total das contribuições: {formatMoney(Object.values(contribs).reduce((a, v) => a + (Number(v) || 0), 0))} Kz{litros(String(Object.values(contribs).reduce((a, v) => a + (Number(v) || 0), 0)))}
                 </p>
               </div>
             )}
