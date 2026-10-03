@@ -109,8 +109,12 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
     const stk = used.reduce((s, u) => s + (u.amount || 0), 0);
     const fuelIds = new Set(stockItems.filter((i) => i.fuel).map((i) => i.id));
     const fuel = used.filter((u) => fuelIds.has(u.purchase_id));
-    const fuelL = fuel.reduce((s, u) => s + (u.quantity || 0), 0);
-    const fuelKz = fuel.reduce((s, u) => s + (u.amount || 0), 0);
+    const isFuel = (t?: string | null) => /combust|gas[oó]leo|gasolina|diesel/i.test(t || "");
+    const directFuel = allExp.filter((e) => e.asset_id === id && isFuel(e.category));
+    const ctbFuel = allContrib.filter((c) => c.asset_id === id && isFuel(c.note));
+    const fuelKzExtra = directFuel.reduce((s, e) => s + (e.amount || 0), 0) + ctbFuel.reduce((s, c) => s + (c.amount || 0), 0);
+    const fuelL = Math.round((fuel.reduce((s, u) => s + (u.quantity || 0), 0) + fuelKzExtra / 420) * 10) / 10;
+    const fuelKz = fuel.reduce((s, u) => s + (u.amount || 0), 0) + fuelKzExtra;
     return { rev, exp: exp + stk, bal: rev - exp - stk, fuelL, fuelKz };
   };
 
