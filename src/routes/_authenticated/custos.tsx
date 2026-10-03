@@ -101,6 +101,7 @@ function CustosPage() {
   const [rawTab, setTab] = useState<string>("agua");
   const [formCat, setFormCat] = useState<string>("");
   const [stockKind, setStockKind] = useState<"litro" | "unidade">("litro");
+  const [contribs, setContribs] = useState<Record<string, string>>({});
   const allowedSlugs = SECTORS.filter((s) => access.isAdmin || access.sectors.includes(s.slug)).map((s) => s.slug as string);
   const tab = allowedSlugs.includes(rawTab) ? rawTab : (allowedSlugs[0] ?? rawTab);
   const catOptions = tab === "restaurante" ? categories.filter((c) => c !== STOCK_CATEGORY) : Array.from(new Set([STOCK_CATEGORY, ...categories]));
@@ -171,7 +172,15 @@ function CustosPage() {
         invoice_path: invoicePath,
         notes: (String(form.get("notes") || "").trim() || null) as string | null,
         payment_method: (form.get("payment_method") === "Banco" ? "Banco" : "Numerário") as "Banco" | "Numerário",
+        contributions:
+          access.isAdmin && tab === "geral"
+            ? Object.entries(contribs)
+                .map(([sector, v]) => ({ sector, amount: Math.round(Number(v) || 0) }))
+                .filter((c) => c.amount > 0)
+            : undefined,
       };
+      const cSum = (payload.contributions || []).reduce((a, c) => a + c.amount, 0);
+      if (cSum > payload.amount) throw new Error("As contribuições ultrapassam o valor da fatura.");
       const r = await sendOrQueue("expense", payload, `Despesa: ${payload.description}`, () => createExpense({ data: payload }));
 
       if (r === "queued")
@@ -179,7 +188,8 @@ function CustosPage() {
       else toast.success("Despesa registada.");
       setOpen(false);
       setFile(null);
-      if (r === "sent") await queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      setContribs({});
+      if (r === "sent") await queryClient.invalidateQueries();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao guardar a despesa.");
     } finally {
@@ -399,6 +409,31 @@ function CustosPage() {
               </label>
               <input name="notes" className={`${inputClass} mt-1.5`} />
             </div>
+            {access.isAdmin && tab === "geral" && (
+              <div className="md:col-span-3 rounded-md ring-1 ring-edge p-3">
+                <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-2">
+                  Contribuições por setor (opcional) — uma única fatura, cada setor paga a sua parte
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                  {SECTORS.filter((s) => s.slug !== "geral").map((s) => (
+                    <label key={s.slug} className="text-xs text-muted-foreground">
+                      {s.label}
+                      <input
+                        type="number"
+                        min="0"
+                        value={contribs[s.slug] || ""}
+                        onChange={(e) => setContribs({ ...contribs, [s.slug]: e.target.value })}
+                        className={`${inputClass} mt-1`}
+                        placeholder="0"
+                      />
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Total das contribuições: {formatMoney(Object.values(contribs).reduce((a, v) => a + (Number(v) || 0), 0))} Kz
+                </p>
+              </div>
+            )}
             <div className="md:col-span-1 flex items-end">
               <button
                 type="submit"
