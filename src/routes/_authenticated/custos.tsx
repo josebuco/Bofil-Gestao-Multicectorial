@@ -105,6 +105,7 @@ function CustosPage() {
   const litros = (v: string) => (Number(v) || 0) > 0 ? ` ≈ ${((Number(v) || 0) / 420).toLocaleString("pt-PT", { maximumFractionDigits: 1 })} L` : "";
   const [contribs, setContribs] = useState<Record<string, string>>({});
   const [contribAsset, setContribAsset] = useState<Record<string, string>>({});
+  const [extra, setExtra] = useState<Record<string, number>>({});
   const allAssets = useQuery({ queryKey: ["all-assets"], queryFn: () => listAllAssets(), enabled: access.isAdmin });
   const allowedSlugs = SECTORS.filter((s) => access.isAdmin || access.sectors.includes(s.slug)).map((s) => s.slug as string);
   const tab = allowedSlugs.includes(rawTab) ? rawTab : (allowedSlugs[0] ?? rawTab);
@@ -179,7 +180,7 @@ function CustosPage() {
         contributions:
           access.isAdmin && tab === "geral"
             ? Object.entries(contribs)
-                .map(([sector, v]) => ({ sector, amount: Math.round(Number(v) || 0), asset_id: contribAsset[sector] || null }))
+                .map(([k, v]) => ({ sector: k.split("#")[0], amount: Math.round(Number(v) || 0), asset_id: contribAsset[k] || null }))
                 .filter((c) => c.amount > 0)
             : undefined,
       };
@@ -373,7 +374,11 @@ function CustosPage() {
                   <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                     {curCat === "Combustível" || stockKind === "litro" ? "Litros comprados" : "Quantidade comprada"}
                   </label>
-                  <input name="quantity" type="number" min="1" defaultValue={1} required className={`${inputClass} mt-1.5`} />
+                  {curCat === "Combustível" || stockKind === "litro" ? (
+                    <input name="quantity" type="number" readOnly value={Math.max(1, Math.round((Number(amt) || 0) / 420))} className={`${inputClass} mt-1.5 opacity-80`} />
+                  ) : (
+                    <input name="quantity" type="number" min="1" defaultValue={1} required className={`${inputClass} mt-1.5`} />
+                  )}
                   {(curCat === "Combustível" || stockKind === "litro") && litros(amt) && (
                     <p className="text-[11px] text-muted-foreground mt-1">Conferência: {formatMoney(Number(amt) || 0)} Kz{litros(amt)} a 420 Kz/L</p>
                   )}
@@ -429,30 +434,39 @@ function CustosPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                   {SECTORS.filter((s) => s.slug !== "geral").map((s) => {
                     const opts = (allAssets.data || []).filter((a) => a.sector === s.slug);
+                    const keys = [s.slug, ...Array.from({ length: extra[s.slug] || 0 }, (_, i) => `${s.slug}#${i + 1}`)];
                     return (
                       <div key={s.slug} className="text-xs text-muted-foreground">
-                        {s.label}<span className="text-primary">{litros(contribs[s.slug] || "")}</span>
-                        <div className="grid grid-cols-1 gap-1 mt-1">
-                          <input
-                            type="number"
-                            min="0"
-                            value={contribs[s.slug] || ""}
-                            onChange={(e) => setContribs({ ...contribs, [s.slug]: e.target.value })}
-                            className={`${inputClass} w-full`}
-                            placeholder="Valor (Kz)"
-                          />
-                          <select
-                            value={contribAsset[s.slug] || ""}
-                            onChange={(e) => setContribAsset({ ...contribAsset, [s.slug]: e.target.value })}
-                            className={`${inputClass} w-full`}
-                          >
-                            <option value="">Caixa do setor</option>
-                            {opts.length === 0 && <option disabled>Sem veículos/equipamentos</option>}
-                            {opts.map((a) => (
-                              <option key={a.id} value={a.id}>{a.name}</option>
-                            ))}
-                          </select>
+                        <div className="flex items-center justify-between">
+                          <span>{s.label}</span>
+                          {opts.length > 1 && (
+                            <button type="button" onClick={() => setExtra({ ...extra, [s.slug]: (extra[s.slug] || 0) + 1 })} className="text-primary text-[11px]">+ veículo</button>
+                          )}
                         </div>
+                        {keys.map((k) => (
+                          <div key={k} className="grid grid-cols-1 gap-1 mt-1">
+                            <input
+                              type="number"
+                              min="0"
+                              value={contribs[k] || ""}
+                              onChange={(e) => setContribs({ ...contribs, [k]: e.target.value })}
+                              className={`${inputClass} w-full`}
+                              placeholder={`Valor (Kz)${litros(contribs[k] || "")}`}
+                            />
+                            {contribs[k] && <span className="text-primary text-[11px]">{litros(contribs[k])}</span>}
+                            <select
+                              value={contribAsset[k] || ""}
+                              onChange={(e) => setContribAsset({ ...contribAsset, [k]: e.target.value })}
+                              className={`${inputClass} w-full`}
+                            >
+                              <option value="">Caixa do setor</option>
+                              {opts.length === 0 && <option disabled>Sem veículos/equipamentos</option>}
+                              {opts.map((a) => (
+                                <option key={a.id} value={a.id}>{a.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ))}
                       </div>
                     );
                   })}
