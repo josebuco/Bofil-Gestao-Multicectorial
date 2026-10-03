@@ -106,7 +106,7 @@ export const createExpense = createServerFn({ method: "POST" })
           asset_id: c.asset_id ?? null,
           kind: "contribuicao",
           payment_method: row.payment_method,
-          note: `Contribuição: ${row.description}`,
+          note: `Contribuição: ${row.description}${row.category ? ` [${row.category}]` : ""}`,
           transfer_date: row.expense_date,
           created_by: context.userId,
         })),
