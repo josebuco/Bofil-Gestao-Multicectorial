@@ -92,6 +92,7 @@ export function QuickCashPage({
   const mergedFinance = useMergedFinance(finance.data, range);
   const sector = mergedFinance.sectors.find((s) => s.slug === slug);
   const outs = mergedFinance.entries.filter((e) => e.sector === slug && e.kind === "despesa");
+  const outsTotal = outs.reduce((s, e) => s + (Number(e.amount) || 0), 0);
 
   async function refresh() {
     await Promise.all([
