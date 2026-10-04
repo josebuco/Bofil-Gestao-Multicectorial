@@ -24,3 +24,9 @@
 - [x] Uniformizar a data nas entradas de Restaurante e Lavagem
   - [x] Substituir o campo antigo pelo botão azul compacto no canto superior direito
   - [x] Manter o calendário exclusivo da administração
+
+- [ ] Compactar formulários e históricos dos setores
+  - [ ] Restaurante e Lavagem com entradas e saídas expansíveis
+  - [ ] Água, Transporte e Aluguer com históricos por unidade expansíveis
+  - [ ] Entregas recentes da Água expansíveis
+  - [ ] Verificar no computador e no telefone
