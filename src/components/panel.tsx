@@ -196,9 +196,8 @@ export function ExpandableCard({
           type="button"
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
-          className="flex min-w-0 items-center gap-2 text-left"
+          className="min-w-0 text-left"
         >
-          <ChevronDown className={`size-4 shrink-0 text-primary transition-transform ${open ? "rotate-180" : ""}`} />
           <span className="min-w-0">
             <span className="block truncate font-display font-semibold text-sm uppercase tracking-wide text-foreground">{title}</span>
             {summary ? <span className="block truncate text-[11px] text-muted-foreground">{summary}</span> : null}
