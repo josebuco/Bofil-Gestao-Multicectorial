@@ -7,6 +7,7 @@ import { ArrowDownRight, ArrowUpRight, CalendarDays, FileText, Plus, Trash2 } fr
 import { Area, ComposedChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/access.functions";
 import { createExpense, deleteExpense } from "@/lib/expenses.functions";
+import { addCategory, listCategories } from "@/lib/rental.functions";
 import { openInvoice, uploadInvoice } from "@/lib/invoice";
 import { getFinance } from "@/lib/finance.functions";
 import { periodLabel } from "@/lib/period";
@@ -45,6 +46,20 @@ export function QuickCashPage({
   const [saving, setSaving] = useState(false);
   const addExp = useServerFn(createExpense);
   const delExp = useServerFn(deleteExpense);
+  const addCat = useServerFn(addCategory);
+  const extraCats = useQuery({ queryKey: ["expense-categories"], queryFn: () => listCategories() });
+  const categories = Array.from(new Set(["Combustível", "Manutenção e Reparação", "Produtos", "Subsídio de Alimentação", "Salários", "Energia", ...(extraCats.data || []), "Outros"]));
+  async function onNewCategory() {
+    const name = window.prompt("Nome da nova categoria de custo:")?.trim();
+    if (!name) return;
+    try {
+      await addCat({ data: { name } });
+      await qc.invalidateQueries({ queryKey: ["expense-categories"] });
+      toast.success(`Categoria "${name}" criada.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível criar (precisa de internet).");
+    }
+  }
   async function onExpense(ev: React.FormEvent<HTMLFormElement>) {
     ev.preventDefault();
     const form = ev.currentTarget;
