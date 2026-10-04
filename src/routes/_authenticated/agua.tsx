@@ -15,6 +15,7 @@ import {
 import {
   ActionButton,
   Card,
+  ExpandableCard,
   Field,
   FormPanel,
   Kpi,
@@ -279,7 +280,7 @@ function AguaPage() {
             </table>
           </Card>
 
-          <Card title="Entregas recentes">
+          <ExpandableCard title="Entregas recentes" summary={`${visibleSales.length} registo${visibleSales.length === 1 ? "" : "s"}`}>
             <table className="w-full text-sm">
               <thead className="border-b border-edge text-left">
                 <tr>
@@ -338,7 +339,7 @@ function AguaPage() {
                 ))}
               </tbody>
             </table>
-          </Card>
+          </ExpandableCard>
         </div>
       </div>
     </div>
