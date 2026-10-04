@@ -73,7 +73,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   const qEntries = useQueue("sector_entry").filter((q) => q.data["sector"] === sector)
     .map((q) => ({ id: q.id, amount: Number(q.data["amount"]) || 0, payment_method: String(q.data["payment_method"]), created_at: q.at, asset_id: (q.data["asset_id"] as string) || null, students: (q.data["students"] as number) ?? null, per_student: (q.data["per_student"] as number) ?? null, pending: true }));
   const qExp = useQueue("expense").filter((q) => q.data["sector"] === sector)
-    .map((q) => ({ id: q.id, amount: Number(q.data["amount"]) || 0, description: String(q.data["description"] || ""), category: String(q.data["category"] || ""), expense_date: String(q.data["expense_date"] || q.at.slice(0, 10)), status: String(q.data["status"] || "Pendente"), asset_id: (q.data["asset_id"] as string) || null, pending: true }));
+    .map((q) => ({ id: q.id, amount: Number(q.data["amount"]) || 0, description: String(q.data["description"] || ""), category: String(q.data["category"] || ""), expense_date: String(q.data["expense_date"] || q.at.slice(0, 10)), status: String(q.data["status"] || "Pendente"), asset_id: (q.data["asset_id"] as string) || null, invoice_path: null as string | null, pending: true }));
 
   const allEntries = [...qEntries, ...(entries.data || []).map((e) => ({ ...e, pending: false }))];
   const allExp = [
