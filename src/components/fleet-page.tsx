@@ -566,8 +566,8 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               {!sectorEntryMode && current.kind !== "Equipamento" && (truckMode ? truckCard : entriesCard)}
 
-              {sector !== "lavagem" && (
-              <Card title="Centro de custos" action={expenseDateAction}>
+              {(
+              <Card title={current.kind === "Equipamento" ? "Saída do equipamento" : "Centro de custos"} action={expenseDateAction}>
                 <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
                   <input name="description" required placeholder="Descrição" className={`${inputClass} col-span-2`} />
                   <input name="amount" type="number" min={1} required placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
