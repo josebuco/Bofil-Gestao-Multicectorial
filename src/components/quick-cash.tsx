@@ -276,6 +276,34 @@ export function QuickCashPage({
 
         {totalsBlock}
         {slug === "lavagem" && (
+          <Card title="Saídas">
+            <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
+              <input name="description" required placeholder="Descrição" className={`${inputClass} col-span-2`} />
+              <input name="amount" type="number" min={1} required inputMode="numeric" placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
+              <input name="category" list={`cats-${slug}`} placeholder="Categoria" className={inputClass} />
+              <datalist id={`cats-${slug}`}>{["Combustível", "Manutenção e Reparação", "Produtos", "Subsídio de Alimentação", "Salários", "Energia", "Outros"].map((c) => <option key={c} value={c} />)}</datalist>
+              <input name="supplier" placeholder="Fornecedor (opcional)" className={inputClass} />
+              <select name="payment_method" className={inputClass}><option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option></select>
+              <select name="status" className={inputClass}><option>Pago</option><option>Pendente</option></select>
+              <button className="col-span-2 h-11 rounded-md bg-destructive text-primary-foreground font-medium">Registar saída</button>
+            </form>
+            <ul className="divide-y divide-edge/60 max-h-96 overflow-auto">
+              {outs.length === 0 ? (
+                <li className="p-5 text-sm text-muted-foreground">Sem saídas neste período.</li>
+              ) : null}
+              {outs.map((e, i) => (
+                <li key={i} className="flex items-center justify-between px-5 py-3 text-sm">
+                  <span className="text-muted-foreground">
+                    {e.date.slice(0, 10)}
+                    {e.pending ? <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">No aparelho</span> : null}
+                  </span>
+                  <span className="font-display text-destructive">−{formatMoney(e.amount)}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+        {slug === "lavagem" && (
           <section className="space-y-3">
             <h2 className="font-display text-lg uppercase tracking-wide text-foreground">Equipamentos</h2>
             <FleetPage sector="lavagem" title="Lavagem" subtitle="" dot="bg-wash" embedded />
