@@ -92,6 +92,7 @@ export function QuickCashPage({
   const mergedFinance = useMergedFinance(finance.data, range);
   const sector = mergedFinance.sectors.find((s) => s.slug === slug);
   const outs = mergedFinance.entries.filter((e) => e.sector === slug && e.kind === "despesa");
+  const outsTotal = outs.reduce((s, e) => s + (Number(e.amount) || 0), 0);
 
   async function refresh() {
     await Promise.all([
@@ -149,11 +150,12 @@ export function QuickCashPage({
         <DebtCard sector={slug} />
 
         <Card title="Custo e Lucro">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-5">
             <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Entradas</p><p className="font-display text-2xl text-warning">{formatMoney(entTotal)}</p></div>
             <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Custo total</p><p className="font-display text-2xl text-foreground">{formatMoney(costTotal)}</p></div>
-            <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Lucro</p><p className="font-display text-2xl text-success">{formatMoney(entTotal - costTotal)}</p></div>
-            <p className="sm:col-span-3 text-[11px] text-muted-foreground">Custo {formatMoney(costTotal)} + Lucro {formatMoney(entTotal - costTotal)} = Entradas {formatMoney(entTotal)}</p>
+            <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Saídas</p><p className="font-display text-2xl text-destructive">{formatMoney(outsTotal)}</p></div>
+            <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Lucro líquido</p><p className="font-display text-2xl text-success">{formatMoney(entTotal - costTotal - outsTotal)}</p></div>
+            <p className="sm:col-span-4 text-[11px] text-muted-foreground">Entradas {formatMoney(entTotal)} − Custos {formatMoney(costTotal)} − Saídas {formatMoney(outsTotal)} = Lucro {formatMoney(entTotal - costTotal - outsTotal)}</p>
           </div>
         </Card>
 
