@@ -2,9 +2,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { CalendarDays, Plus, Trash2, Truck, Wrench, Package, Fuel } from "lucide-react";
+import { CalendarDays, FileText, Plus, Trash2, Truck, Wrench, Package, Fuel } from "lucide-react";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/access.functions";
-import { createExpense, getExpenses } from "@/lib/expenses.functions";
+import { createExpense, deleteExpense, getExpenses } from "@/lib/expenses.functions";
+import { openInvoice, uploadInvoice } from "@/lib/invoice";
 import { addCategory, createAsset, createStockUsage, deleteAsset, listAssets, listCategories, listStock, listAssetContributions, type FleetSector } from "@/lib/rental.functions";
 import { Card, CashBalanceCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
 import { DebtCard } from "@/components/debt-card";
@@ -38,6 +39,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   const delA = useServerFn(deleteAsset);
   const addEntry = useServerFn(addSectorEntry);
   const addExp = useServerFn(createExpense);
+  const delExp = useServerFn(deleteExpense);
 
   const assets = useQuery({ queryKey: ["rental-assets", sector], queryFn: () => listA({ data: { sector } }) });
   const entries = useQuery({ queryKey: ["entries", sector, range.from, range.to], queryFn: () => listE({ data: { sector, ...range } }) });
@@ -169,6 +171,9 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
     if (!current) return;
     const f = new FormData(ev.currentTarget);
     const form = ev.currentTarget;
+    let invoicePath: string | null = null;
+    try { invoicePath = await uploadInvoice(f.get("invoice") as File | null, sector); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Falha ao enviar comprovativo."); return; }
     const payload = {
       sector,
       category: String(f.get("category") || "Outros"),
@@ -177,7 +182,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
       expense_date: access.isAdmin && expenseDate ? expenseDate : todayAngola(),
       supplier: null,
       status: String(f.get("status") || "Pendente"),
-      invoice_path: null,
+      invoice_path: invoicePath,
       notes: null,
       payment_method: (f.get("payment_method") === "Banco" ? "Banco" : "Numerário") as "Banco" | "Numerário",
       asset_id: current.id,
@@ -591,6 +596,9 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                   </div>
                   <select name="payment_method" className={inputClass}><option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option></select>
                   <select name="status" className={inputClass}><option>Pendente</option><option>Pago</option></select>
+                  <label className="col-span-2 text-[11px] text-muted-foreground">Comprovativo (foto ou PDF, opcional)
+                    <input name="invoice" type="file" accept="image/*,application/pdf" className="mt-1 block w-full text-xs text-muted-foreground file:mr-2 file:rounded file:border-0 file:bg-edge file:px-2 file:py-1 file:text-foreground" />
+                  </label>
                   <button className="col-span-2 h-10 rounded-md bg-destructive text-primary-foreground font-medium">Registar despesa</button>
                 </form>
                 <ul className="divide-y divide-edge/60 max-h-80 overflow-auto">
@@ -598,7 +606,27 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                   {curExp.map((e) => (
                     <li key={e.id} className="flex justify-between px-5 py-3 text-sm gap-3">
                       <span className="text-muted-foreground min-w-0 truncate">{e.expense_date} · {e.description} <span className="text-[11px]">({e.category}, {e.status})</span>{e.pending ? badge : null}</span>
-                      <span className="font-display text-destructive shrink-0">−{formatMoney(e.amount || 0)}</span>
+                      <span className="flex items-center gap-3 shrink-0">
+                        {e.invoice_path && !e.pending ? (
+                          <button type="button" onClick={() => e.invoice_path && void openInvoice(e.invoice_path)} className="text-xs text-primary flex items-center gap-1"><FileText className="size-3.5" /> Ver fatura</button>
+                        ) : null}
+                        <span className="font-display text-destructive">−{formatMoney(e.amount || 0)}</span>
+                        {access.isAdmin && !e.pending ? (
+                          <button
+                            type="button"
+                            aria-label="Apagar despesa"
+                            onClick={async () => {
+                              if (!window.confirm("Apagar esta despesa?")) return;
+                              try {
+                                await delExp({ data: { id: e.id } });
+                                toast.success("Despesa apagada.");
+                                await Promise.all([qc.invalidateQueries({ queryKey: ["expenses"] }), qc.invalidateQueries({ queryKey: ["finance"] })]);
+                              } catch (err) { toast.error(err instanceof Error ? err.message : "Não foi possível apagar."); }
+                            }}
+                            className="text-muted-foreground hover:text-destructive"
+                          ><Trash2 className="size-3.5" /></button>
+                        ) : null}
+                      </span>
                     </li>
                   ))}
                 </ul>

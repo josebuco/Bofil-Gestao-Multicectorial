@@ -3,10 +3,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowDownRight, ArrowUpRight, CalendarDays, Plus, Trash2 } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, CalendarDays, FileText, Plus, Trash2 } from "lucide-react";
 import { Area, ComposedChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/access.functions";
-import { createExpense } from "@/lib/expenses.functions";
+import { createExpense, deleteExpense } from "@/lib/expenses.functions";
+import { openInvoice, uploadInvoice } from "@/lib/invoice";
 import { getFinance } from "@/lib/finance.functions";
 import { periodLabel } from "@/lib/period";
 import { Card, CashBalanceCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
@@ -43,12 +44,16 @@ export function QuickCashPage({
   const [method, setMethod] = useState<"Numerário" | "Banco">("Numerário");
   const [saving, setSaving] = useState(false);
   const addExp = useServerFn(createExpense);
+  const delExp = useServerFn(deleteExpense);
   async function onExpense(ev: React.FormEvent<HTMLFormElement>) {
     ev.preventDefault();
     const form = ev.currentTarget;
     const f = new FormData(form);
     const value = Math.round(Number(f.get("amount")));
     if (!value || value <= 0) { toast.error("Indique um valor válido."); return; }
+    let invoicePath: string | null = null;
+    try { invoicePath = await uploadInvoice(f.get("invoice") as File | null, slug); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Falha ao enviar comprovativo."); return; }
     const payload = {
       sector: slug,
       category: String(f.get("category") || "Geral").trim() || "Geral",
@@ -57,7 +62,7 @@ export function QuickCashPage({
       expense_date: isAdminView && entryDate ? entryDate : todayAngola(),
       supplier: String(f.get("supplier") || "").trim() || null,
       status: String(f.get("status") || "Pago"),
-      invoice_path: null,
+      invoice_path: invoicePath,
       notes: null,
       payment_method: (f.get("payment_method") === "Banco" ? "Banco" : "Numerário") as "Banco" | "Numerário",
       asset_id: null,
@@ -287,6 +292,9 @@ export function QuickCashPage({
               <input name="supplier" placeholder="Fornecedor (opcional)" className={inputClass} />
               <select name="payment_method" className={inputClass}><option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option></select>
               <select name="status" className={inputClass}><option>Pago</option><option>Pendente</option></select>
+              <label className="col-span-2 text-[11px] text-muted-foreground">Comprovativo (foto ou PDF, opcional)
+                <input name="invoice" type="file" accept="image/*,application/pdf" className="mt-1 block w-full text-xs text-muted-foreground file:mr-2 file:rounded file:border-0 file:bg-edge file:px-2 file:py-1 file:text-foreground" />
+              </label>
               <button className="col-span-2 h-11 rounded-md bg-destructive text-primary-foreground font-medium">Registar saída</button>
             </form>
             <ul className="divide-y divide-edge/60 max-h-96 overflow-auto">
@@ -299,7 +307,27 @@ export function QuickCashPage({
                     {e.date.slice(0, 10)}
                     {e.pending ? <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">No aparelho</span> : null}
                   </span>
-                  <span className="font-display text-destructive">−{formatMoney(e.amount)}</span>
+                  <span className="flex items-center gap-3">
+                    {e.invoice_path && !e.pending ? (
+                      <button type="button" onClick={() => e.invoice_path && void openInvoice(e.invoice_path)} className="text-xs text-primary flex items-center gap-1"><FileText className="size-3.5" /> Ver fatura</button>
+                    ) : null}
+                    <span className="font-display text-destructive">−{formatMoney(e.amount)}</span>
+                    {access.isAdmin && !e.pending ? (
+                      <button
+                        type="button"
+                        aria-label="Apagar saída"
+                        onClick={async () => {
+                          if (!window.confirm("Apagar esta saída?")) return;
+                          try {
+                            await delExp({ data: { id: e.id } });
+                            toast.success("Saída apagada.");
+                            await Promise.all([refresh(), qc.invalidateQueries({ queryKey: ["expenses"] })]);
+                          } catch (err) { toast.error(err instanceof Error ? err.message : "Não foi possível apagar."); }
+                        }}
+                        className="text-muted-foreground hover:text-destructive"
+                      ><Trash2 className="size-4" /></button>
+                    ) : null}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -357,6 +385,9 @@ export function QuickCashPage({
               <input name="supplier" placeholder="Fornecedor (opcional)" className={inputClass} />
               <select name="payment_method" className={inputClass}><option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option></select>
               <select name="status" className={inputClass}><option>Pago</option><option>Pendente</option></select>
+              <label className="col-span-2 text-[11px] text-muted-foreground">Comprovativo (foto ou PDF, opcional)
+                <input name="invoice" type="file" accept="image/*,application/pdf" className="mt-1 block w-full text-xs text-muted-foreground file:mr-2 file:rounded file:border-0 file:bg-edge file:px-2 file:py-1 file:text-foreground" />
+              </label>
               <button className="col-span-2 h-11 rounded-md bg-destructive text-primary-foreground font-medium">Registar saída</button>
             </form>
             <ul className="divide-y divide-edge/60 max-h-96 overflow-auto">
@@ -369,7 +400,27 @@ export function QuickCashPage({
                     {e.date.slice(0, 10)}
                     {e.pending ? <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">No aparelho</span> : null}
                   </span>
-                  <span className="font-display text-destructive">−{formatMoney(e.amount)}</span>
+                  <span className="flex items-center gap-3">
+                    {e.invoice_path && !e.pending ? (
+                      <button type="button" onClick={() => e.invoice_path && void openInvoice(e.invoice_path)} className="text-xs text-primary flex items-center gap-1"><FileText className="size-3.5" /> Ver fatura</button>
+                    ) : null}
+                    <span className="font-display text-destructive">−{formatMoney(e.amount)}</span>
+                    {access.isAdmin && !e.pending ? (
+                      <button
+                        type="button"
+                        aria-label="Apagar saída"
+                        onClick={async () => {
+                          if (!window.confirm("Apagar esta saída?")) return;
+                          try {
+                            await delExp({ data: { id: e.id } });
+                            toast.success("Saída apagada.");
+                            await Promise.all([refresh(), qc.invalidateQueries({ queryKey: ["expenses"] })]);
+                          } catch (err) { toast.error(err instanceof Error ? err.message : "Não foi possível apagar."); }
+                        }}
+                        className="text-muted-foreground hover:text-destructive"
+                      ><Trash2 className="size-4" /></button>
+                    ) : null}
+                  </span>
                 </li>
               ))}
             </ul>
