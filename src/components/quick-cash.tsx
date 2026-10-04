@@ -372,6 +372,7 @@ export function QuickCashPage({
               ))}
             </ul>
           </Card>
+          )}
         </div>
       </div>
     </div>
