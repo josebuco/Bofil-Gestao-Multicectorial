@@ -249,14 +249,16 @@ function CustosPage() {
           <p className="text-[11px] text-muted-foreground">{periodLabel(preset, range)}</p>
         </div>
         <PeriodPicker preset={preset} setPreset={setPreset} custom={custom} setCustom={setCustom} />
-        {tab !== "categorias" && (
+        {tab === "geral" ? (
           <button
             onClick={() => setOpen((v) => !v)}
             className="px-3 py-1.5 text-sm font-medium text-primary-foreground bg-brand rounded-md hover:bg-brand/90"
           >
             {open ? "Fechar" : "+ Nova despesa"}
           </button>
-        )}
+        ) : tab !== "categorias" ? (
+          <span className="text-[11px] text-muted-foreground">Histórico — as despesas registam-se na aba do setor.</span>
+        ) : null}
       </header>
 
       <div className="flex-1 overflow-auto p-6 space-y-5">

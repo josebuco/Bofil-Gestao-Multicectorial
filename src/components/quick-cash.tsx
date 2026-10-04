@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { ArrowDownRight, ArrowUpRight, CalendarDays, Plus, Trash2 } from "lucide-react";
 import { Area, ComposedChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/access.functions";
+import { createExpense } from "@/lib/expenses.functions";
 import { getFinance } from "@/lib/finance.functions";
 import { periodLabel } from "@/lib/period";
 import { Card, CashBalanceCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
@@ -41,6 +42,35 @@ export function QuickCashPage({
   const [cost, setCost] = useState("");
   const [method, setMethod] = useState<"Numerário" | "Banco">("Numerário");
   const [saving, setSaving] = useState(false);
+  const addExp = useServerFn(createExpense);
+  async function onExpense(ev: React.FormEvent<HTMLFormElement>) {
+    ev.preventDefault();
+    const form = ev.currentTarget;
+    const f = new FormData(form);
+    const value = Math.round(Number(f.get("amount")));
+    if (!value || value <= 0) { toast.error("Indique um valor válido."); return; }
+    const payload = {
+      sector: slug,
+      category: String(f.get("category") || "Geral").trim() || "Geral",
+      description: String(f.get("description") || "").trim() || "Despesa",
+      amount: value,
+      expense_date: isAdminView && entryDate ? entryDate : todayAngola(),
+      supplier: String(f.get("supplier") || "").trim() || null,
+      status: String(f.get("status") || "Pago"),
+      invoice_path: null,
+      notes: null,
+      payment_method: (f.get("payment_method") === "Banco" ? "Banco" : "Numerário") as "Banco" | "Numerário",
+      asset_id: null,
+    };
+    try {
+      const r = await sendOrQueue("expense", payload, `Despesa ${title}: ${payload.description}`, () => addExp({ data: payload }));
+      form.reset();
+      toast.success(r === "queued" ? "Sem internet: despesa guardada no aparelho." : "Saída registada.");
+      if (r === "sent") await Promise.all([qc.invalidateQueries({ queryKey: ["finance"] }), qc.invalidateQueries({ queryKey: ["expenses"] })]);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível guardar.");
+    }
+  }
   const [entryDate, setEntryDate] = useState("");
   const [showEntryDate, setShowEntryDate] = useState(false);
 
@@ -224,13 +254,13 @@ export function QuickCashPage({
             />
             <p className="text-[11px] text-success mt-1.5">Lucro: {formatMoney((Number(amount) || 0) - (Number(cost) || 0))} Kz</p>
           </div>
-          <div className="flex rounded-md ring-1 ring-edge overflow-hidden h-14">
+          <div className="flex w-full sm:w-auto rounded-md ring-1 ring-edge overflow-hidden h-14">
             {(["Numerário", "Banco"] as const).map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => setMethod(m)}
-                className={`px-4 text-sm font-medium ${method === m ? "bg-brand text-primary-foreground" : "text-muted-foreground hover:bg-white/5"}`}
+                className={`flex-1 sm:flex-none whitespace-nowrap px-4 text-sm font-medium ${method === m ? "bg-brand text-primary-foreground" : "text-muted-foreground hover:bg-white/5"}`}
               >
                 {m === "Banco" ? "Banco (VB)" : m}
               </button>
@@ -287,7 +317,17 @@ export function QuickCashPage({
               ))}
             </ul>
           </Card>
-          <Card title="Saídas (do Centro de Custos)">
+          <Card title="Saídas">
+            <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
+              <input name="description" required placeholder="Descrição" className={`${inputClass} col-span-2`} />
+              <input name="amount" type="number" min={1} required inputMode="numeric" placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
+              <input name="category" list={`cats-${slug}`} placeholder="Categoria" className={inputClass} />
+              <datalist id={`cats-${slug}`}>{["Combustível", "Manutenção e Reparação", "Produtos", "Subsídio de Alimentação", "Salários", "Energia", "Outros"].map((c) => <option key={c} value={c} />)}</datalist>
+              <input name="supplier" placeholder="Fornecedor (opcional)" className={inputClass} />
+              <select name="payment_method" className={inputClass}><option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option></select>
+              <select name="status" className={inputClass}><option>Pago</option><option>Pendente</option></select>
+              <button className="col-span-2 h-11 rounded-md bg-destructive text-primary-foreground font-medium">Registar saída</button>
+            </form>
             <ul className="divide-y divide-edge/60 max-h-96 overflow-auto">
               {outs.length === 0 ? (
                 <li className="p-5 text-sm text-muted-foreground">Sem saídas neste período.</li>
