@@ -197,7 +197,7 @@ export function QuickCashPage({
       <div className="flex-1 overflow-auto p-6 space-y-5">
         <form
           onSubmit={onSubmit}
-          className="relative rounded-xl bg-panel ring-1 ring-edge p-5 pt-16 sm:pt-14 flex flex-col sm:flex-row gap-3 sm:items-end"
+          className="relative rounded-xl bg-panel ring-1 ring-edge p-5 pt-16 sm:pt-14 flex flex-col xl:flex-row gap-3 xl:items-end"
         >
           {isAdminView ? (
             <div className="absolute right-5 top-4 flex items-center gap-2">
@@ -241,7 +241,7 @@ export function QuickCashPage({
               <p className="text-[11px] text-muted-foreground mt-1.5">Data e hora são registadas automaticamente.</p>
             ) : null}
           </div>
-          <div className="sm:w-44">
+          <div className="xl:w-44">
             <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Custo da entrada (Kz)</label>
             <input
               value={cost}
@@ -254,13 +254,13 @@ export function QuickCashPage({
             />
             <p className="text-[11px] text-success mt-1.5">Lucro: {formatMoney((Number(amount) || 0) - (Number(cost) || 0))} Kz</p>
           </div>
-          <div className="flex w-full sm:w-auto rounded-md ring-1 ring-edge overflow-hidden h-14">
+          <div className="grid grid-cols-2 w-full xl:w-64 shrink-0 rounded-md ring-1 ring-edge overflow-hidden h-14">
             {(["Numerário", "Banco"] as const).map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => setMethod(m)}
-                className={`flex-1 sm:flex-none whitespace-nowrap px-4 text-sm font-medium ${method === m ? "bg-brand text-primary-foreground" : "text-muted-foreground hover:bg-white/5"}`}
+                className={`min-w-0 whitespace-nowrap px-2 text-sm font-medium ${method === m ? "bg-brand text-primary-foreground" : "text-muted-foreground hover:bg-white/5"}`}
               >
                 {m === "Banco" ? "Banco (VB)" : m}
               </button>
@@ -268,7 +268,7 @@ export function QuickCashPage({
           </div>
           <button
             disabled={saving}
-            className={`h-14 px-6 rounded-md font-medium text-primary-foreground ${accent} hover:opacity-90 disabled:opacity-50 flex items-center gap-2 justify-center`}
+            className={`h-14 px-6 w-full xl:w-auto shrink-0 rounded-md font-medium text-primary-foreground ${accent} hover:opacity-90 disabled:opacity-50 flex items-center gap-2 justify-center whitespace-nowrap`}
           >
             <Plus className="size-5" /> {saving ? "A guardar…" : "Registar entrada"}
           </button>
