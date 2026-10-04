@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
-import { Banknote, Landmark, Wallet } from "lucide-react";
+import { Banknote, ChevronDown, Landmark, Wallet } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PERIOD_OPTIONS, resolvePeriod, type PeriodPreset } from "@/lib/period";
 import { useAccess } from "@/lib/use-access";
 
@@ -171,6 +172,46 @@ export function Card({
       </div>
       <div className="overflow-x-auto">{children}</div>
     </div>
+  );
+}
+
+export function ExpandableCard({
+  title,
+  summary,
+  action,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  summary?: string;
+  action?: ReactNode;
+  children: ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="rounded-lg bg-panel ring-1 ring-edge overflow-hidden shadow-sm">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-4 py-3">
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+          className="min-w-0 text-left"
+        >
+          <span className="min-w-0">
+            <span className="block truncate font-display font-semibold text-sm uppercase tracking-wide text-foreground">{title}</span>
+            {summary ? <span className="block truncate text-[11px] text-muted-foreground">{summary}</span> : null}
+          </span>
+        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {action}
+          <Button type="button" variant="ghost" size="icon" onClick={() => setOpen((value) => !value)} aria-label={open ? `Fechar ${title}` : `Abrir ${title}`}>
+            <ChevronDown className={`transition-transform ${open ? "rotate-180" : ""}`} />
+          </Button>
+        </div>
+      </div>
+      {open ? <div className="border-t border-edge overflow-x-auto">{children}</div> : null}
+    </section>
   );
 }
 

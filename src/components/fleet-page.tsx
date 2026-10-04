@@ -7,7 +7,7 @@ import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/acce
 import { createExpense, deleteExpense, getExpenses } from "@/lib/expenses.functions";
 import { openInvoice, uploadInvoice } from "@/lib/invoice";
 import { addCategory, createAsset, createStockUsage, deleteAsset, listAssets, listCategories, listStock, listAssetContributions, type FleetSector } from "@/lib/rental.functions";
-import { Card, CashBalanceCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
+import { Card, CashBalanceCard, ExpandableCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
 import { DebtCard } from "@/components/debt-card";
 import { periodLabel } from "@/lib/period";
 import { useAccess } from "@/lib/use-access";
@@ -356,7 +356,8 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
     </div>
   ) : null;
   const truckCard = (
-              <Card title="Entradas do camião (serviços)" action={entryDateAction}>
+              <div className="space-y-3">
+              <ExpandableCard title="Registar entrada" summary="Adicionar um serviço do camião" action={entryDateAction}>
                 <form onSubmit={onTruck} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
                   <input value={tService} onChange={(e) => setTService(e.target.value)} list="truck-services" placeholder="Serviço (ex.: Carregamento cisterna)" className={`${inputClass} h-12 col-span-2`} />
                   <datalist id="truck-services">{(waterData.data?.products || []).map((p) => <option key={p.id} value={p.name} />)}</datalist>
@@ -369,6 +370,8 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                   </select>
                   <button className="col-span-2 h-12 rounded-md bg-warning text-primary-foreground font-medium flex items-center justify-center gap-2"><Plus className="size-4" /> Registar · {formatMoney(tTotal)} Kz</button>
                 </form>
+              </ExpandableCard>
+              <ExpandableCard title="Todas as entradas" summary={`${curTruck.length} registo${curTruck.length === 1 ? "" : "s"} no período`}>
                 <ul className="divide-y divide-edge/60 max-h-80 overflow-auto">
                   {curTruck.length === 0 && <li className="p-5 text-sm text-muted-foreground">Sem entradas neste período.</li>}
                   {curTruck.map((t) => (
@@ -391,11 +394,13 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                     </li>
                   ))}
                 </ul>
-              </Card>
+              </ExpandableCard>
+              </div>
   );
 
   const entriesCard = (
-              <Card title={sectorEntryMode ? "Entradas do setor" : "Entradas"} action={entryDateAction}>
+              <div className="space-y-3">
+              <ExpandableCard title="Registar entrada" summary={perStudentMode ? "Adicionar alunos e valor diário" : "Adicionar uma entrada da unidade"} action={entryDateAction}>
                 <form onSubmit={onEntry} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
                   {perStudentMode ? (
                     <>
@@ -415,6 +420,8 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                     Total do dia: <span className="font-display text-warning">{formatMoney(computed)} Kz</span>
                   </p>
                 )}
+              </ExpandableCard>
+              <ExpandableCard title={sectorEntryMode ? "Todas as entradas do setor" : "Todas as entradas"} summary={`${curEntries.length} registo${curEntries.length === 1 ? "" : "s"} no período`}>
                 <ul className="divide-y divide-edge/60 max-h-80 overflow-auto">
                   {curEntries.length === 0 && <li className="p-5 text-sm text-muted-foreground">Sem entradas neste período.</li>}
                   {curEntries.map((e) => (
@@ -433,7 +440,8 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                     </li>
                   ))}
                 </ul>
-              </Card>
+              </ExpandableCard>
+              </div>
   );
 
   const body = (
@@ -572,7 +580,8 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
               {!sectorEntryMode && current.kind !== "Equipamento" && (truckMode ? truckCard : entriesCard)}
 
               {(
-              <Card title={current.kind === "Equipamento" ? "Saída do equipamento" : "Centro de custos"} action={expenseDateAction}>
+              <div className="space-y-3">
+              <ExpandableCard title={current.kind === "Equipamento" ? "Registar saída do equipamento" : "Registar saída"} summary="Adicionar uma despesa desta unidade" action={expenseDateAction}>
                 <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
                   <input name="description" required placeholder="Descrição" className={`${inputClass} col-span-2`} />
                   <input name="amount" type="number" min={1} required placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
@@ -601,6 +610,8 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                   </label>
                   <button className="col-span-2 h-10 rounded-md bg-destructive text-primary-foreground font-medium">Registar despesa</button>
                 </form>
+              </ExpandableCard>
+              <ExpandableCard title="Todas as saídas" summary={`${curExp.length} registo${curExp.length === 1 ? "" : "s"} no período`}>
                 <ul className="divide-y divide-edge/60 max-h-80 overflow-auto">
                   {curExp.length === 0 && <li className="p-5 text-sm text-muted-foreground">Sem despesas neste período.</li>}
                   {curExp.map((e) => (
@@ -630,10 +641,12 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                     </li>
                   ))}
                 </ul>
-              </Card>
+              </ExpandableCard>
+              </div>
               )}
 
-              <Card title={`Consumo de estoque — ${current.name}`}>
+              <div className="space-y-3">
+              <ExpandableCard title="Registar consumo de estoque" summary={`Aplicar material em ${current.name}`}>
                 <form onSubmit={onUsage} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
                   <select
                     value={usePurchase}
@@ -673,6 +686,8 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                     Aplicar na unidade
                   </button>
                 </form>
+              </ExpandableCard>
+              <ExpandableCard title="Histórico de consumo" summary={`${curUsage.length} registo${curUsage.length === 1 ? "" : "s"} no período`}>
                 <ul className="divide-y divide-edge/60 max-h-80 overflow-auto">
                   {curUsage.length === 0 && <li className="p-5 text-sm text-muted-foreground">Nada aplicado a esta unidade.</li>}
                   {curUsage.map((u) => {
@@ -688,7 +703,8 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                     );
                   })}
                 </ul>
-              </Card>
+              </ExpandableCard>
+              </div>
             </div>
           </>
         )}
