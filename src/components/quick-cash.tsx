@@ -11,7 +11,7 @@ import { addCategory, listCategories } from "@/lib/rental.functions";
 import { openInvoice, uploadInvoice } from "@/lib/invoice";
 import { getFinance } from "@/lib/finance.functions";
 import { periodLabel } from "@/lib/period";
-import { Card, CashBalanceCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
+import { Card, CashBalanceCard, ExpandableCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
 import { chartTooltip } from "@/components/sector-cash";
 import { DebtCard } from "@/components/debt-card";
 import { useAccess } from "@/lib/use-access";
@@ -217,9 +217,10 @@ export function QuickCashPage({
         action={<PeriodPicker preset={preset} setPreset={setPreset} custom={custom} setCustom={setCustom} />}
       />
       <div className="flex-1 overflow-auto p-6 space-y-5">
+        <ExpandableCard title="Registar entrada" summary="Adicionar uma nova entrada neste setor">
         <form
           onSubmit={onSubmit}
-          className="relative rounded-xl bg-panel ring-1 ring-edge p-5 pt-16 sm:pt-14 flex flex-col xl:flex-row gap-3 xl:items-end"
+          className="relative p-4 pt-14 flex flex-col xl:flex-row gap-2 xl:items-end"
         >
           {isAdminView ? (
             <div className="absolute right-5 top-4 flex items-center gap-2">
@@ -257,7 +258,7 @@ export function QuickCashPage({
               min={1}
               inputMode="numeric"
               placeholder="0"
-              className={`${inputClass} mt-1.5 text-2xl font-display h-14`}
+              className={`${inputClass} mt-1.5 text-xl font-display h-12`}
             />
             {!isAdminView ? (
               <p className="text-[11px] text-muted-foreground mt-1.5">Data e hora são registadas automaticamente.</p>
@@ -272,11 +273,11 @@ export function QuickCashPage({
               min={0}
               inputMode="numeric"
               placeholder="0"
-              className={`${inputClass} mt-1.5 text-2xl font-display h-14`}
+              className={`${inputClass} mt-1.5 text-xl font-display h-12`}
             />
             <p className="text-[11px] text-success mt-1.5">Lucro: {formatMoney((Number(amount) || 0) - (Number(cost) || 0))}</p>
           </div>
-          <div className="grid grid-cols-2 w-full xl:w-64 shrink-0 rounded-md ring-1 ring-edge overflow-hidden h-14">
+          <div className="grid grid-cols-2 w-full xl:w-64 shrink-0 rounded-md ring-1 ring-edge overflow-hidden h-12">
             {(["Numerário", "Banco"] as const).map((m) => (
               <button
                 key={m}
@@ -290,15 +291,17 @@ export function QuickCashPage({
           </div>
           <button
             disabled={saving}
-            className={`h-14 px-6 w-full xl:w-auto shrink-0 rounded-md font-medium text-primary-foreground ${accent} hover:opacity-90 disabled:opacity-50 flex items-center gap-2 justify-center whitespace-nowrap`}
+            className={`h-12 px-5 w-full xl:w-auto shrink-0 rounded-md font-medium text-primary-foreground ${accent} hover:opacity-90 disabled:opacity-50 flex items-center gap-2 justify-center whitespace-nowrap`}
           >
             <Plus className="size-5" /> {saving ? "A guardar…" : "Registar entrada"}
           </button>
         </form>
+        </ExpandableCard>
 
         {totalsBlock}
         {slug === "lavagem" && (
-          <Card title="Saídas">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <ExpandableCard title="Registar saída" summary="Adicionar uma despesa geral da Lavagem">
             <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
               <input name="description" required placeholder="Descrição" className={`${inputClass} col-span-2`} />
               <input name="amount" type="number" min={1} required inputMode="numeric" placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
@@ -317,6 +320,8 @@ export function QuickCashPage({
               </label>
               <button className="col-span-2 h-11 rounded-md bg-destructive text-primary-foreground font-medium">Registar saída</button>
             </form>
+          </ExpandableCard>
+          <ExpandableCard title="Todas as saídas" summary={`${outs.length} registo${outs.length === 1 ? "" : "s"} no período`}>
             <ul className="divide-y divide-edge/60 max-h-96 overflow-auto">
               {outs.length === 0 ? (
                 <li className="p-5 text-sm text-muted-foreground">Sem saídas neste período.</li>
@@ -351,7 +356,8 @@ export function QuickCashPage({
                 </li>
               ))}
             </ul>
-          </Card>
+          </ExpandableCard>
+          </div>
         )}
         {slug === "lavagem" && (
           <section className="space-y-3">
@@ -360,7 +366,7 @@ export function QuickCashPage({
           </section>
         )}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          <Card title="Entradas">
+          <ExpandableCard title="Todas as entradas" summary={`${allEntries.length} registo${allEntries.length === 1 ? "" : "s"} no período`}>
             <ul className="divide-y divide-edge/60 max-h-96 overflow-auto">
               {allEntries.length === 0 ? (
                 <li className="p-5 text-sm text-muted-foreground">Sem entradas neste período.</li>
@@ -394,9 +400,10 @@ export function QuickCashPage({
                 </li>
               ))}
             </ul>
-          </Card>
+          </ExpandableCard>
           {slug !== "lavagem" && (
-          <Card title="Saídas">
+          <div className="space-y-3">
+          <ExpandableCard title="Registar saída" summary="Adicionar uma despesa geral do setor">
             <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
               <input name="description" required placeholder="Descrição" className={`${inputClass} col-span-2`} />
               <input name="amount" type="number" min={1} required inputMode="numeric" placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
@@ -415,6 +422,8 @@ export function QuickCashPage({
               </label>
               <button className="col-span-2 h-11 rounded-md bg-destructive text-primary-foreground font-medium">Registar saída</button>
             </form>
+          </ExpandableCard>
+          <ExpandableCard title="Todas as saídas" summary={`${outs.length} registo${outs.length === 1 ? "" : "s"} no período`}>
             <ul className="divide-y divide-edge/60 max-h-96 overflow-auto">
               {outs.length === 0 ? (
                 <li className="p-5 text-sm text-muted-foreground">Sem saídas neste período.</li>
@@ -449,7 +458,8 @@ export function QuickCashPage({
                 </li>
               ))}
             </ul>
-          </Card>
+          </ExpandableCard>
+          </div>
           )}
         </div>
       </div>
