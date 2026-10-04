@@ -7,6 +7,7 @@ import { ArrowDownRight, ArrowUpRight, CalendarDays, FileText, Plus, Trash2 } fr
 import { Area, ComposedChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/access.functions";
 import { createExpense, deleteExpense } from "@/lib/expenses.functions";
+import { addCategory, listCategories } from "@/lib/rental.functions";
 import { openInvoice, uploadInvoice } from "@/lib/invoice";
 import { getFinance } from "@/lib/finance.functions";
 import { periodLabel } from "@/lib/period";
@@ -45,6 +46,20 @@ export function QuickCashPage({
   const [saving, setSaving] = useState(false);
   const addExp = useServerFn(createExpense);
   const delExp = useServerFn(deleteExpense);
+  const addCat = useServerFn(addCategory);
+  const extraCats = useQuery({ queryKey: ["expense-categories"], queryFn: () => listCategories() });
+  const categories = Array.from(new Set(["Combustível", "Manutenção e Reparação", "Produtos", "Subsídio de Alimentação", "Salários", "Energia", ...(extraCats.data || []), "Outros"]));
+  async function onNewCategory() {
+    const name = window.prompt("Nome da nova categoria de custo:")?.trim();
+    if (!name) return;
+    try {
+      await addCat({ data: { name } });
+      await qc.invalidateQueries({ queryKey: ["expense-categories"] });
+      toast.success(`Categoria "${name}" criada.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível criar (precisa de internet).");
+    }
+  }
   async function onExpense(ev: React.FormEvent<HTMLFormElement>) {
     ev.preventDefault();
     const form = ev.currentTarget;
@@ -287,8 +302,13 @@ export function QuickCashPage({
             <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
               <input name="description" required placeholder="Descrição" className={`${inputClass} col-span-2`} />
               <input name="amount" type="number" min={1} required inputMode="numeric" placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
-              <input name="category" list={`cats-${slug}`} placeholder="Categoria" className={inputClass} />
-              <datalist id={`cats-${slug}`}>{["Combustível", "Manutenção e Reparação", "Produtos", "Subsídio de Alimentação", "Salários", "Energia", "Outros"].map((c) => <option key={c} value={c} />)}</datalist>
+              <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                <input name="category" list={`cats-${slug}`} placeholder="Categoria" className={inputClass} />
+                <datalist id={`cats-${slug}`}>{categories.map((c) => <option key={c} value={c} />)}</datalist>
+                <button type="button" onClick={onNewCategory} className="h-10 px-3 rounded-md ring-1 ring-edge bg-panel text-sm font-medium text-primary hover:bg-primary/10 whitespace-nowrap">
+                  <Plus className="size-4 inline-block mr-1" /> Nova categoria
+                </button>
+              </div>
               <input name="supplier" placeholder="Fornecedor (opcional)" className={inputClass} />
               <select name="payment_method" className={inputClass}><option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option></select>
               <select name="status" className={inputClass}><option>Pago</option><option>Pendente</option></select>
@@ -380,8 +400,13 @@ export function QuickCashPage({
             <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
               <input name="description" required placeholder="Descrição" className={`${inputClass} col-span-2`} />
               <input name="amount" type="number" min={1} required inputMode="numeric" placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
-              <input name="category" list={`cats-${slug}`} placeholder="Categoria" className={inputClass} />
-              <datalist id={`cats-${slug}`}>{["Combustível", "Manutenção e Reparação", "Produtos", "Subsídio de Alimentação", "Salários", "Energia", "Outros"].map((c) => <option key={c} value={c} />)}</datalist>
+              <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                <input name="category" list={`cats-${slug}`} placeholder="Categoria" className={inputClass} />
+                <datalist id={`cats-${slug}`}>{categories.map((c) => <option key={c} value={c} />)}</datalist>
+                <button type="button" onClick={onNewCategory} className="h-10 px-3 rounded-md ring-1 ring-edge bg-panel text-sm font-medium text-primary hover:bg-primary/10 whitespace-nowrap">
+                  <Plus className="size-4 inline-block mr-1" /> Nova categoria
+                </button>
+              </div>
               <input name="supplier" placeholder="Fornecedor (opcional)" className={inputClass} />
               <select name="payment_method" className={inputClass}><option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option></select>
               <select name="status" className={inputClass}><option>Pago</option><option>Pendente</option></select>
