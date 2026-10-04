@@ -137,6 +137,22 @@ function AuthenticatedLayout() {
           })}
         </nav>
 
+        <div className="p-4 border-t border-edge">
+          <button
+            onClick={() => setConfirmOut(true)}
+            className="w-full rounded-md bg-panel ring-1 ring-black/5 p-3 text-left flex items-center gap-3 hover:bg-white/5 transition-colors"
+          >
+            <div className="size-9 rounded-md bg-edge grid place-items-center font-display font-semibold text-muted-foreground text-sm">
+              {access.isAdmin ? "AD" : "TR"}
+            </div>
+            <div className="leading-tight min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">{access.name || "…"}</p>
+              <p className="text-[11px] text-muted-foreground truncate">Sair da conta</p>
+            </div>
+          </button>
+        </div>
+      </aside>
+
         {confirmOut && (
           <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4" onClick={() => setConfirmOut(false)}>
             <div className="w-full max-w-sm rounded-xl border border-edge bg-panel p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
@@ -155,22 +171,6 @@ function AuthenticatedLayout() {
             </div>
           </div>
         )}
-        <div className="p-4 border-t border-edge">
-          <button
-            onClick={() => setConfirmOut(true)}
-            className="w-full rounded-md bg-panel ring-1 ring-black/5 p-3 text-left flex items-center gap-3 hover:bg-white/5 transition-colors"
-          >
-            <div className="size-9 rounded-md bg-edge grid place-items-center font-display font-semibold text-muted-foreground text-sm">
-              {access.isAdmin ? "AD" : "TR"}
-            </div>
-            <div className="leading-tight min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{access.name || "…"}</p>
-              <p className="text-[11px] text-muted-foreground truncate">Sair da conta</p>
-            </div>
-          </button>
-        </div>
-      </aside>
-
       <main className="flex-1 min-w-0 flex flex-col">
         <div className="md:hidden flex items-center gap-3 h-12 px-4 border-b border-edge bg-ink">
           <button
