@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { Menu } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccess } from "@/lib/use-access";
 import { useQueryClient } from "@tanstack/react-query";
@@ -72,6 +73,7 @@ function AuthenticatedLayout() {
 
   const queryClient = useQueryClient();
   const [confirmOut, setConfirmOut] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const access = useAccess();
   const sectors = allSectors.filter((s) => access.isAdmin || access.sectors.includes(s.perm));
 
@@ -91,7 +93,13 @@ function AuthenticatedLayout() {
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      <aside className="w-60 shrink-0 border-r border-edge bg-ink flex flex-col">
+      {menuOpen && (
+        <div className="fixed inset-0 z-40 bg-background/70 md:hidden" onClick={() => setMenuOpen(false)} />
+      )}
+      <aside
+        onClick={(e) => { if ((e.target as HTMLElement).closest("a")) setMenuOpen(false); }}
+        className={`w-60 shrink-0 border-r border-edge bg-ink flex flex-col fixed inset-y-0 left-0 z-50 transition-transform md:static md:translate-x-0 ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}
+      >
         <div className="h-16 flex items-center gap-2.5 px-5 border-b border-edge">
           <div className="size-8 rounded-md bg-brand grid place-items-center font-display font-semibold text-primary-foreground text-lg">
             B
@@ -164,6 +172,17 @@ function AuthenticatedLayout() {
       </aside>
 
       <main className="flex-1 min-w-0 flex flex-col">
+        <div className="md:hidden flex items-center gap-3 h-12 px-4 border-b border-edge bg-ink">
+          <button
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Abrir menu"
+            className="size-9 grid place-items-center rounded-md ring-1 ring-edge text-foreground"
+          >
+            <Menu className="size-5" />
+          </button>
+          <span className="font-display font-semibold uppercase tracking-wide text-sm">Bofil</span>
+        </div>
         <OfflineBar />
         <Outlet />
       </main>
