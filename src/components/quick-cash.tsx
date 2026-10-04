@@ -345,6 +345,7 @@ export function QuickCashPage({
               ))}
             </ul>
           </Card>
+          {slug !== "lavagem" && (
           <Card title="Saídas">
             <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
               <input name="description" required placeholder="Descrição" className={`${inputClass} col-span-2`} />
