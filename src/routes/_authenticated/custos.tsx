@@ -517,7 +517,7 @@ function CustosPage() {
             </p>}
           </div>
 
-          {access.isAdmin && tab !== "aluguer" && rows.length > 0 && (
+          {access.isAdmin && rows.length > 0 && (
             <div className="mb-5 rounded-lg ring-1 ring-edge p-4">
               <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mb-3">Resumo das saídas por categoria</p>
               <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
