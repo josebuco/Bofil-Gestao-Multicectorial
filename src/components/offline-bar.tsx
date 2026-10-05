@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CloudOff, CloudUpload, Wifi } from "lucide-react";
 import { QUEUE_EVENT, isNetworkError, readQueue, writeQueue, type QueuedItem } from "@/lib/offline";
-import { addSectorEntry } from "@/lib/access.functions";
+import { addSectorEntry, paySectorEntry } from "@/lib/access.functions";
 import { createWaterSale } from "@/lib/crud.functions";
 import { createExpense } from "@/lib/expenses.functions";
 import { createStockUsage } from "@/lib/rental.functions";
@@ -11,6 +11,7 @@ import { createStockUsage } from "@/lib/rental.functions";
 async function sendItem(item: QueuedItem) {
   const data = item.data as never;
   if (item.kind === "sector_entry") return addSectorEntry({ data });
+  if (item.kind === "sector_entry_payment") return paySectorEntry({ data });
   if (item.kind === "water_sale") return createWaterSale({ data });
   if (item.kind === "stock_usage") return createStockUsage({ data });
   return createExpense({ data });

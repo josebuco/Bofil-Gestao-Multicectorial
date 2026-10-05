@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 const KEY = "bofil_offline_queue";
 export const QUEUE_EVENT = "bofil-queue-changed";
 
-export type QueuedKind = "sector_entry" | "water_sale" | "expense" | "stock_usage";
+export type QueuedKind = "sector_entry" | "sector_entry_payment" | "water_sale" | "expense" | "stock_usage";
 export type QueuedItem = { id: string; kind: QueuedKind; data: Record<string, unknown>; at: string; label: string };
 
 export function readQueue(): QueuedItem[] {
@@ -23,6 +23,15 @@ export function writeQueue(items: QueuedItem[]) {
 export function enqueue(kind: QueuedKind, data: Record<string, unknown>, label: string) {
   const at = new Date().toISOString();
   writeQueue([...readQueue(), { id: crypto.randomUUID(), kind, data: { ...data, recorded_at: at }, at, label }]);
+}
+
+/** An entry not yet uploaded can be paid locally without creating a second row. */
+export function payQueuedEntry(id: string, payment_method: "Numerário" | "Banco") {
+  const queue = readQueue();
+  if (!queue.some((item) => item.id === id && item.kind === "sector_entry")) return false;
+  writeQueue(queue.map((item) => item.id === id && item.kind === "sector_entry"
+    ? { ...item, data: { ...item.data, status: "Pago", payment_method } } : item));
+  return true;
 }
 
 export function isNetworkError(e: unknown) {
