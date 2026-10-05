@@ -3,9 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowDownRight, ArrowUpRight, CalendarDays, FileText, Plus, Trash2 } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, CalendarDays, Check, FileText, Plus, Trash2 } from "lucide-react";
 import { Area, ComposedChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/access.functions";
+import { addSectorEntry, deleteSectorEntry, listSectorEntries, paySectorEntry } from "@/lib/access.functions";
 import { createExpense, deleteExpense } from "@/lib/expenses.functions";
 import { addCategory, listCategories } from "@/lib/rental.functions";
 import { openInvoice, uploadInvoice } from "@/lib/invoice";
@@ -15,8 +15,8 @@ import { Card, CashBalanceCard, ExpandableCard, PageHeader, PeriodPicker, format
 import { chartTooltip } from "@/components/sector-cash";
 import { DebtCard } from "@/components/debt-card";
 import { useAccess } from "@/lib/use-access";
-import { sendOrQueue, useQueue } from "@/lib/offline";
-import { useMergedFinance } from "@/lib/offline-finance";
+import { payQueuedEntry, sendOrQueue, useQueue } from "@/lib/offline";
+import { mergeQueuedSectorEntries, useMergedFinance } from "@/lib/offline-finance";
 import { todayAngola } from "@/lib/tz";
 import { Button } from "@/components/ui/button";
 
@@ -43,6 +43,11 @@ export function QuickCashPage({
   const [amount, setAmount] = useState("");
   const [cost, setCost] = useState("");
   const [method, setMethod] = useState<"Numerário" | "Banco">("Numerário");
+  const [status, setStatus] = useState<"Pago" | "Pendente">("Pago");
+  const [clientName, setClientName] = useState("");
+  const [paying, setPaying] = useState<string | null>(null);
+  const [receiptMethods, setReceiptMethods] = useState<Record<string, "Numerário" | "Banco">>({});
+  const pay = useServerFn(paySectorEntry);
   const [saving, setSaving] = useState(false);
   const addExp = useServerFn(createExpense);
   const delExp = useServerFn(deleteExpense);
@@ -103,11 +108,10 @@ export function QuickCashPage({
     queryFn: () => list({ data: { sector: slug, ...range } }),
   });
 
-  const queued = useQueue("sector_entry")
-    .filter((q) => q.data["sector"] === slug)
-    .map((q) => ({ id: q.id, amount: Number(q.data["amount"]) || 0, cost: Number(q.data["cost"]) || 0, payment_method: String(q.data["payment_method"]), created_at: q.at, pending: true }));
-  const allEntries = [...queued, ...(entries.data || []).map((e) => ({ ...e, cost: e.cost || 0, pending: false }))];
-  const entTotal = allEntries.reduce((s, e) => s + e.amount, 0);
+  const queue = useQueue();
+  const allEntries = mergeQueuedSectorEntries(entries.data || [], queue, slug, range);
+  const entTotal = allEntries.filter((e) => e.status !== "Pendente").reduce((s, e) => s + e.amount, 0);
+  const pendingTotal = allEntries.filter((e) => e.status === "Pendente").reduce((s, e) => s + e.amount, 0);
   const costTotal = allEntries.reduce((s, e) => s + e.cost, 0);
   const mergedFinance = useMergedFinance(finance.data, range);
   const sector = mergedFinance.sectors.find((s) => s.slug === slug);
@@ -121,6 +125,25 @@ export function QuickCashPage({
     ]);
   }
 
+  async function onPay(entry: (typeof allEntries)[number]) {
+    if (slug !== "restaurante" && slug !== "lavagem") return;
+    const payment_method = receiptMethods[entry.id] || (entry.payment_method === "Banco" ? "Banco" : "Numerário");
+    if (!window.confirm(`Confirmar recebimento de ${formatMoney(entry.amount)} Kz via ${payment_method}?`)) return;
+    setPaying(entry.id);
+    try {
+      if (payQueuedEntry(entry.id, payment_method)) {
+        toast.success("Pagamento guardado no aparelho. Será enviado ao sincronizar.");
+        return;
+      }
+      const payload = { id: entry.id, sector: slug, payment_method };
+      const result = await sendOrQueue("sector_entry_payment", payload, `${title}: pagamento de ${formatMoney(entry.amount)} Kz`, () => pay({ data: payload }));
+      toast.success(result === "queued" ? "Sem internet: pagamento guardado no aparelho." : "Entrada marcada como paga.");
+      if (result === "sent") await refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível confirmar o pagamento.");
+    } finally { setPaying(null); }
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const value = Math.round(Number(amount));
@@ -129,10 +152,12 @@ export function QuickCashPage({
     try {
       const c = Math.max(0, Math.round(Number(cost) || 0));
       if (c > value) { toast.error("O custo não pode ser maior que a entrada."); setSaving(false); return; }
-      const payload = { sector: slug, amount: value, cost: c, payment_method: method, ...(isAdminView && entryDate ? { entry_date: entryDate } : {}) };
+      const payload = { sector: slug, amount: value, cost: c, status, client_name: clientName.trim() || null, payment_method: method, ...(isAdminView && entryDate ? { entry_date: entryDate } : {}) };
       const r = await sendOrQueue("sector_entry", payload, `${title}: ${formatMoney(value)} Kz`, () => add({ data: payload }));
       setAmount("");
       setCost("");
+      setClientName("");
+      setStatus("Pago");
       if (r === "queued") toast.success(`Sem internet: ${formatMoney(value)} Kz guardado no aparelho. Envia ao sincronizar.`);
       else {
         toast.success(`Entrada de ${formatMoney(value)} Kz registada.`);
@@ -169,9 +194,11 @@ export function QuickCashPage({
 
         <DebtCard sector={slug} />
 
+        <p className="text-sm text-muted-foreground">Entradas por receber <span className="ml-2 font-display text-foreground">{formatMoney(pendingTotal)}</span></p>
+
         <Card title="Custo e Lucro">
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-5">
-            <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Entradas</p><p className="font-display text-2xl text-warning">{formatMoney(entTotal)}</p></div>
+            <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Entradas pagas</p><p className="font-display text-2xl text-warning">{formatMoney(entTotal)}</p></div>
             <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Custo total</p><p className="font-display text-2xl text-foreground">{formatMoney(costTotal)}</p></div>
             <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Saídas</p><p className="font-display text-2xl text-destructive">{formatMoney(outsTotal)}</p></div>
             <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Lucro líquido</p><p className="font-display text-2xl text-success">{formatMoney(entTotal - costTotal - outsTotal)}</p></div>
@@ -220,7 +247,7 @@ export function QuickCashPage({
         <ExpandableCard title="Registar entrada" summary="Adicionar uma nova entrada neste setor" defaultOpen>
         <form
           onSubmit={onSubmit}
-          className="relative p-4 pt-14 flex flex-col xl:flex-row gap-2 xl:items-end"
+          className="relative p-4 pt-14 grid grid-cols-1 xl:grid-cols-3 gap-3 items-end"
         >
           {isAdminView ? (
             <div className="absolute right-5 top-4 flex items-center gap-2">
@@ -252,6 +279,7 @@ export function QuickCashPage({
               Nova entrada (Kz)
             </label>
             <input
+              aria-label="Nova entrada (Kz)"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               type="number"
@@ -264,9 +292,10 @@ export function QuickCashPage({
               <p className="text-[11px] text-muted-foreground mt-1.5">Data e hora são registadas automaticamente.</p>
             ) : null}
           </div>
-          <div className="xl:w-44">
+          <div>
             <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Custo da entrada (Kz)</label>
             <input
+              aria-label="Custo da entrada (Kz)"
               value={cost}
               onChange={(e) => setCost(e.target.value)}
               type="number"
@@ -275,26 +304,37 @@ export function QuickCashPage({
               placeholder="0"
               className={`${inputClass} mt-1.5 text-xl font-display h-12`}
             />
-            <p className="text-[11px] text-success mt-1.5">Lucro: {formatMoney((Number(amount) || 0) - (Number(cost) || 0))}</p>
+            <p className="text-[11px] text-success mt-1.5">Lucro recebido: {formatMoney((status === "Pago" ? Number(amount) || 0 : 0) - (Number(cost) || 0))}</p>
           </div>
-          <div className="grid grid-cols-2 w-full xl:w-64 shrink-0 rounded-md ring-1 ring-edge overflow-hidden h-12">
+          <label className="block text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Estado
+            <select aria-label="Estado da entrada" value={status} onChange={(e) => setStatus(e.target.value === "Pendente" ? "Pendente" : "Pago")} className={`${inputClass} mt-1.5 h-12 text-sm`}>
+              <option>Pago</option><option>Pendente</option>
+            </select>
+          </label>
+          <label className="block text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Cliente / Observação (opcional)
+            <input aria-label="Cliente / Observação" value={clientName} onChange={(e) => setClientName(e.target.value)} maxLength={200} className={`${inputClass} mt-1.5 h-12 text-sm`} />
+          </label>
+          <div className="grid grid-cols-2 w-full shrink-0 rounded-md ring-1 ring-edge overflow-hidden h-12">
             {(["Numerário", "Banco"] as const).map((m) => (
-              <button
+              <Button
                 key={m}
                 type="button"
+                variant="ghost"
+                aria-pressed={method === m}
                 onClick={() => setMethod(m)}
-                className={`min-w-0 whitespace-nowrap px-2 text-sm font-medium ${method === m ? "bg-brand text-primary-foreground" : "text-muted-foreground hover:bg-white/5"}`}
+                className={`h-full rounded-none min-w-0 whitespace-nowrap px-2 text-sm font-medium ${method === m ? "bg-brand text-primary-foreground hover:bg-brand/90" : "text-muted-foreground hover:bg-muted"}`}
               >
                 {m === "Banco" ? "Banco (VB)" : m}
-              </button>
+              </Button>
             ))}
           </div>
-          <button
+          <Button
+            type="submit"
             disabled={saving}
             className={`h-12 px-5 w-full xl:w-auto shrink-0 rounded-md font-medium text-primary-foreground ${accent} hover:opacity-90 disabled:opacity-50 flex items-center gap-2 justify-center whitespace-nowrap`}
           >
             <Plus className="size-5" /> {saving ? "A guardar…" : "Registar entrada"}
-          </button>
+          </Button>
         </form>
         </ExpandableCard>
 
@@ -372,16 +412,18 @@ export function QuickCashPage({
                 <li className="p-5 text-sm text-muted-foreground">Sem entradas neste período.</li>
               ) : null}
               {allEntries.map((e) => (
-                <li key={e.id} className="flex items-center justify-between px-5 py-3 text-sm">
+                <li key={e.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
                   <span className="text-muted-foreground">
                     {new Date(e.created_at).toLocaleString("pt-AO")}
+                    {e.client_name ? <span className="block break-words max-w-64 text-foreground">{e.client_name}</span> : null}
+                    <span className="block text-[11px] font-medium">{e.status === "Pendente" ? "Pendente" : "Pago"}</span>
                     {e.payment_method === "Banco" ? <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-brand/15 text-brand">VB</span> : null}
                     {e.pending ? <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">No aparelho</span> : null}
                   </span>
                   <span className="flex items-center gap-3">
                     <span className="text-right">
-                      <span className="font-display text-warning">+{formatMoney(e.amount)}</span>
-                      <span className="block text-[10px] text-muted-foreground">Custo {formatMoney(e.cost)} · Lucro {formatMoney(e.amount - e.cost)}</span>
+                      <span className={`font-display ${e.status === "Pendente" ? "text-muted-foreground" : "text-warning"}`}>{e.status === "Pendente" ? "" : "+"}{formatMoney(e.amount)}</span>
+                      <span className="block text-[10px] text-muted-foreground">Custo {formatMoney(e.cost)} · Lucro recebido {formatMoney((e.status === "Pendente" ? 0 : e.amount) - e.cost)}</span>
                     </span>
                     {access.isAdmin && !e.pending ? (
                       <button
@@ -397,6 +439,14 @@ export function QuickCashPage({
                       </button>
                     ) : null}
                   </span>
+                  {e.status === "Pendente" && (slug === "restaurante" || slug === "lavagem") ? (
+                    <div className="flex w-full flex-wrap gap-2 items-center justify-end">
+                      <select aria-label={`Receber ${e.client_name || formatMoney(e.amount)} via`} value={receiptMethods[e.id] || e.payment_method} onChange={(event) => setReceiptMethods((prev) => ({ ...prev, [e.id]: event.target.value === "Banco" ? "Banco" : "Numerário" }))} className={`${inputClass} w-36 h-9 text-xs`}>
+                        <option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option>
+                      </select>
+                      <Button type="button" size="sm" disabled={paying === e.id} onClick={() => void onPay(e)}><Check />{paying === e.id ? "A guardar…" : "Marcar pago"}</Button>
+                    </div>
+                  ) : null}
                 </li>
               ))}
             </ul>

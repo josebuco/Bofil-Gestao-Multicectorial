@@ -52,7 +52,7 @@ export const getFinance = createServerFn({ method: "GET" })
         .lte("created_at", toIso),
       context.supabase
         .from("sector_entries")
-        .select("id, sector, amount, created_at, payment_method")
+        .select("id, sector, amount, created_at, payment_method, status, client_name")
         .gte("created_at", fromIso)
         .lte("created_at", toIso),
       context.supabase
@@ -144,15 +144,16 @@ export const getFinance = createServerFn({ method: "GET" })
       });
     }
     for (const q of quick.data || []) {
-      add(revenue, q.sector, q.created_at, q.amount || 0);
-      if (q.payment_method === "Banco") bank[q.sector] = (bank[q.sector] || 0) + (q.amount || 0);
+      if (q.status !== "Pendente") add(revenue, q.sector, q.created_at, q.amount || 0);
+      if (q.status !== "Pendente" && q.payment_method === "Banco") bank[q.sector] = (bank[q.sector] || 0) + (q.amount || 0);
       entries.push({
+        id: q.id,
         sector: q.sector,
         kind: "receita",
         date: q.created_at,
-        description: "Entrada",
+        description: q.client_name ? `Entrada — ${q.client_name}` : "Entrada",
         amount: q.amount || 0,
-        status: "Recebido",
+        status: q.status,
         payment: q.payment_method,
       });
     }
@@ -269,7 +270,7 @@ async function sectorCashOnHand(
     sector === "agua"
       ? supabase.from("water_sales").select("total, payment_method").neq("status", "Pendente")
       : Promise.resolve({ data: [] }),
-    supabase.from("sector_entries").select("amount, payment_method").eq("sector", sector),
+    supabase.from("sector_entries").select("amount, payment_method").eq("sector", sector).neq("status", "Pendente"),
     supabase.from("expenses").select("amount, payment_method").eq("sector", sector),
     supabase.from("bank_deposits").select("amount").eq("sector", sector),
     supabase.from("sector_transfers").select("amount, payment_method").eq("from_sector", sector),

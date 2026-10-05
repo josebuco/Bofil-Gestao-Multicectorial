@@ -442,6 +442,7 @@ export type Database = {
         Row: {
           amount: number
           asset_id: string | null
+          client_name: string | null
           cost: number
           created_at: string
           created_by: string | null
@@ -449,11 +450,13 @@ export type Database = {
           payment_method: string
           per_student: number | null
           sector: string
+          status: string
           students: number | null
         }
         Insert: {
           amount: number
           asset_id?: string | null
+          client_name?: string | null
           cost?: number
           created_at?: string
           created_by?: string | null
@@ -461,11 +464,13 @@ export type Database = {
           payment_method?: string
           per_student?: number | null
           sector: string
+          status?: string
           students?: number | null
         }
         Update: {
           amount?: number
           asset_id?: string | null
+          client_name?: string | null
           cost?: number
           created_at?: string
           created_by?: string | null
@@ -473,6 +478,7 @@ export type Database = {
           payment_method?: string
           per_student?: number | null
           sector?: string
+          status?: string
           students?: number | null
         }
         Relationships: [

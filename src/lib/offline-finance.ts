@@ -101,7 +101,8 @@ function queuedEntry(item: QueuedItem): FinanceEntry | null {
   const amount = Number(item.data["amount"] ?? item.data["offline_total"] ?? item.data["total"]) || 0;
   const payment = String(item.data["payment_method"] || "Numerário");
   if (item.kind === "sector_entry") {
-    return { id: item.id, sector: String(item.data["sector"]), kind: "receita", date: item.at, description: "Entrada", amount, status: "Recebido", payment, pending: true };
+    const client = item.data["client_name"];
+    return { id: item.id, sector: String(item.data["sector"]), kind: "receita", date: item.data["entry_date"] ? `${item.data["entry_date"]}T12:00:00+01:00` : item.at, description: client ? `Entrada — ${client}` : "Entrada", amount, status: String(item.data["status"] || "Pago"), payment, pending: true };
   }
   if (item.kind === "water_sale") {
     return { id: item.id, sector: "agua", kind: "receita", date: item.at, description: item.label, amount, status: String(item.data["status"] || "Entregue"), payment, pending: true };
@@ -138,6 +139,14 @@ export function mergeQueuedFinance(
     totals: { ...base.totals },
   };
   const pendingEntries = queue.map(queuedEntry).filter((entry): entry is FinanceEntry => entry !== null);
+
+  for (const item of queue.filter((item) => item.kind === "sector_entry_payment")) {
+    const existing = snapshot.entries.find((entry) => entry.id === item.data["id"] && entry.sector === item.data["sector"] && entry.kind === "receita");
+    if (!existing || existing.status !== "Pendente") continue;
+    // Replace the pending row, then add only its newly received revenue below.
+    snapshot.entries = snapshot.entries.filter((entry) => entry !== existing);
+    pendingEntries.push({ ...existing, status: "Pago", payment: String(item.data["payment_method"]), pending: true });
+  }
 
   for (const entry of pendingEntries) {
     const date = dayKey(entry.date);
@@ -190,4 +199,21 @@ export function useMergedFinance(
 ) {
   const queue = useQueue();
   return mergeQueuedFinance(source, queue, range);
+}
+
+type SectorEntryRow = { id: string; amount: number; cost: number; status: string; client_name: string | null; payment_method: string; created_at: string };
+
+/** Same local payment overlay used by the finance snapshot and sector histories. */
+export function mergeQueuedSectorEntries(rows: SectorEntryRow[], queue: QueuedItem[], sector: string, range: { from: string; to: string }) {
+  const local = queue.filter((item) => item.kind === "sector_entry" && item.data["sector"] === sector).map((item) => ({
+    id: item.id, amount: Number(item.data["amount"]) || 0, cost: Number(item.data["cost"]) || 0,
+    status: String(item.data["status"] || "Pago"), client_name: item.data["client_name"] ? String(item.data["client_name"]) : null,
+    payment_method: String(item.data["payment_method"] || "Numerário"),
+    created_at: item.data["entry_date"] ? `${item.data["entry_date"]}T12:00:00+01:00` : item.at, pending: true,
+  }));
+  return [...local, ...rows.map((row) => ({ ...row, pending: false }))].map((row) => {
+    const receipt = queue.find((item) => item.kind === "sector_entry_payment" && item.data["id"] === row.id && item.data["sector"] === sector);
+    return receipt && row.status === "Pendente" ? { ...row, status: "Pago", payment_method: String(receipt.data["payment_method"]), pending: true } : row;
+  }).filter((row) => { const date = dayKey(row.created_at); return date >= range.from && date <= range.to; })
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
 }

@@ -161,6 +161,8 @@ export const addSectorEntry = createServerFn({ method: "POST" })
         per_student: z.number().int().min(0).max(100_000_000).nullable().default(null),
         amount: z.number().int().positive().max(1_000_000_000),
         cost: z.number().int().min(0).max(1_000_000_000).default(0),
+        status: z.enum(["Pago", "Pendente"]).default("Pago"),
+        client_name: z.string().trim().max(200).nullable().default(null),
         payment_method: z.enum(["Numerário", "Banco"]).default("Numerário"),
         recorded_at: z.string().datetime().optional(),
         entry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -190,7 +192,7 @@ export const listSectorEntries = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     const { data: rows, error } = await context.supabase
       .from("sector_entries")
-      .select("id, amount, cost, created_at, payment_method, asset_id, students, per_student")
+      .select("id, amount, cost, status, client_name, created_at, payment_method, asset_id, students, per_student")
       .eq("sector", data.sector)
       .gte("created_at", dayStartIso(data.from))
       .lte("created_at", dayEndIso(data.to))
@@ -211,5 +213,26 @@ export const deleteSectorEntry = createServerFn({ method: "POST" })
     if (!isAdmin) throw new Error("Só a administração pode apagar registos.");
     const { error } = await context.supabase.from("sector_entries").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const paySectorEntry = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    id: z.string().uuid(),
+    sector: z.enum(["restaurante", "lavagem"]),
+    payment_method: z.enum(["Numerário", "Banco"]),
+  }).parse(d))
+  .handler(async ({ context, data }) => {
+    // RLS checks the caller's sector access; repeated receipts are harmless.
+    const { data: row, error } = await context.supabase.from("sector_entries")
+      .select("id, status").eq("id", data.id).eq("sector", data.sector).single();
+    if (error || !row) throw new Error("Entrada não encontrada ou sem acesso.");
+    if (row.status === "Pago") return { ok: true };
+    const { data: paid, error: updateError } = await context.supabase.from("sector_entries")
+      .update({ status: "Pago", payment_method: data.payment_method })
+      .eq("id", data.id).eq("sector", data.sector).eq("status", "Pendente").select("id");
+    if (updateError) throw new Error(updateError.message);
+    if (!paid?.length) throw new Error("A entrada foi alterada. Actualize o histórico.");
     return { ok: true };
   });
