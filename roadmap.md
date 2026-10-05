@@ -1,10 +1,11 @@
 # Roadmap
 
-- [ ] Pagamentos pendentes no Restaurante e Lavagem
-  - [ ] Estado e cliente opcional, preservando entradas antigas
-  - [ ] Marcar pago e sincronizar sem internet
-  - [ ] Totais, saldo e lucro sem receitas pendentes
-  - [ ] Verificar formulários, cálculos e histórico
+- [x] Pagamentos pendentes no Restaurante e Lavagem
+  - [x] Estado e cliente opcional, preservando entradas antigas
+  - [x] Marcar pago e sincronizar sem internet
+  - [x] Totais, saldo e lucro sem receitas pendentes
+  - [x] Verificar formulários, cálculos e histórico (5 testes financeiros; navegador com dados locais; build OK)
+  - [ ] Verificação online autenticada da sincronização
 
 - [x] Simplificar aba Utilizadores (design "Cartões industriais" escolhido)
   - [x] Dispositivos integrados por baixo dentro de Utilizadores
