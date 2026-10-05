@@ -194,7 +194,7 @@ export function QuickCashPage({
 
         <DebtCard sector={slug} />
 
-        <p className="text-sm text-muted-foreground">Entradas por receber <span className="ml-2 font-display text-foreground">{formatMoney(pendingTotal)} Kz</span></p>
+        <p className="text-sm text-muted-foreground">Entradas por receber <span className="ml-2 font-display text-foreground">{formatMoney(pendingTotal)}</span></p>
 
         <Card title="Custo e Lucro">
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-5">
