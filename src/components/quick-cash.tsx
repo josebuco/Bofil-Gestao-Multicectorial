@@ -284,7 +284,7 @@ export function QuickCashPage({
         action={<PeriodPicker preset={preset} setPreset={setPreset} custom={custom} setCustom={setCustom} />}
       />
       <div className="flex-1 overflow-auto p-6 space-y-5">
-                <ExpandableCard title="Registar entrada" defaultOpen>
+        <ExpandableCard title="Registar entrada" defaultOpen>
           <form
             onSubmit={onSubmit}
             className="grid grid-cols-2 items-end gap-2 p-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto_auto]"
