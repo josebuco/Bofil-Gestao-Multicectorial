@@ -119,7 +119,7 @@ export function QuickCashPage({
       category: String(f.get("category") || "Geral").trim() || "Geral",
       description: String(f.get("description") || "").trim() || "Despesa",
       amount: value,
-      expense_date: isAdminView && entryDate ? entryDate : todayAngola(),
+      expense_date: String(f.get("expense_date") || "") || todayAngola(),
       supplier: String(f.get("supplier") || "").trim() || null,
       status: String(f.get("status") || "Pago"),
       invoice_path: invoicePath,
@@ -434,6 +434,7 @@ export function QuickCashPage({
               <input name="supplier" placeholder="Fornecedor (opcional)" className={inputClass} />
               <select name="payment_method" className={inputClass}><option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option></select>
               <select name="status" className={inputClass}><option>Pago</option><option>Pendente</option></select>
+              <input name="expense_date" type="date" defaultValue={todayAngola()} max={todayAngola()} aria-label="Data da saída" className={inputClass} />
               <label className="col-span-2 text-[11px] text-muted-foreground">Comprovativo (foto ou PDF, opcional)
                 <input name="invoice" type="file" accept="image/*,application/pdf" className="mt-1 block w-full text-xs text-muted-foreground file:mr-2 file:rounded file:border-0 file:bg-edge file:px-2 file:py-1 file:text-foreground" />
               </label>
@@ -546,6 +547,7 @@ export function QuickCashPage({
               <input name="supplier" placeholder="Fornecedor (opcional)" className={inputClass} />
               <select name="payment_method" className={inputClass}><option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option></select>
               <select name="status" className={inputClass}><option>Pago</option><option>Pendente</option></select>
+              <input name="expense_date" type="date" defaultValue={todayAngola()} max={todayAngola()} aria-label="Data da saída" className={inputClass} />
               <label className="col-span-2 text-[11px] text-muted-foreground">Comprovativo (foto ou PDF, opcional)
                 <input name="invoice" type="file" accept="image/*,application/pdf" className="mt-1 block w-full text-xs text-muted-foreground file:mr-2 file:rounded file:border-0 file:bg-edge file:px-2 file:py-1 file:text-foreground" />
               </label>
