@@ -22,6 +22,43 @@ import { Button } from "@/components/ui/button";
 
 type Slug = "restaurante" | "lavagem" | "transporte";
 
+function Segmented<T extends string>({
+  value,
+  onChange,
+  options,
+  activeClass,
+  ariaLabel,
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: readonly { value: T; label: string }[];
+  activeClass: string;
+  ariaLabel: string;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={ariaLabel}
+      className="grid h-8 grid-cols-2 overflow-hidden rounded-md bg-ink ring-1 ring-edge"
+    >
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          aria-pressed={value === o.value}
+          onClick={() => onChange(o.value)}
+          className={`min-w-0 whitespace-nowrap px-2 text-[11px] font-medium transition-colors ${
+            value === o.value ? activeClass : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+
 export function QuickCashPage({
   slug,
   title,
