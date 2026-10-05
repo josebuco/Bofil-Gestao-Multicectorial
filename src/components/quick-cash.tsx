@@ -22,6 +22,46 @@ import { Button } from "@/components/ui/button";
 
 type Slug = "restaurante" | "lavagem" | "transporte";
 
+const compactInput =
+  "h-9 w-full rounded-md bg-ink ring-1 ring-edge px-2.5 text-base font-display text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-primary";
+
+function Segmented<T extends string>({
+  value,
+  onChange,
+  options,
+  activeClass,
+  ariaLabel,
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: readonly { value: T; label: string }[];
+  activeClass: string;
+  ariaLabel: string;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={ariaLabel}
+      className="grid h-8 grid-cols-2 overflow-hidden rounded-md bg-ink ring-1 ring-edge"
+    >
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          aria-pressed={value === o.value}
+          onClick={() => onChange(o.value)}
+          className={`min-w-0 whitespace-nowrap px-2 text-[11px] font-medium transition-colors ${
+            value === o.value ? activeClass : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+
 export function QuickCashPage({
   slug,
   title,
@@ -152,7 +192,7 @@ export function QuickCashPage({
     try {
       const c = Math.max(0, Math.round(Number(cost) || 0));
       if (c > value) { toast.error("O custo não pode ser maior que a entrada."); setSaving(false); return; }
-      const payload = { sector: slug, amount: value, cost: c, status, client_name: clientName.trim() || null, payment_method: method, ...(isAdminView && entryDate ? { entry_date: entryDate } : {}) };
+      const payload = { sector: slug, amount: value, cost: c, status, client_name: status === "Pendente" ? clientName.trim() || null : null, payment_method: method, ...(isAdminView && entryDate ? { entry_date: entryDate } : {}) };
       const r = await sendOrQueue("sector_entry", payload, `${title}: ${formatMoney(value)} Kz`, () => add({ data: payload }));
       setAmount("");
       setCost("");
@@ -244,98 +284,137 @@ export function QuickCashPage({
         action={<PeriodPicker preset={preset} setPreset={setPreset} custom={custom} setCustom={setCustom} />}
       />
       <div className="flex-1 overflow-auto p-6 space-y-5">
-        <ExpandableCard title="Registar entrada" summary="Adicionar uma nova entrada neste setor" defaultOpen>
-        <form
-          onSubmit={onSubmit}
-          className="relative p-4 pt-14 grid grid-cols-1 xl:grid-cols-3 gap-3 items-end"
-        >
-          {isAdminView ? (
-            <div className="absolute right-5 top-4 flex items-center gap-2">
-              {showEntryDate ? (
-                <input
-                  type="date"
-                  value={entryDate}
-                  max={todayAngola()}
-                  onChange={(e) => setEntryDate(e.target.value)}
-                  aria-label="Data da entrada"
-                  className="h-8 w-36 rounded-md bg-ink ring-1 ring-edge px-2 text-xs text-foreground focus:outline-none focus:ring-primary"
-                />
-              ) : null}
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => {
-                  setShowEntryDate((open) => !open);
-                  if (!entryDate) setEntryDate(todayAngola());
-                }}
-                aria-expanded={showEntryDate}
-              >
-                <CalendarDays /> Data
-              </Button>
-            </div>
-          ) : null}
-          <div className="flex-1">
-            <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-              Nova entrada (Kz)
-            </label>
-            <input
-              aria-label="Nova entrada (Kz)"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              type="number"
-              min={1}
-              inputMode="numeric"
-              placeholder="0"
-              className={`${inputClass} mt-1.5 text-xl font-display h-12`}
-            />
-            {!isAdminView ? (
-              <p className="text-[11px] text-muted-foreground mt-1.5">Data e hora são registadas automaticamente.</p>
-            ) : null}
-          </div>
-          <div>
-            <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Custo da entrada (Kz)</label>
-            <input
-              aria-label="Custo da entrada (Kz)"
-              value={cost}
-              onChange={(e) => setCost(e.target.value)}
-              type="number"
-              min={0}
-              inputMode="numeric"
-              placeholder="0"
-              className={`${inputClass} mt-1.5 text-xl font-display h-12`}
-            />
-            <p className="text-[11px] text-success mt-1.5">Lucro recebido: {formatMoney((status === "Pago" ? Number(amount) || 0 : 0) - (Number(cost) || 0))}</p>
-          </div>
-          <label className="block text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Estado
-            <select aria-label="Estado da entrada" value={status} onChange={(e) => setStatus(e.target.value === "Pendente" ? "Pendente" : "Pago")} className={`${inputClass} mt-1.5 h-12 text-sm`}>
-              <option>Pago</option><option>Pendente</option>
-            </select>
-          </label>
-          <label className="block text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Cliente / Observação (opcional)
-            <input aria-label="Cliente / Observação" value={clientName} onChange={(e) => setClientName(e.target.value)} maxLength={200} className={`${inputClass} mt-1.5 h-12 text-sm`} />
-          </label>
-          <div className="grid grid-cols-2 w-full shrink-0 rounded-md ring-1 ring-edge overflow-hidden h-12">
-            {(["Numerário", "Banco"] as const).map((m) => (
-              <Button
-                key={m}
-                type="button"
-                variant="ghost"
-                aria-pressed={method === m}
-                onClick={() => setMethod(m)}
-                className={`h-full rounded-none min-w-0 whitespace-nowrap px-2 text-sm font-medium ${method === m ? "bg-brand text-primary-foreground hover:bg-brand/90" : "text-muted-foreground hover:bg-muted"}`}
-              >
-                {m === "Banco" ? "Banco (VB)" : m}
-              </Button>
-            ))}
-          </div>
-          <Button
-            type="submit"
-            disabled={saving}
-            className={`h-12 px-5 w-full xl:w-auto shrink-0 rounded-md font-medium text-primary-foreground ${accent} hover:opacity-90 disabled:opacity-50 flex items-center gap-2 justify-center whitespace-nowrap`}
+        <ExpandableCard title="Registar entrada" defaultOpen>
+          <form
+            onSubmit={onSubmit}
+            className="grid grid-cols-2 items-end gap-2 p-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto_auto]"
           >
-            <Plus className="size-5" /> {saving ? "A guardar…" : "Registar entrada"}
-          </Button>
-        </form>
+            <label className="block min-w-0">
+              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Nova entrada (Kz)
+              </span>
+              <input
+                aria-label="Nova entrada (Kz)"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                type="number"
+                min={1}
+                inputMode="numeric"
+                placeholder="0"
+                className={compactInput}
+              />
+            </label>
+            <label className="block min-w-0">
+              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Custo da entrada (Kz)
+              </span>
+              <input
+                aria-label="Custo da entrada (Kz)"
+                value={cost}
+                onChange={(e) => setCost(e.target.value)}
+                type="number"
+                min={0}
+                inputMode="numeric"
+                placeholder="0"
+                className={compactInput}
+              />
+            </label>
+            <div className="min-w-0">
+              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Estado
+              </span>
+              <Segmented
+                ariaLabel="Estado da entrada"
+                value={status}
+                activeClass={status === "Pendente" ? "bg-warning/20 text-warning" : "bg-success/20 text-success"}
+                onChange={(v) => {
+                  setStatus(v);
+                  if (v === "Pago") setClientName("");
+                }}
+                options={[
+                  { value: "Pago", label: "Pago" },
+                  { value: "Pendente", label: "Pendente" },
+                ]}
+              />
+            </div>
+            <div className="min-w-0">
+              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Pagamento
+              </span>
+              <Segmented
+                ariaLabel="Método de pagamento"
+                value={method}
+                activeClass="bg-brand text-primary-foreground"
+                onChange={setMethod}
+                options={[
+                  { value: "Numerário", label: "Numerário" },
+                  { value: "Banco", label: "Banco (VB)" },
+                ]}
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={saving}
+              className={`col-span-2 xl:col-span-1 h-9 rounded-md px-3 text-sm font-medium text-primary-foreground ${accent} hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5 justify-center whitespace-nowrap`}
+            >
+              <Plus className="size-4" /> {saving ? "A guardar…" : "Registar"}
+            </Button>
+            {isAdminView ? (
+              <div className="col-span-2 xl:col-span-5 flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  aria-expanded={showEntryDate}
+                  onClick={() => {
+                    setShowEntryDate((open) => !open);
+                    if (!entryDate) setEntryDate(todayAngola());
+                  }}
+                  className="h-8 px-2 text-xs"
+                >
+                  <CalendarDays className="size-3.5" /> Data
+                </Button>
+                {showEntryDate ? (
+                  <input
+                    type="date"
+                    value={entryDate}
+                    max={todayAngola()}
+                    onChange={(e) => setEntryDate(e.target.value)}
+                    aria-label="Data da entrada"
+                    className="h-8 w-36 rounded-md bg-ink ring-1 ring-edge px-2 text-xs text-foreground focus:outline-none focus:ring-primary"
+                  />
+                ) : null}
+              </div>
+            ) : (
+              <p className="col-span-2 xl:col-span-5 text-[11px] text-muted-foreground">
+                Data e hora registadas automaticamente.
+              </p>
+            )}
+            {status === "Pendente" ? (
+              <label className="col-span-2 xl:col-span-5 block min-w-0 rounded-md bg-warning/5 ring-1 ring-warning/30 px-2.5 py-1.5">
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-warning">
+                  Cliente / Observação
+                </span>
+                <input
+                  aria-label="Cliente / Observação"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  maxLength={200}
+                  placeholder="Quem vai pagar?"
+                  className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                />
+              </label>
+            ) : null}
+            {amount || cost ? (
+              <p className="col-span-2 xl:col-span-5 text-[11px] text-muted-foreground">
+                Lucro:{" "}
+                <span className="font-display text-success">
+                  {formatMoney((Number(amount) || 0) - (Number(cost) || 0))}
+                </span>
+                {status === "Pendente" ? " — só entra na caixa quando marcar como pago." : ""}
+              </p>
+            ) : null}
+          </form>
         </ExpandableCard>
 
         {totalsBlock}
