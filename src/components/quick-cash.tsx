@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { ArrowDownRight, ArrowUpRight, CalendarDays, Check, FileText, Plus, Trash2 } from "lucide-react";
 import { Area, ComposedChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries, paySectorEntry } from "@/lib/access.functions";
-import { createExpense, deleteExpense } from "@/lib/expenses.functions";
-import { addCategory, listCategories } from "@/lib/rental.functions";
+import { createExpense, deleteExpense, getExpenses } from "@/lib/expenses.functions";
+import { addCategory, listAssets, listCategories } from "@/lib/rental.functions";
 import { openInvoice, uploadInvoice } from "@/lib/invoice";
 import { getFinance } from "@/lib/finance.functions";
 import { periodLabel } from "@/lib/period";
@@ -79,7 +79,7 @@ export function QuickCashPage({
   const remove = useServerFn(deleteSectorEntry);
   const list = useServerFn(listSectorEntries);
   const listAssetsFn = useServerFn(listAssets);
-  const listExpensesFn = useServerFn(listExpenses);
+  const listExpensesFn = useServerFn(getExpenses);
   const access = useAccess();
   const isAdminView = access.isAdmin;
   const [amount, setAmount] = useState("");
@@ -165,7 +165,7 @@ export function QuickCashPage({
   const profitEntries = withVehicles ? mergeQueuedSectorEntries(vehEntriesQ.data || [], queue, slug, range, true) : allEntries;
   const vehOuts = withVehicles
     ? [
-        ...((vehExpQ.data || []) as Array<{ sector: string; asset_id: string | null; amount: number; expense_date: string }>).filter((e) => e.sector === slug && e.asset_id && vehIds.has(e.asset_id) && e.expense_date >= range.from && e.expense_date <= range.to),
+        ...((vehExpQ.data?.expenses || []) as Array<{ sector: string; asset_id: string | null; amount: number; expense_date: string }>).filter((e) => e.sector === slug && e.asset_id && vehIds.has(e.asset_id) && e.expense_date >= range.from && e.expense_date <= range.to),
         ...queue.filter((i) => i.kind === "expense" && i.data["draft"] && i.data["sector"] === slug).map((i) => ({ amount: Number(i.data["amount"]) || 0, expense_date: String(i.data["expense_date"] || "") })).filter((e) => e.expense_date >= range.from && e.expense_date <= range.to),
       ].reduce((s, e) => s + (Number(e.amount) || 0), 0)
     : 0;
