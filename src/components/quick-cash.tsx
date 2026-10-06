@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { ArrowDownRight, ArrowUpRight, CalendarDays, Check, FileText, Plus, Trash2 } from "lucide-react";
 import { Area, ComposedChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries, paySectorEntry } from "@/lib/access.functions";
-import { createExpense, deleteExpense, getExpenses } from "@/lib/expenses.functions";
+import { createExpense, deleteExpense, markExpensePaid, getExpenses } from "@/lib/expenses.functions";
 import { addCategory, listAssets, listCategories } from "@/lib/rental.functions";
 import { openInvoice, uploadInvoice } from "@/lib/invoice";
 import { getFinance } from "@/lib/finance.functions";
@@ -93,6 +93,7 @@ export function QuickCashPage({
   const [saving, setSaving] = useState(false);
   const addExp = useServerFn(createExpense);
   const delExp = useServerFn(deleteExpense);
+  const payExp = useServerFn(markExpensePaid);
   const addCat = useServerFn(addCategory);
   const extraCats = useQuery({ queryKey: ["expense-categories"], queryFn: () => listCategories() });
   const categories = Array.from(new Set(["Combustível", "Manutenção e Reparação", "Produtos", "Subsídio de Alimentação", "Salários", "Energia", ...(extraCats.data || []), "Outros"]));
@@ -479,6 +480,12 @@ export function QuickCashPage({
                       <button type="button" onClick={() => e.invoice_path && void openInvoice(e.invoice_path)} className="text-xs text-primary flex items-center gap-1"><FileText className="size-3.5" /> Ver fatura</button>
                     ) : null}
                     <span className="font-display text-destructive">−{formatMoney(e.amount)}</span>
+                    {e.status === "Pendente" && !e.pending && e.id ? (
+                      <button type="button" onClick={async () => {
+                        try { await payExp({ data: { id: e.id as string, invoice_path: null, notes: null } }); toast.success("Saída marcada como paga."); await Promise.all([refresh(), qc.invalidateQueries({ queryKey: ["expenses"] })]); }
+                        catch (err) { toast.error(err instanceof Error ? err.message : "Não foi possível marcar."); }
+                      }} className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">Pendente · Marcar pago</button>
+                    ) : null}
                     {access.isAdmin && !e.pending ? (
                       <button
                         type="button"
@@ -500,12 +507,6 @@ export function QuickCashPage({
             </ul>
           </ExpandableCard>
           </div>
-        )}
-        {slug === "lavagem" && (
-          <section className="space-y-3">
-            <h2 className="font-display text-lg uppercase tracking-wide text-foreground">Equipamentos</h2>
-            <FleetPage sector="lavagem" title="Estação 4 de Abril" subtitle="" dot="bg-wash" embedded />
-          </section>
         )}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <ExpandableCard title="Todas as entradas" summary={`${allEntries.length} registo${allEntries.length === 1 ? "" : "s"} no período`}>
@@ -592,6 +593,12 @@ export function QuickCashPage({
                       <button type="button" onClick={() => e.invoice_path && void openInvoice(e.invoice_path)} className="text-xs text-primary flex items-center gap-1"><FileText className="size-3.5" /> Ver fatura</button>
                     ) : null}
                     <span className="font-display text-destructive">−{formatMoney(e.amount)}</span>
+                    {e.status === "Pendente" && !e.pending && e.id ? (
+                      <button type="button" onClick={async () => {
+                        try { await payExp({ data: { id: e.id as string, invoice_path: null, notes: null } }); toast.success("Saída marcada como paga."); await Promise.all([refresh(), qc.invalidateQueries({ queryKey: ["expenses"] })]); }
+                        catch (err) { toast.error(err instanceof Error ? err.message : "Não foi possível marcar."); }
+                      }} className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">Pendente · Marcar pago</button>
+                    ) : null}
                     {access.isAdmin && !e.pending ? (
                       <button
                         type="button"
@@ -615,6 +622,12 @@ export function QuickCashPage({
           </div>
           )}
         </div>
+        {slug === "lavagem" && (
+          <section className="space-y-3">
+            <h2 className="font-display text-lg uppercase tracking-wide text-foreground">Veículos e equipamentos</h2>
+            <FleetPage sector="lavagem" title="Estação 4 de Abril" subtitle="" dot="bg-wash" embedded />
+          </section>
+        )}
       </div>
     </div>
   );

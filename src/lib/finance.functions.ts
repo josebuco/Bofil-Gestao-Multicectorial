@@ -162,9 +162,13 @@ export const getFinance = createServerFn({ method: "GET" })
     }
 
     for (const e of expenses.data || []) {
-      add(expense, e.sector, e.expense_date, e.amount || 0);
-      if (e.payment_method === "Banco") bankExp[e.sector] = (bankExp[e.sector] || 0) + (e.amount || 0);
+      // Saídas pendentes só contam depois de marcadas como pagas.
+      if (e.status !== "Pendente") {
+        add(expense, e.sector, e.expense_date, e.amount || 0);
+        if (e.payment_method === "Banco") bankExp[e.sector] = (bankExp[e.sector] || 0) + (e.amount || 0);
+      }
       entries.push({
+        id: e.id,
         sector: e.sector,
         kind: "despesa",
         date: e.expense_date,
@@ -281,7 +285,7 @@ async function sectorCashOnHand(
       ? supabase.from("water_sales").select("total, payment_method").neq("status", "Pendente")
       : Promise.resolve({ data: [] }),
     supabase.from("sector_entries").select("amount, payment_method, asset_id").eq("sector", sector).neq("status", "Pendente"),
-    supabase.from("expenses").select("amount, payment_method, asset_id").eq("sector", sector),
+    supabase.from("expenses").select("amount, payment_method, asset_id").eq("sector", sector).neq("status", "Pendente"),
     supabase.from("bank_deposits").select("amount").eq("sector", sector),
     supabase.from("sector_transfers").select("amount, payment_method").eq("from_sector", sector),
     supabase.from("sector_transfers").select("amount, payment_method").eq("to_sector", sector),

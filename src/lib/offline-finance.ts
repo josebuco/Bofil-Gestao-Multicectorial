@@ -163,9 +163,11 @@ export function mergeQueuedFinance(
       if (bank) sector.bankRevenue += entry.amount;
     }
     if (countsAsExpense) {
-      sector.expense += entry.amount;
-      if (bank) sector.bankExpense += entry.amount;
       if (entry.status === "Pendente") sector.pendingExpense += entry.amount;
+      else {
+        sector.expense += entry.amount;
+        if (bank) sector.bankExpense += entry.amount;
+      }
     }
     sector.balance = sector.revenue - sector.expense;
     sector.bank = sector.bankRevenue - sector.bankExpense + sector.deposits;
