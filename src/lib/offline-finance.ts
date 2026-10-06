@@ -99,7 +99,7 @@ function emptySnapshot(range: { from: string; to: string }): FinanceSnapshot {
 
 function queuedEntry(item: QueuedItem): FinanceEntry | null {
   // Vehicle drafts (Estação 4 de Abril) stay on their cards, outside sector totals.
-  if (item.data["draft"]) return null;
+  if (item.data["draft"] && item.kind === "sector_entry") return null;
   const amount = Number(item.data["amount"] ?? item.data["offline_total"] ?? item.data["total"]) || 0;
   const payment = String(item.data["payment_method"] || "Numerário");
   if (item.kind === "sector_entry") {
