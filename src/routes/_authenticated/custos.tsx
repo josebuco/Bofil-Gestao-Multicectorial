@@ -397,10 +397,10 @@ function CustosPage() {
                     </option>
                   ))}
                 </select>
-                {access.isAdmin && (extraCats.data || []).includes(curCat) && !CATEGORIES.includes(curCat as never) ? (
+                {access.isAdmin && (extraCats.data || []).includes(curCat || "") && curCat && !CATEGORIES.includes(curCat as never) ? (
                   <div className="mt-1 flex gap-3 text-[11px]">
-                    <button type="button" onClick={() => editCategory(curCat)} className="text-primary hover:underline">Editar categoria</button>
-                    <button type="button" onClick={() => removeCategory(curCat)} className="text-destructive hover:underline">Excluir categoria</button>
+                    <button type="button" onClick={() => editCategory(curCat!)} className="text-primary hover:underline">Editar categoria</button>
+                    <button type="button" onClick={() => removeCategory(curCat!)} className="text-destructive hover:underline">Excluir categoria</button>
                   </div>
                 ) : null}
               </div>
