@@ -297,7 +297,7 @@ export function QuickCashPage({
                 aria-label="Nova entrada (Kz)"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                type="number"
+                type="number" step="any"
                 min={1}
                 inputMode="numeric"
                 placeholder="0"
@@ -312,7 +312,7 @@ export function QuickCashPage({
                 aria-label="Custo da entrada (Kz)"
                 value={cost}
                 onChange={(e) => setCost(e.target.value)}
-                type="number"
+                type="number" step="any"
                 min={0}
                 inputMode="numeric"
                 placeholder="0"
