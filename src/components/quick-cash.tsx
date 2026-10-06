@@ -145,7 +145,7 @@ export function QuickCashPage({
   });
   const entries = useQuery({
     queryKey: ["entries", slug, range.from, range.to],
-    queryFn: () => list({ data: { sector: slug, ...range } }),
+    queryFn: () => list({ data: { sector: slug, ...range, excludeVehicles: true } }),
   });
 
   const queue = useQueue();
