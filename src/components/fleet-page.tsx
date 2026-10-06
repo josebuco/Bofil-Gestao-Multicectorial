@@ -40,6 +40,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   const addEntry = useServerFn(addSectorEntry);
   const addExp = useServerFn(createExpense);
   const delExp = useServerFn(deleteExpense);
+  const payExp = useServerFn(markExpensePaid);
 
   const assets = useQuery({ queryKey: ["rental-assets", sector], queryFn: () => listA({ data: { sector } }) });
   const entries = useQuery({ queryKey: ["entries", sector, range.from, range.to], queryFn: () => listE({ data: { sector, ...range } }) });
@@ -654,6 +655,12 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                       <span className="flex items-center gap-3 shrink-0">
                         {e.invoice_path && !e.pending ? (
                           <button type="button" onClick={() => e.invoice_path && void openInvoice(e.invoice_path)} className="text-xs text-primary flex items-center gap-1"><FileText className="size-3.5" /> Ver fatura</button>
+                        ) : null}
+                        {e.status === "Pendente" && !e.pending ? (
+                          <button type="button" onClick={async () => {
+                            try { await payExp({ data: { id: e.id, invoice_path: null, notes: null } }); toast.success("Saída marcada como paga."); await Promise.all([qc.invalidateQueries({ queryKey: ["expenses"] }), qc.invalidateQueries({ queryKey: ["finance"] })]); }
+                            catch (err) { toast.error(err instanceof Error ? err.message : "Não foi possível marcar."); }
+                          }} className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">Pendente · Marcar pago</button>
                         ) : null}
                         <span className="font-display text-destructive">−{formatMoney(e.amount || 0)}</span>
                         {access.isAdmin && !e.pending ? (
