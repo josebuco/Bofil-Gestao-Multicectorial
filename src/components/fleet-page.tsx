@@ -26,7 +26,7 @@ const label = "text-[11px] uppercase tracking-[0.14em] text-muted-foreground";
 export function FleetPage({ sector, title, subtitle, dot, embedded = false, afterAssets }: { sector: FleetSector; title: string; subtitle: string; dot: string; embedded?: boolean; afterAssets?: React.ReactNode }) {
   const perStudentMode = sector === "transporte";
   const sectorEntryMode = false; // entradas sempre por veículo (no Transporte: alunos × valor diário)
-  const equipmentOnly = sector === "lavagem";
+  const equipmentOnly = false;
   const { preset, setPreset, custom, setCustom, range } = usePeriod("mes");
   const qc = useQueryClient();
   const access = useAccess();
