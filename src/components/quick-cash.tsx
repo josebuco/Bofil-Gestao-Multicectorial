@@ -162,7 +162,7 @@ export function QuickCashPage({
   const vehAssetsQ = useQuery({ queryKey: ["rental-assets", slug], queryFn: () => listAssetsFn({ data: { sector: "lavagem" } }), enabled: withVehicles });
   const vehExpQ = useQuery({ queryKey: ["expenses"], queryFn: () => listExpensesFn(), enabled: withVehicles });
   const vehIds = new Set((vehAssetsQ.data || []).filter((a) => a.kind === "Veículo").map((a) => a.id));
-  const profitEntries = withVehicles ? mergeQueuedSectorEntries(vehEntriesQ.data || [], queue, slug, range, true) : allEntries;
+  const profitEntries = withVehicles ? mergeQueuedSectorEntries((vehEntriesQ.data || []).filter((r) => r.asset_id && vehIds.has(r.asset_id)), queue.filter((i) => i.kind !== "sector_entry" || i.data["draft"]), slug, range, true) : allEntries;
   const vehOuts = withVehicles
     ? [
         ...((vehExpQ.data?.expenses || []) as Array<{ sector: string; asset_id: string | null; amount: number; expense_date: string }>).filter((e) => e.sector === slug && e.asset_id && vehIds.has(e.asset_id) && e.expense_date >= range.from && e.expense_date <= range.to),
@@ -178,7 +178,7 @@ export function QuickCashPage({
   const sector = mergedFinance.sectors.find((s) => s.slug === slug);
   const outs = mergedFinance.entries.filter((e) => e.sector === slug && e.kind === "despesa");
   const outsTotal = outs.reduce((s, e) => s + (Number(e.amount) || 0), 0);
-  const pOuts = outsTotal + vehOuts;
+  const pOuts = withVehicles ? vehOuts : outsTotal;
 
   async function refresh() {
     await Promise.all([
@@ -258,13 +258,13 @@ export function QuickCashPage({
 
         <p className="text-sm text-muted-foreground">Entradas por receber <span className="ml-2 font-display text-foreground">{formatMoney(pendingTotal)}</span></p>
 
-        <Card title="Custo e Lucro">
+        <Card title={withVehicles ? "Custo e Lucro dos veículos" : "Custo e Lucro"}>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-5">
             <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Entradas pagas</p><p className="font-display text-2xl text-warning">{formatMoney(pEnt)}</p></div>
             <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Custo total</p><p className="font-display text-2xl text-foreground">{formatMoney(pCost)}</p></div>
             <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Saídas</p><p className="font-display text-2xl text-destructive">{formatMoney(pOuts)}</p></div>
             <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Lucro líquido</p><p className="font-display text-2xl text-success">{formatMoney(pEnt - pCost - pOuts)}</p></div>
-            <p className="sm:col-span-4 text-[11px] text-muted-foreground">Entradas {formatMoney(pEnt)} − Custos {formatMoney(pCost)} − Saídas {formatMoney(pOuts)} = Lucro {formatMoney(pEnt - pCost - pOuts)}{withVehicles ? " (inclui os veículos)" : ""}</p>
+            <p className="sm:col-span-4 text-[11px] text-muted-foreground">Entradas {formatMoney(pEnt)} − Custos {formatMoney(pCost)} − Saídas {formatMoney(pOuts)} = Lucro {formatMoney(pEnt - pCost - pOuts)}{withVehicles ? " (só os veículos)" : ""}</p>
           </div>
         </Card>
 

@@ -15,4 +15,4 @@
 - Keep every database table listed in the `TABLES` export of `src/lib/backup.functions.ts`; the admin backup download is the user's only protection against losing records, so a new table left out silently breaks the guarantee.
 - Use the shared expandable sector panel for operational forms and long histories, so sector pages remain compact without changing financial behavior.
 - Represent sector-entry payment changes as idempotent, authenticated updates and overlay queued changes in the shared finance merger, so offline receipts affect every financial view consistently without duplicate revenue.
-- Treat Estação 4 de Abril (lavagem) vehicle entries/expenses as drafts: excluded from sector cash, balances and global lists (server and offline queue via `draft` flag), but included in the sector Custo e Lucro board, because cash vs bank cannot be separated for them.
+- Treat Estação 4 de Abril (lavagem) vehicle entries/expenses as drafts: excluded from sector cash, balances and global lists (server and offline queue via `draft` flag), and the sector Custo e Lucro board shows only these vehicle values, because cash vs bank cannot be separated for them.
