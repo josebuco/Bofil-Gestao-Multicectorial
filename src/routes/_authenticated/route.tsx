@@ -51,7 +51,7 @@ const allSectors = [
   { id: "/dashboard", label: "Painel geral", color: "bg-primary", perm: "admin" },
   { id: "/agua", label: "Água", color: "bg-water", perm: "agua" },
   { id: "/restaurante", label: "Restaurante", color: "bg-restaurant", perm: "restaurante" },
-  { id: "/lavagem", label: "Lavagem", color: "bg-wash", perm: "lavagem" },
+  { id: "/lavagem", label: "Estação 4 de Abril", color: "bg-wash", perm: "lavagem" },
   { id: "/transporte", label: "Transporte Escolar", color: "bg-transport", perm: "transporte" },
   { id: "/aluguer", label: "Aluguer de Veículos", color: "bg-primary", perm: "aluguer" },
   { id: "/custos", label: "Centro de Custos", color: "bg-brand", perm: "custos" },

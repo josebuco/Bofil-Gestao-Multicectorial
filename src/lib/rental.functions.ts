@@ -180,3 +180,34 @@ export const deleteStockUsage = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+async function assertAdmin(context: { supabase: any; userId: string }) {
+  const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+  if (!isAdmin) throw new Error("Só a administração pode alterar categorias.");
+}
+
+/** Renomeia uma categoria criada e actualiza as despesas que a usam. */
+export const renameCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ from: z.string().trim().min(1), to: z.string().trim().min(2).max(60) }).parse(d))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("expense_categories").update({ name: data.to }).eq("name", data.from);
+    if (error) throw new Error(error.message);
+    await supabaseAdmin.from("expenses").update({ category: data.to }).eq("category", data.from);
+    return { ok: true };
+  });
+
+/** Exclui uma categoria criada; as despesas antigas passam para "Outros". */
+export const deleteCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ name: z.string().trim().min(1) }).parse(d))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("expense_categories").delete().eq("name", data.name);
+    if (error) throw new Error(error.message);
+    await supabaseAdmin.from("expenses").update({ category: "Outros" }).eq("category", data.name);
+    return { ok: true };
+  });

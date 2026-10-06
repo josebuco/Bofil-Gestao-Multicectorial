@@ -49,7 +49,7 @@ export type FinanceSnapshot = {
 const LABELS: Record<string, string> = {
   agua: "Água",
   restaurante: "Restaurante",
-  lavagem: "Lavagem",
+  lavagem: "Estação 4 de Abril",
   transporte: "Transporte Escolar",
   aluguer: "Aluguer de Veículos e Equipamentos",
   geral: "Geral / Administração",

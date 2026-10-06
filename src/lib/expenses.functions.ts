@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const SECTORS = [
   { slug: "agua", label: "Água", color: "bg-water" },
   { slug: "restaurante", label: "Restaurante", color: "bg-restaurant" },
-  { slug: "lavagem", label: "Lavagem", color: "bg-wash" },
+  { slug: "lavagem", label: "Estação 4 de Abril", color: "bg-wash" },
   { slug: "transporte", label: "Transporte Escolar", color: "bg-transport" },
   { slug: "aluguer", label: "Aluguer", color: "bg-primary" },
   { slug: "geral", label: "Geral / Administração", color: "bg-primary" },

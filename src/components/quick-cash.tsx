@@ -420,7 +420,7 @@ export function QuickCashPage({
         {totalsBlock}
         {slug === "lavagem" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          <ExpandableCard title="Registar saída" summary="Adicionar uma despesa geral da Lavagem">
+          <ExpandableCard title="Registar saída" summary="Adicionar uma despesa geral da Estação 4 de Abril">
             <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
               <input name="description" required placeholder="Descrição" className={`${inputClass} col-span-2`} />
               <input name="amount" type="number" step="any" min={1} required inputMode="numeric" placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
@@ -482,7 +482,7 @@ export function QuickCashPage({
         {slug === "lavagem" && (
           <section className="space-y-3">
             <h2 className="font-display text-lg uppercase tracking-wide text-foreground">Equipamentos</h2>
-            <FleetPage sector="lavagem" title="Lavagem" subtitle="" dot="bg-wash" embedded />
+            <FleetPage sector="lavagem" title="Estação 4 de Abril" subtitle="" dot="bg-wash" embedded />
           </section>
         )}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">

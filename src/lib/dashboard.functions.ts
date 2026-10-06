@@ -129,7 +129,7 @@ export const getDailyOperations = createServerFn({ method: "GET" })
       ...(washQueue || []).map((q) => ({
         id: q.id,
         service: q.car_description,
-        sector: "Lavagem",
+        sector: "Estação 4 de Abril",
         value: q.total,
         status: q.status,
       })),

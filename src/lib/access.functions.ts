@@ -6,7 +6,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const PERMISSION_OPTIONS = [
   { slug: "agua", label: "Água" },
   { slug: "restaurante", label: "Restaurante" },
-  { slug: "lavagem", label: "Lavagem" },
+  { slug: "lavagem", label: "Estação 4 de Abril" },
   { slug: "transporte", label: "Transporte Escolar" },
   { slug: "aluguer", label: "Aluguer de Veículos" },
   { slug: "custos", label: "Centro de Custos" },
