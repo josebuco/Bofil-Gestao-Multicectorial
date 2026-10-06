@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { CalendarDays, FileText, Plus, Trash2, Truck, Wrench, Package, Fuel } from "lucide-react";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries, paySectorEntry } from "@/lib/access.functions";
-import { createExpense, deleteExpense, getExpenses } from "@/lib/expenses.functions";
+import { createExpense, deleteExpense, getExpenses, markExpensePaid } from "@/lib/expenses.functions";
 import { openInvoice, uploadInvoice } from "@/lib/invoice";
 import { addCategory, createAsset, createStockUsage, deleteAsset, listAssets, listCategories, listStock, listAssetContributions, type FleetSector } from "@/lib/rental.functions";
 import { Card, CashBalanceCard, ExpandableCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
@@ -109,7 +109,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
     const cost = ents.reduce((s, e) => s + (e.cost || 0), 0);
     const rev = ents.filter((e) => e.status !== "Pendente").reduce((s, e) => s + e.amount, 0)
       + allTruck.filter((t) => t.asset_id === id && t.status !== "Pendente").reduce((s, t) => s + t.total, 0);
-    const exp = allExp.filter((e) => e.asset_id === id).reduce((s, e) => s + (e.amount || 0), 0)
+    const exp = allExp.filter((e) => e.asset_id === id && e.status !== "Pendente").reduce((s, e) => s + (e.amount || 0), 0)
       + allContrib.filter((c) => c.asset_id === id).reduce((s, c) => s + (c.amount || 0), 0);
     const used = allUsage.filter((u) => u.asset_id === id && u.used_on >= range.from && u.used_on <= range.to);
     const stk = used.reduce((s, u) => s + (u.amount || 0), 0);
