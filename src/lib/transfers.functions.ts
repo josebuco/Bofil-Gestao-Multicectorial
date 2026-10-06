@@ -38,7 +38,7 @@ export const createTransfer = createServerFn({ method: "POST" })
       .object({
         from_sector: SECTOR,
         to_sector: SECTOR,
-        amount: z.number().int().positive().max(1_000_000_000),
+        amount: z.number().positive().max(1_000_000_000),
         payment_method: z.enum(["Numerário", "Banco"]),
         note: z.string().max(200).nullable().default(null),
         transfer_date: DATE,
@@ -62,7 +62,7 @@ export const returnTransfer = createServerFn({ method: "POST" })
     z
       .object({
         parent_id: z.string().uuid(),
-        amount: z.number().int().positive(),
+        amount: z.number().positive(),
         payment_method: z.enum(["Numerário", "Banco"]),
         transfer_date: DATE,
       })

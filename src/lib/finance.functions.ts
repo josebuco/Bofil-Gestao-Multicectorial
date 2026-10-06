@@ -310,7 +310,7 @@ export const getCashAvailable = createServerFn({ method: "GET" })
 export const addBankDeposit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
-    z.object({ sector: z.string().min(1), amount: z.number().int().positive() }).parse(data),
+    z.object({ sector: z.string().min(1), amount: z.number().positive() }).parse(data),
   )
   .handler(async ({ context, data }) => {
     const available = await sectorCashOnHand(context.supabase, data.sector);

@@ -392,9 +392,9 @@ function CustosPage() {
                     {curCat === "Combustível" || stockKind === "litro" ? "Litros comprados" : "Quantidade comprada"}
                   </label>
                   {curCat === "Combustível" || stockKind === "litro" ? (
-                    <input name="quantity" type="number" readOnly value={Math.max(1, Math.round((Number(amt) || 0) / 420))} className={`${inputClass} mt-1.5 opacity-80`} />
+                    <input name="quantity" type="number" step="any" readOnly value={Math.max(1, Math.round((Number(amt) || 0) / 420))} className={`${inputClass} mt-1.5 opacity-80`} />
                   ) : (
-                    <input name="quantity" type="number" min="1" defaultValue={1} required className={`${inputClass} mt-1.5`} />
+                    <input name="quantity" type="number" step="any" min="1" defaultValue={1} required className={`${inputClass} mt-1.5`} />
                   )}
                   {(curCat === "Combustível" || stockKind === "litro") && litros(amt) && (
                     <p className="text-[11px] text-muted-foreground mt-1">Conferência: {formatMoney(Number(amt) || 0)} Kz{litros(amt)} a 420 Kz/L</p>

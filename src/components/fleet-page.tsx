@@ -142,7 +142,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   const [expenseCategory, setExpenseCategory] = useState("");
   const [students, setStudents] = useState("");
   const [perStudent, setPerStudent] = useState("");
-  const computed = (Math.round(Number(students)) || 0) * (Math.round(Number(perStudent)) || 0);
+  const computed = ((Math.round(Number(students) * 100) / 100) || 0) * ((Math.round(Number(perStudent) * 100) / 100) || 0);
   const [method, setMethod] = useState<"Numerário" | "Banco">("Numerário");
   const [eCost, setECost] = useState("");
   const [eStatus, setEStatus] = useState<"Pago" | "Pendente">("Pago");
@@ -165,13 +165,13 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   async function onEntry(ev: React.FormEvent) {
     ev.preventDefault();
     if (!sectorEntryMode && (!current || current.kind === "Equipamento")) return;
-    const value = perStudentMode ? computed : Math.round(Number(amount));
+    const value = perStudentMode ? computed : (Math.round(Number(amount) * 100) / 100);
     if (!value || value <= 0) { toast.error(perStudentMode ? "Indique alunos e valor diário por aluno." : "Indique um valor válido."); return; }
     const payload = {
       sector, amount: value, payment_method: method, asset_id: sectorEntryMode ? null : current!.id,
       ...(costMode ? { cost: Math.max(0, Math.round(Number(eCost) || 0)), status: eStatus, client_name: eStatus === "Pendente" ? eClient.trim() || null : null } : {}),
       ...(access.isAdmin && entryDate ? { entry_date: entryDate } : {}),
-      ...(perStudentMode ? { students: Math.round(Number(students)), per_student: Math.round(Number(perStudent)) } : {}),
+      ...(perStudentMode ? { students: (Math.round(Number(students) * 100) / 100), per_student: (Math.round(Number(perStudent) * 100) / 100) } : {}),
     };
     try {
       const r = await sendOrQueue("sector_entry", payload, `${title}${sectorEntryMode ? "" : " " + current!.name}: ${formatMoney(value)} Kz`, () => addEntry({ data: payload }));
@@ -240,7 +240,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   async function onUsage(ev: React.FormEvent) {
     ev.preventDefault();
     if (!current || !selectedLot) return;
-    const qty = Math.round(Number(useQty));
+    const qty = (Math.round(Number(useQty) * 100) / 100);
     if (!qty || qty <= 0) { toast.error("Indique a quantidade."); return; }
     if (qty > selectedLot.left_quantity) { toast.error("Não há essa quantidade no estoque."); return; }
     const value = Math.round(Number(useValue) || suggested);
@@ -289,14 +289,14 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   const [tTrips, setTTrips] = useState("1");
   const [tClient, setTClient] = useState("");
   const [tStatus, setTStatus] = useState("Entregue");
-  const tTotal = (Math.round(Number(tPrice)) || 0) * (Math.round(Number(tTrips)) || 0);
+  const tTotal = ((Math.round(Number(tPrice) * 100) / 100) || 0) * ((Math.round(Number(tTrips) * 100) / 100) || 0);
   async function refreshTruck() {
     await Promise.all(["truck-sales", "sector", "finance", "dashboard"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
   }
   async function onTruck(ev: React.FormEvent) {
     ev.preventDefault();
     if (!current || current.kind === "Equipamento") return;
-    const price = Math.round(Number(tPrice)); const trips = Math.round(Number(tTrips));
+    const price = (Math.round(Number(tPrice) * 100) / 100); const trips = (Math.round(Number(tTrips) * 100) / 100);
     if (!tService.trim()) { toast.error("Indique o serviço."); return; }
     if (!price || price <= 0 || !trips || trips < 1) { toast.error("Indique o valor por viagem e o nº de viagens."); return; }
     const payload = {
@@ -616,7 +616,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
               <ExpandableCard title={current.kind === "Equipamento" ? "Registar saída do equipamento" : "Registar saída"} summary="Adicionar uma despesa desta unidade" action={expenseDateAction}>
                 <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
                   <input name="description" required placeholder="Descrição" className={`${inputClass} col-span-2`} />
-                  <input name="amount" type="number" min={1} required placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
+                  <input name="amount" type="number" step="any" min={1} required placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
                   <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
                     <select
                       name="category"

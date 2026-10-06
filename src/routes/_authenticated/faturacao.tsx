@@ -92,7 +92,7 @@ function FaturacaoPage() {
   });
   const availableCash = avail?.available ?? 0;
   const deposit = async () => {
-    const amount = Math.round(Number(depAmount));
+    const amount = (Math.round(Number(depAmount) * 100) / 100);
     if (!amount || amount <= 0) { toast.error("Indique o valor do depósito."); return; }
     if (amount > availableCash) {
       toast.error(
@@ -210,7 +210,7 @@ function FaturacaoPage() {
             </label>
             <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
               Valor (Kz)
-              <input type="number" min={1} value={depAmount} onChange={(e) => setDepAmount(e.target.value)} className={`${inputClass} mt-1.5`} />
+              <input type="number" step="any" min={1} value={depAmount} onChange={(e) => setDepAmount(e.target.value)} className={`${inputClass} mt-1.5`} />
             </label>
             <button
               type="button"
