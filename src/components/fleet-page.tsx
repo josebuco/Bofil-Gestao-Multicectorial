@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import { CalendarDays, FileText, Plus, Trash2, Truck, Wrench, Package, Fuel } from "lucide-react";
-import { addSectorEntry, deleteSectorEntry, listSectorEntries } from "@/lib/access.functions";
+import { addSectorEntry, deleteSectorEntry, listSectorEntries, paySectorEntry } from "@/lib/access.functions";
 import { createExpense, deleteExpense, getExpenses } from "@/lib/expenses.functions";
 import { openInvoice, uploadInvoice } from "@/lib/invoice";
 import { addCategory, createAsset, createStockUsage, deleteAsset, listAssets, listCategories, listStock, listAssetContributions, type FleetSector } from "@/lib/rental.functions";
@@ -71,7 +71,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   });
 
   const qEntries = useQueue("sector_entry").filter((q) => q.data["sector"] === sector)
-    .map((q) => ({ id: q.id, amount: Number(q.data["amount"]) || 0, payment_method: String(q.data["payment_method"]), created_at: q.at, asset_id: (q.data["asset_id"] as string) || null, students: (q.data["students"] as number) ?? null, per_student: (q.data["per_student"] as number) ?? null, pending: true }));
+    .map((q) => ({ id: q.id, amount: Number(q.data["amount"]) || 0, payment_method: String(q.data["payment_method"]), created_at: q.at, asset_id: (q.data["asset_id"] as string) || null, students: (q.data["students"] as number) ?? null, per_student: (q.data["per_student"] as number) ?? null, cost: Number(q.data["cost"]) || 0, status: String(q.data["status"] || "Pago"), client_name: (q.data["client_name"] as string) || null, pending: true }));
   const qExp = useQueue("expense").filter((q) => q.data["sector"] === sector)
     .map((q) => ({ id: q.id, amount: Number(q.data["amount"]) || 0, description: String(q.data["description"] || ""), category: String(q.data["category"] || ""), expense_date: String(q.data["expense_date"] || q.at.slice(0, 10)), status: String(q.data["status"] || "Pendente"), asset_id: (q.data["asset_id"] as string) || null, invoice_path: null as string | null, pending: true }));
 
@@ -82,6 +82,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   ].filter((e) => e.expense_date >= range.from && e.expense_date <= range.to);
 
   const truckMode = sector === "agua";
+  const costMode = sector === "lavagem";
   const listTS = useServerFn(listTruckSales);
   const addTS = useServerFn(createWaterSale);
   const setTS = useServerFn(updateWaterSaleStatus);
@@ -104,7 +105,9 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   const contribQ = useQuery({ queryKey: ["asset-contribs", sector], queryFn: () => listCtb({ data: { sector } }) });
   const allContrib = (contribQ.data || []).filter((c) => c.transfer_date >= range.from && c.transfer_date <= range.to);
   const statsFor = (id: string) => {
-    const rev = allEntries.filter((e) => e.asset_id === id).reduce((s, e) => s + e.amount, 0)
+    const ents = allEntries.filter((e) => e.asset_id === id);
+    const cost = ents.reduce((s, e) => s + (e.cost || 0), 0);
+    const rev = ents.filter((e) => e.status !== "Pendente").reduce((s, e) => s + e.amount, 0)
       + allTruck.filter((t) => t.asset_id === id && t.status !== "Pendente").reduce((s, t) => s + t.total, 0);
     const exp = allExp.filter((e) => e.asset_id === id).reduce((s, e) => s + (e.amount || 0), 0)
       + allContrib.filter((c) => c.asset_id === id).reduce((s, c) => s + (c.amount || 0), 0);
@@ -118,7 +121,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
     const fuelKzExtra = directFuel.reduce((s, e) => s + (e.amount || 0), 0) + ctbFuel.reduce((s, c) => s + (c.amount || 0), 0);
     const fuelL = Math.round((fuel.reduce((s, u) => s + (u.quantity || 0), 0) + fuelKzExtra / 420) * 10) / 10;
     const fuelKz = fuel.reduce((s, u) => s + (u.amount || 0), 0) + fuelKzExtra;
-    return { rev, exp: exp + stk, bal: rev - exp - stk, fuelL, fuelKz };
+    return { rev, cost, exp: exp + stk, bal: rev - cost - exp - stk, fuelL, fuelKz };
   };
 
   const [showNew, setShowNew] = useState(false);
@@ -141,6 +144,20 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   const [perStudent, setPerStudent] = useState("");
   const computed = (Math.round(Number(students)) || 0) * (Math.round(Number(perStudent)) || 0);
   const [method, setMethod] = useState<"Numerário" | "Banco">("Numerário");
+  const [eCost, setECost] = useState("");
+  const [eStatus, setEStatus] = useState<"Pago" | "Pendente">("Pago");
+  const [eClient, setEClient] = useState("");
+  const payEntry = useServerFn(paySectorEntry);
+  async function onPayEntry(id: string, amount: number) {
+    if (sector !== "lavagem") return;
+    if (!window.confirm(`Confirmar recebimento de ${formatMoney(amount)} Kz?`)) return;
+    try {
+      const payload = { id, sector: "lavagem" as const, payment_method: method };
+      const r = await sendOrQueue("sector_entry_payment", payload, `${title}: pagamento de ${formatMoney(amount)} Kz`, () => payEntry({ data: payload }));
+      toast.success(r === "queued" ? "Sem internet: pagamento guardado no aparelho." : "Entrada marcada como paga.");
+      if (r === "sent") await Promise.all([qc.invalidateQueries({ queryKey: ["entries", sector] }), qc.invalidateQueries({ queryKey: ["finance"] })]);
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível confirmar."); }
+  }
   const [entryDate, setEntryDate] = useState("");
   const [showEntryDate, setShowEntryDate] = useState(false);
   const [expenseDate, setExpenseDate] = useState("");
@@ -152,6 +169,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
     if (!value || value <= 0) { toast.error(perStudentMode ? "Indique alunos e valor diário por aluno." : "Indique um valor válido."); return; }
     const payload = {
       sector, amount: value, payment_method: method, asset_id: sectorEntryMode ? null : current!.id,
+      ...(costMode ? { cost: Math.max(0, Math.round(Number(eCost) || 0)), status: eStatus, client_name: eStatus === "Pendente" ? eClient.trim() || null : null } : {}),
       ...(access.isAdmin && entryDate ? { entry_date: entryDate } : {}),
       ...(perStudentMode ? { students: Math.round(Number(students)), per_student: Math.round(Number(perStudent)) } : {}),
     };
@@ -159,6 +177,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
       const r = await sendOrQueue("sector_entry", payload, `${title}${sectorEntryMode ? "" : " " + current!.name}: ${formatMoney(value)} Kz`, () => addEntry({ data: payload }));
       setAmount("");
       setStudents("");
+      setECost(""); setEClient(""); setEStatus("Pago");
       toast.success(r === "queued" ? "Sem internet: guardado no aparelho." : "Entrada registada.");
       if (r === "sent") await Promise.all([qc.invalidateQueries({ queryKey: ["entries", sector] }), qc.invalidateQueries({ queryKey: ["finance"] })]);
     } catch (e) {
@@ -410,6 +429,16 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                   ) : (
                     <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" min={1} placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
                   )}
+                  {costMode && (
+                    <>
+                      <input value={eCost} onChange={(e) => setECost(e.target.value)} type="number" min={0} placeholder="Custo da entrada (Kz)" aria-label="Custo da entrada" className={inputClass} />
+                      <select value={eStatus} onChange={(e) => { const v = e.target.value === "Pendente" ? "Pendente" : "Pago"; setEStatus(v); if (v === "Pago") setEClient(""); }} aria-label="Estado" className={inputClass}>
+                        <option value="Pago">Pago</option><option value="Pendente">Pendente</option>
+                      </select>
+                      {eStatus === "Pendente" && <input value={eClient} onChange={(e) => setEClient(e.target.value)} maxLength={200} placeholder="Cliente / Observação" className={`${inputClass} col-span-2`} />}
+                      {amount || eCost ? <p className="col-span-2 text-[11px] text-muted-foreground">Lucro: <span className="font-display text-success">{formatMoney((Number(amount) || 0) - (Number(eCost) || 0))}</span>{eStatus === "Pendente" ? " — só entra na caixa quando marcar como pago." : ""}</p> : null}
+                    </>
+                  )}
                   <select value={method} onChange={(e) => setMethod(e.target.value as "Numerário" | "Banco")} className={`${inputClass} h-12`}>
                     <option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option>
                   </select>
@@ -430,9 +459,12 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                         {new Date(e.created_at).toLocaleString("pt-AO")}{e.payment_method === "Banco" ? " · VB" : ""}
                         {e.students ? <span className="text-[11px]"> · {e.students} alunos × {formatMoney(e.per_student || 0)}</span> : null}
                         {e.pending ? badge : null}
+                        {e.client_name ? <span className="block text-foreground">{e.client_name}</span> : null}
+                        {costMode ? <span className="block text-[10px]">{e.status === "Pendente" ? "Pendente" : "Pago"} · Custo {formatMoney(e.cost || 0)}</span> : null}
                       </span>
                       <span className="flex items-center gap-3 shrink-0">
-                        <span className="font-display text-warning">+{formatMoney(e.amount)}</span>
+                        {costMode && e.status === "Pendente" && !e.pending ? <button type="button" onClick={() => void onPayEntry(e.id, e.amount)} className="text-xs text-success">Marcar pago</button> : null}
+                        <span className={`font-display ${e.status === "Pendente" ? "text-muted-foreground" : "text-warning"}`}>{e.status === "Pendente" ? "" : "+"}{formatMoney(e.amount)}</span>
                         {(access.isAdmin || e.pending) && (
                           <button onClick={() => removeEntry(e)} aria-label="Apagar entrada" className="text-muted-foreground hover:text-destructive"><Trash2 className="size-3.5" /></button>
                         )}
@@ -487,7 +519,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                   <div className={`mt-3 grid gap-2 text-xs ${access.isAdmin ? "grid-cols-3" : "grid-cols-1"}`}>
                     {a.kind !== "Equipamento" && !sectorEntryMode ? <div><p className="text-muted-foreground">Entradas</p><p className="font-display text-warning">{formatMoney(s.rev)}</p></div> : !access.isAdmin ? <div><p className="text-muted-foreground">Equipamento — só custos</p></div> : null}
                     {access.isAdmin && <>
-                    <div><p className="text-muted-foreground">Custos</p><p className="font-display text-destructive">{formatMoney(s.exp)}</p></div>
+                    <div><p className="text-muted-foreground">Custos</p><p className="font-display text-destructive">{formatMoney(s.exp + (costMode ? s.cost : 0))}</p></div>
                     <div><p className="text-muted-foreground">Saldo</p><p className={`font-display ${s.bal >= 0 ? "text-success" : "text-destructive"}`}>{formatMoney(s.bal)}</p></div>
                     </>}
                   </div>
