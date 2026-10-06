@@ -6,7 +6,7 @@ import { angolaParts, dayEndIso, dayStartIso } from "@/lib/tz";
 export const SECTOR_LABELS: Record<string, string> = {
   agua: "Água",
   restaurante: "Restaurante",
-  lavagem: "Lavagem",
+  lavagem: "Estação 4 de Abril",
   transporte: "Transporte Escolar",
   aluguer: "Aluguer de Veículos e Equipamentos",
   geral: "Geral / Administração",
