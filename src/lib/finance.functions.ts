@@ -74,7 +74,6 @@ export const getFinance = createServerFn({ method: "GET" })
 
     const draftIds = await draftVehicleIds(context.supabase as never);
     if (quick.data) quick.data = quick.data.filter(notDraft(draftIds));
-    if (expenses.data) expenses.data = expenses.data.filter(notDraft(draftIds));
 
     // build buckets
     const buckets: string[] = [];
