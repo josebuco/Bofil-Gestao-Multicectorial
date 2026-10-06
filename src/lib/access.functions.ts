@@ -188,7 +188,7 @@ export const addSectorEntry = createServerFn({ method: "POST" })
 
 export const listSectorEntries = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ sector: z.string(), from: z.string(), to: z.string() }).parse(d))
+  .inputValidator((d) => z.object({ sector: z.string(), from: z.string(), to: z.string(), excludeVehicles: z.boolean().optional() }).parse(d))
   .handler(async ({ context, data }) => {
     const { data: rows, error } = await context.supabase
       .from("sector_entries")
@@ -199,6 +199,11 @@ export const listSectorEntries = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(300);
     if (error) throw new Error(error.message);
+    if (data.excludeVehicles && data.sector === "lavagem") {
+      const { draftVehicleIds } = await import("@/lib/finance.functions");
+      const ids = await draftVehicleIds(context.supabase as never);
+      return (rows || []).filter((r) => !r.asset_id || !ids.has(r.asset_id));
+    }
     return rows || [];
   });
 

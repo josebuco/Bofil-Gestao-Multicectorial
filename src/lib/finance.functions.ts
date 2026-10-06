@@ -52,7 +52,7 @@ export const getFinance = createServerFn({ method: "GET" })
         .lte("created_at", toIso),
       context.supabase
         .from("sector_entries")
-        .select("id, sector, amount, created_at, payment_method, status, client_name")
+        .select("id, sector, amount, created_at, payment_method, status, client_name, asset_id")
         .gte("created_at", fromIso)
         .lte("created_at", toIso),
       context.supabase
@@ -71,6 +71,10 @@ export const getFinance = createServerFn({ method: "GET" })
         .gte("transfer_date", data.from)
         .lte("transfer_date", data.to),
     ]);
+
+    const draftIds = await draftVehicleIds(context.supabase as never);
+    if (quick.data) quick.data = quick.data.filter(notDraft(draftIds));
+    if (expenses.data) expenses.data = expenses.data.filter(notDraft(draftIds));
 
     // build buckets
     const buckets: string[] = [];
@@ -260,6 +264,13 @@ export const getFinance = createServerFn({ method: "GET" })
     };
   });
 
+/** Veículos da Estação 4 de Abril: os seus registos ficam só como rascunho nos cartões, fora das contas do setor. */
+export async function draftVehicleIds(supabase: { from: (t: string) => any }): Promise<Set<string>> {
+  const { data } = await supabase.from("rental_assets").select("id").eq("sector", "lavagem").eq("kind", "Veículo");
+  return new Set(((data || []) as Array<{ id: string }>).map((a) => a.id));
+}
+const notDraft = (ids: Set<string>) => (r: { asset_id?: string | null }) => !r.asset_id || !ids.has(r.asset_id);
+
 // Cash physically available in the sector's box: all cash revenue minus cash
 // expenses minus everything already deposited, over all time (not just a period).
 async function sectorCashOnHand(
@@ -270,12 +281,15 @@ async function sectorCashOnHand(
     sector === "agua"
       ? supabase.from("water_sales").select("total, payment_method").neq("status", "Pendente")
       : Promise.resolve({ data: [] }),
-    supabase.from("sector_entries").select("amount, payment_method").eq("sector", sector).neq("status", "Pendente"),
-    supabase.from("expenses").select("amount, payment_method").eq("sector", sector),
+    supabase.from("sector_entries").select("amount, payment_method, asset_id").eq("sector", sector).neq("status", "Pendente"),
+    supabase.from("expenses").select("amount, payment_method, asset_id").eq("sector", sector),
     supabase.from("bank_deposits").select("amount").eq("sector", sector),
     supabase.from("sector_transfers").select("amount, payment_method").eq("from_sector", sector),
     supabase.from("sector_transfers").select("amount, payment_method").eq("to_sector", sector),
   ]);
+  const draftIds = sector === "lavagem" ? await draftVehicleIds(supabase) : new Set<string>();
+  entries.data = (entries.data || []).filter(notDraft(draftIds));
+  expenses.data = (expenses.data || []).filter(notDraft(draftIds));
   for (const t of tIn.data || []) if (t.payment_method !== "Banco") entries.data = [...(entries.data || []), { amount: t.amount, payment_method: "Numerário" }];
   for (const t of tOut.data || []) if (t.payment_method !== "Banco") expenses.data = [...(expenses.data || []), { amount: t.amount, payment_method: "Numerário" }];
   let rev = 0;
