@@ -171,6 +171,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
       sector, amount: value, payment_method: method, asset_id: sectorEntryMode ? null : current!.id,
       ...(costMode ? { cost: Math.max(0, Math.round((Number(eCost) || 0) * 100) / 100), status: eStatus, client_name: eStatus === "Pendente" ? eClient.trim() || null : null } : {}),
       ...(access.isAdmin && entryDate ? { entry_date: entryDate } : {}),
+      ...(sector === "lavagem" && !sectorEntryMode && current?.kind === "Veículo" ? { draft: true } : {}),
       ...(perStudentMode ? { students: (Math.round(Number(students) * 100) / 100), per_student: (Math.round(Number(perStudent) * 100) / 100) } : {}),
     };
     try {
@@ -205,6 +206,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
       notes: null,
       payment_method: (f.get("payment_method") === "Banco" ? "Banco" : "Numerário") as "Banco" | "Numerário",
       asset_id: current.id,
+      ...(sector === "lavagem" && current.kind === "Veículo" ? { draft: true } : {}),
     };
     try {
       const r = await sendOrQueue("expense", payload, `Despesa ${current.name}: ${payload.description}`, () => addExp({ data: payload }));

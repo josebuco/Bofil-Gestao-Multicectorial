@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { ArrowDownRight, ArrowUpRight, CalendarDays, Check, FileText, Plus, Trash2 } from "lucide-react";
 import { Area, ComposedChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries, paySectorEntry } from "@/lib/access.functions";
-import { createExpense, deleteExpense } from "@/lib/expenses.functions";
-import { addCategory, listCategories } from "@/lib/rental.functions";
+import { createExpense, deleteExpense, getExpenses } from "@/lib/expenses.functions";
+import { addCategory, listAssets, listCategories } from "@/lib/rental.functions";
 import { openInvoice, uploadInvoice } from "@/lib/invoice";
 import { getFinance } from "@/lib/finance.functions";
 import { periodLabel } from "@/lib/period";
@@ -78,6 +78,8 @@ export function QuickCashPage({
   const add = useServerFn(addSectorEntry);
   const remove = useServerFn(deleteSectorEntry);
   const list = useServerFn(listSectorEntries);
+  const listAssetsFn = useServerFn(listAssets);
+  const listExpensesFn = useServerFn(getExpenses);
   const access = useAccess();
   const isAdminView = access.isAdmin;
   const [amount, setAmount] = useState("");
@@ -150,6 +152,25 @@ export function QuickCashPage({
 
   const queue = useQueue();
   const allEntries = mergeQueuedSectorEntries(entries.data || [], queue, slug, range);
+  // Custo e Lucro da Estação 4 de Abril também soma os veículos (rascunhos fora da caixa).
+  const withVehicles = slug === "lavagem";
+  const vehEntriesQ = useQuery({
+    queryKey: ["entries", slug, range.from, range.to, "all"],
+    queryFn: () => list({ data: { sector: slug, ...range } }),
+    enabled: withVehicles,
+  });
+  const vehAssetsQ = useQuery({ queryKey: ["rental-assets", slug], queryFn: () => listAssetsFn({ data: { sector: "lavagem" } }), enabled: withVehicles });
+  const vehExpQ = useQuery({ queryKey: ["expenses"], queryFn: () => listExpensesFn(), enabled: withVehicles });
+  const vehIds = new Set((vehAssetsQ.data || []).filter((a) => a.kind === "Veículo").map((a) => a.id));
+  const profitEntries = withVehicles ? mergeQueuedSectorEntries(vehEntriesQ.data || [], queue, slug, range, true) : allEntries;
+  const vehOuts = withVehicles
+    ? [
+        ...((vehExpQ.data?.expenses || []) as Array<{ sector: string; asset_id: string | null; amount: number; expense_date: string }>).filter((e) => e.sector === slug && e.asset_id && vehIds.has(e.asset_id) && e.expense_date >= range.from && e.expense_date <= range.to),
+        ...queue.filter((i) => i.kind === "expense" && i.data["draft"] && i.data["sector"] === slug).map((i) => ({ amount: Number(i.data["amount"]) || 0, expense_date: String(i.data["expense_date"] || "") })).filter((e) => e.expense_date >= range.from && e.expense_date <= range.to),
+      ].reduce((s, e) => s + (Number(e.amount) || 0), 0)
+    : 0;
+  const pEnt = profitEntries.filter((e) => e.status !== "Pendente").reduce((s, e) => s + e.amount, 0);
+  const pCost = profitEntries.reduce((s, e) => s + e.cost, 0);
   const entTotal = allEntries.filter((e) => e.status !== "Pendente").reduce((s, e) => s + e.amount, 0);
   const pendingTotal = allEntries.filter((e) => e.status === "Pendente").reduce((s, e) => s + e.amount, 0);
   const costTotal = allEntries.reduce((s, e) => s + e.cost, 0);
@@ -157,6 +178,7 @@ export function QuickCashPage({
   const sector = mergedFinance.sectors.find((s) => s.slug === slug);
   const outs = mergedFinance.entries.filter((e) => e.sector === slug && e.kind === "despesa");
   const outsTotal = outs.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const pOuts = outsTotal + vehOuts;
 
   async function refresh() {
     await Promise.all([
@@ -238,11 +260,11 @@ export function QuickCashPage({
 
         <Card title="Custo e Lucro">
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-5">
-            <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Entradas pagas</p><p className="font-display text-2xl text-warning">{formatMoney(entTotal)}</p></div>
-            <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Custo total</p><p className="font-display text-2xl text-foreground">{formatMoney(costTotal)}</p></div>
-            <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Saídas</p><p className="font-display text-2xl text-destructive">{formatMoney(outsTotal)}</p></div>
-            <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Lucro líquido</p><p className="font-display text-2xl text-success">{formatMoney(entTotal - costTotal - outsTotal)}</p></div>
-            <p className="sm:col-span-4 text-[11px] text-muted-foreground">Entradas {formatMoney(entTotal)} − Custos {formatMoney(costTotal)} − Saídas {formatMoney(outsTotal)} = Lucro {formatMoney(entTotal - costTotal - outsTotal)}</p>
+            <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Entradas pagas</p><p className="font-display text-2xl text-warning">{formatMoney(pEnt)}</p></div>
+            <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Custo total</p><p className="font-display text-2xl text-foreground">{formatMoney(pCost)}</p></div>
+            <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Saídas</p><p className="font-display text-2xl text-destructive">{formatMoney(pOuts)}</p></div>
+            <div><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Lucro líquido</p><p className="font-display text-2xl text-success">{formatMoney(pEnt - pCost - pOuts)}</p></div>
+            <p className="sm:col-span-4 text-[11px] text-muted-foreground">Entradas {formatMoney(pEnt)} − Custos {formatMoney(pCost)} − Saídas {formatMoney(pOuts)} = Lucro {formatMoney(pEnt - pCost - pOuts)}{withVehicles ? " (inclui os veículos)" : ""}</p>
           </div>
         </Card>
 
