@@ -206,7 +206,7 @@ function AguaPage() {
             </select>
           </Field>
           <Field label="Quantidade">
-            <input name="quantity" type="number" min={1} defaultValue={1} required className={inputClass} />
+            <input name="quantity" type="number" step="any" min={1} defaultValue={1} required className={inputClass} />
           </Field>
           <Field label="Cliente">
             <input name="client_name" placeholder="Opcional" className={inputClass} />
@@ -235,7 +235,7 @@ function AguaPage() {
             <input name="name" required className={inputClass} placeholder="Cisterna 10.000L" />
           </Field>
           <Field label="Preço (Kz)">
-            <input name="price" type="number" min={0} required className={inputClass} />
+            <input name="price" type="number" step="any" min={0} required className={inputClass} />
           </Field>
           <Field label="Unidade">
             <input name="unit" defaultValue="viagem" required className={inputClass} />

@@ -74,7 +74,7 @@ export function PeriodPicker({
 }
 
 export function formatMoney(value: number) {
-  return `${Math.round(value).toLocaleString("pt-AO")} Kz`;
+  return `${(Math.round(value * 100) / 100).toLocaleString("pt-AO", { maximumFractionDigits: 2 })} Kz`;
 }
 
 export const inputClass =

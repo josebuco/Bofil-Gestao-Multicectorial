@@ -56,7 +56,7 @@ function CedenciasPage() {
         data: {
           from_sector: String(f.get("from")) as never,
           to_sector: String(f.get("to")) as never,
-          amount: Math.round(Number(f.get("amount"))),
+          amount: (Math.round(Number(f.get("amount")) * 100) / 100),
           payment_method: String(f.get("method")) as Method,
           note: String(f.get("note") || "").trim() || null,
           transfer_date: String(f.get("date") || todayAngola()),
@@ -80,7 +80,7 @@ function CedenciasPage() {
       await giveBack({
         data: {
           parent_id: id,
-          amount: Math.round(Number(f.get("amount"))),
+          amount: (Math.round(Number(f.get("amount")) * 100) / 100),
           payment_method: String(f.get("method")) as Method,
           transfer_date: String(f.get("date") || todayAngola()),
         },
@@ -128,7 +128,7 @@ function CedenciasPage() {
             <select name="to" className={inputClass} required defaultValue={slugs[1]}>{slugs.map((s) => <option key={s} value={s}>{SECTOR_LABELS[s]}</option>)}</select>
           </Field>
           <Field label="Valor (Kz)">
-            <input name="amount" type="number" min={1} required className={inputClass} />
+            <input name="amount" type="number" step="any" min={1} required className={inputClass} />
           </Field>
           <Field label="Pagamento">
             <select name="method" className={inputClass}><option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option></select>
@@ -196,7 +196,7 @@ function CedenciasPage() {
                 ))}
                 {retFor === l.id ? (
                   <form onSubmit={(e) => onReturn(e, l.id)} className="grid grid-cols-1 sm:grid-cols-4 gap-2 pt-1">
-                    <input name="amount" type="number" min={1} max={l.remaining} defaultValue={l.remaining} required className={inputClass} />
+                    <input name="amount" type="number" step="any" min={1} max={l.remaining} defaultValue={l.remaining} required className={inputClass} />
                     <select name="method" className={inputClass}><option value="Numerário">Numerário</option><option value="Banco">Banco (VB)</option></select>
                     <input name="date" type="date" defaultValue={todayAngola()} className={inputClass} />
                     <button className="h-10 rounded-md bg-success text-primary-foreground font-medium">Confirmar devolução</button>

@@ -152,7 +152,7 @@ export const createStockUsage = createServerFn({ method: "POST" })
         purchase_id: z.string().uuid(),
         asset_id: z.string().uuid().nullable().default(null),
         quantity: z.number().int().min(1),
-        amount: z.number().int().min(0),
+        amount: z.number().min(0),
         note: z.string().trim().max(200).nullable().default(null),
         used_on: z.string().min(1),
         sector: FLEET,

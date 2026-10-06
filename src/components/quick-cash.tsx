@@ -109,7 +109,7 @@ export function QuickCashPage({
     ev.preventDefault();
     const form = ev.currentTarget;
     const f = new FormData(form);
-    const value = Math.round(Number(f.get("amount")));
+    const value = (Math.round(Number(f.get("amount")) * 100) / 100);
     if (!value || value <= 0) { toast.error("Indique um valor válido."); return; }
     let invoicePath: string | null = null;
     try { invoicePath = await uploadInvoice(f.get("invoice") as File | null, slug); }
@@ -186,7 +186,7 @@ export function QuickCashPage({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const value = Math.round(Number(amount));
+    const value = (Math.round(Number(amount) * 100) / 100);
     if (!value || value <= 0) { toast.error("Indique um valor válido."); return; }
     setSaving(true);
     try {
@@ -423,7 +423,7 @@ export function QuickCashPage({
           <ExpandableCard title="Registar saída" summary="Adicionar uma despesa geral da Lavagem">
             <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
               <input name="description" required placeholder="Descrição" className={`${inputClass} col-span-2`} />
-              <input name="amount" type="number" min={1} required inputMode="numeric" placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
+              <input name="amount" type="number" step="any" min={1} required inputMode="numeric" placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
               <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
                 <input name="category" list={`cats-${slug}`} placeholder="Categoria" className={inputClass} />
                 <datalist id={`cats-${slug}`}>{categories.map((c) => <option key={c} value={c} />)}</datalist>
@@ -536,7 +536,7 @@ export function QuickCashPage({
           <ExpandableCard title="Registar saída" summary="Adicionar uma despesa geral do setor">
             <form onSubmit={onExpense} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
               <input name="description" required placeholder="Descrição" className={`${inputClass} col-span-2`} />
-              <input name="amount" type="number" min={1} required inputMode="numeric" placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
+              <input name="amount" type="number" step="any" min={1} required inputMode="numeric" placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
               <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
                 <input name="category" list={`cats-${slug}`} placeholder="Categoria" className={inputClass} />
                 <datalist id={`cats-${slug}`}>{categories.map((c) => <option key={c} value={c} />)}</datalist>

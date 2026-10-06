@@ -23,7 +23,7 @@ export const createWaterProduct = createServerFn({ method: "POST" })
     z
       .object({
         name: z.string().min(1),
-        price: z.number().int().min(0),
+        price: z.number().min(0),
         stock: z.number().int().min(0).default(0),
         unit: z.string().min(1),
       })
@@ -43,12 +43,12 @@ export const createWaterSale = createServerFn({ method: "POST" })
         product_id: z.string().uuid().nullable().optional(),
         asset_id: z.string().uuid().nullable().optional(),
         description: z.string().max(200).nullable().optional(),
-        unit_price: z.number().int().min(0).optional(),
+        unit_price: z.number().min(0).optional(),
         quantity: z.number().int().min(1),
         client_name: z.string().nullable().default(null),
         status: z.string().min(1),
         payment_method: z.enum(["Numerário", "Banco"]).default("Numerário"),
-        offline_total: z.number().int().min(0).optional(),
+        offline_total: z.number().min(0).optional(),
         recorded_at: z.string().datetime().optional(),
         entry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
       })
@@ -126,7 +126,7 @@ export const updateWaterSaleStatus = createServerFn({ method: "POST" })
 
 export const createMenuItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ name: z.string().min(1), price: z.number().int().min(0) }).parse(d))
+  .inputValidator((d) => z.object({ name: z.string().min(1), price: z.number().min(0) }).parse(d))
   .handler(async ({ context, data }) => {
     const { error } = await context.supabase.from("restaurant_menu_items").insert(data);
     if (error) throw new Error(error.message);
@@ -156,7 +156,7 @@ export const createOrder = createServerFn({ method: "POST" })
     z
       .object({
         table_id: z.string().uuid().nullable().default(null),
-        total: z.number().int().min(0),
+        total: z.number().min(0),
         status: z.string().min(1),
       })
       .parse(d),
@@ -204,7 +204,7 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
 
 export const createWashService = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ name: z.string().min(1), price: z.number().int().min(0) }).parse(d))
+  .inputValidator((d) => z.object({ name: z.string().min(1), price: z.number().min(0) }).parse(d))
   .handler(async ({ context, data }) => {
     const { error } = await context.supabase.from("wash_services").insert(data);
     if (error) throw new Error(error.message);
@@ -264,7 +264,7 @@ export const createContract = createServerFn({ method: "POST" })
         school_name: z.string().min(1),
         route_code: z.string().min(1),
         student_count: z.number().int().min(0),
-        monthly_fee: z.number().int().min(0),
+        monthly_fee: z.number().min(0),
         status: z.string().min(1),
       })
       .parse(d),
