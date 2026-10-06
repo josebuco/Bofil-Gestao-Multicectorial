@@ -364,7 +364,7 @@ function CustosPage() {
               </label>
               <input
                 name="amount"
-                type="number"
+                type="number" step="any"
                 min="0"
                 required
                 onChange={(e) => setAmt(e.target.value)}
@@ -492,7 +492,7 @@ function CustosPage() {
                         {keys.map((k) => (
                           <div key={k} className="grid grid-cols-1 gap-1 mt-1">
                             <input
-                              type="number"
+                              type="number" step="any"
                               min="0"
                               value={contribs[k] || ""}
                               onChange={(e) => setContribs({ ...contribs, [k]: e.target.value })}

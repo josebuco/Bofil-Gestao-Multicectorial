@@ -169,7 +169,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
     if (!value || value <= 0) { toast.error(perStudentMode ? "Indique alunos e valor diário por aluno." : "Indique um valor válido."); return; }
     const payload = {
       sector, amount: value, payment_method: method, asset_id: sectorEntryMode ? null : current!.id,
-      ...(costMode ? { cost: Math.max(0, Math.round(Number(eCost) || 0)), status: eStatus, client_name: eStatus === "Pendente" ? eClient.trim() || null : null } : {}),
+      ...(costMode ? { cost: Math.max(0, Math.round((Number(eCost) || 0) * 100) / 100), status: eStatus, client_name: eStatus === "Pendente" ? eClient.trim() || null : null } : {}),
       ...(access.isAdmin && entryDate ? { entry_date: entryDate } : {}),
       ...(perStudentMode ? { students: (Math.round(Number(students) * 100) / 100), per_student: (Math.round(Number(perStudent) * 100) / 100) } : {}),
     };
@@ -243,7 +243,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
     const qty = (Math.round(Number(useQty) * 100) / 100);
     if (!qty || qty <= 0) { toast.error("Indique a quantidade."); return; }
     if (qty > selectedLot.left_quantity) { toast.error("Não há essa quantidade no estoque."); return; }
-    const value = Math.round(Number(useValue) || suggested);
+    const value = Math.round((Number(useValue) || suggested) * 100) / 100;
     const payload = {
       purchase_id: selectedLot.id,
       asset_id: current.id,
@@ -380,8 +380,8 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                 <form onSubmit={onTruck} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
                   <input value={tService} onChange={(e) => setTService(e.target.value)} list="truck-services" placeholder="Serviço (ex.: Carregamento cisterna)" className={`${inputClass} h-12 col-span-2`} />
                   <datalist id="truck-services">{(waterData.data?.products || []).map((p) => <option key={p.id} value={p.name} />)}</datalist>
-                  <input value={tPrice} onChange={(e) => setTPrice(e.target.value)} type="number" min={1} placeholder="Kz por viagem" className={`${inputClass} h-12 text-lg font-display`} />
-                  <input value={tTrips} onChange={(e) => setTTrips(e.target.value)} type="number" min={1} placeholder="Nº de viagens" className={`${inputClass} h-12 text-lg font-display`} />
+                  <input value={tPrice} onChange={(e) => setTPrice(e.target.value)} type="number" step="any" min={1} placeholder="Kz por viagem" className={`${inputClass} h-12 text-lg font-display`} />
+                  <input value={tTrips} onChange={(e) => setTTrips(e.target.value)} type="number" step="any" min={1} placeholder="Nº de viagens" className={`${inputClass} h-12 text-lg font-display`} />
                   <input value={tClient} onChange={(e) => setTClient(e.target.value)} placeholder="Nome do cliente" className={`${inputClass} h-12 col-span-2`} />
                   <select value={tStatus} onChange={(e) => setTStatus(e.target.value)} className={`${inputClass} h-12`}><option>Entregue</option><option>Pendente</option></select>
                   <select value={method} onChange={(e) => setMethod(e.target.value as "Numerário" | "Banco")} className={`${inputClass} h-12`}>
@@ -423,15 +423,15 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                 <form onSubmit={onEntry} className="p-4 grid grid-cols-2 gap-2 border-b border-edge">
                   {perStudentMode ? (
                     <>
-                      <input value={students} onChange={(e) => setStudents(e.target.value)} type="number" min={1} placeholder="Nº alunos" className={`${inputClass} h-12 text-lg font-display`} />
-                      <input value={perStudent} onChange={(e) => setPerStudent(e.target.value)} type="number" min={0} placeholder="Kz/aluno/dia" className={`${inputClass} h-12 text-lg font-display`} />
+                      <input value={students} onChange={(e) => setStudents(e.target.value)} type="number" step="any" min={1} placeholder="Nº alunos" className={`${inputClass} h-12 text-lg font-display`} />
+                      <input value={perStudent} onChange={(e) => setPerStudent(e.target.value)} type="number" step="any" min={0} placeholder="Kz/aluno/dia" className={`${inputClass} h-12 text-lg font-display`} />
                     </>
                   ) : (
-                    <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" min={1} placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
+                    <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" step="any" min={1} placeholder="Valor (Kz)" className={`${inputClass} h-12 text-lg font-display col-span-2`} />
                   )}
                   {costMode && (
                     <>
-                      <input value={eCost} onChange={(e) => setECost(e.target.value)} type="number" min={0} placeholder="Custo da entrada (Kz)" aria-label="Custo da entrada" className={inputClass} />
+                      <input value={eCost} onChange={(e) => setECost(e.target.value)} type="number" step="any" min={0} placeholder="Custo da entrada (Kz)" aria-label="Custo da entrada" className={inputClass} />
                       <select value={eStatus} onChange={(e) => { const v = e.target.value === "Pendente" ? "Pendente" : "Pago"; setEStatus(v); if (v === "Pago") setEClient(""); }} aria-label="Estado" className={inputClass}>
                         <option value="Pago">Pago</option><option value="Pendente">Pendente</option>
                       </select>
@@ -695,7 +695,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                   <input
                     value={useQty}
                     onChange={(e) => setUseQty(e.target.value)}
-                    type="number"
+                    type="number" step="any"
                     min={1}
                     placeholder={selectedLot?.fuel ? "Litros" : "Quantidade"}
                     className={`${inputClass} h-12 text-lg font-display`}
@@ -703,7 +703,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                   <input
                     value={useValue}
                     onChange={(e) => setUseValue(e.target.value)}
-                    type="number"
+                    type="number" step="any"
                     min={0}
                     placeholder={suggested ? `${formatMoney(suggested)} Kz` : "Valor (Kz)"}
                     className={`${inputClass} h-12 text-lg font-display`}
