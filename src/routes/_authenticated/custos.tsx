@@ -2,7 +2,7 @@ import { todayAngola } from "@/lib/tz";
 import { sendOrQueue, useQueue } from "@/lib/offline";
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useQuery, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { STOCK_CATEGORY, addCategory, listCategories, listAllAssets } from "@/lib/rental.functions";
+import { STOCK_CATEGORY, addCategory, deleteCategory, listCategories, renameCategory, listAllAssets } from "@/lib/rental.functions";
 import { useState } from "react";
 import { toast } from "sonner";
 import { CalendarDays } from "lucide-react";
@@ -96,6 +96,29 @@ function CustosPage() {
       toast.success(`Categoria "${name}" criada.`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível criar (precisa de internet).");
+    }
+  }
+  async function editCategory(name: string) {
+    const to = window.prompt(`Novo nome para "${name}":`, name)?.trim();
+    if (!to || to === name) return;
+    try {
+      await renameCategory({ data: { from: name, to } });
+      setFormCat(to);
+      await Promise.all([queryClient.invalidateQueries({ queryKey: ["expense-categories"] }), queryClient.invalidateQueries({ queryKey: ["finance"] })]);
+      toast.success("Categoria actualizada.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível editar.");
+    }
+  }
+  async function removeCategory(name: string) {
+    if (!window.confirm(`Excluir a categoria "${name}"? As faturas dela passam para "Outros".`)) return;
+    try {
+      await deleteCategory({ data: { name } });
+      setFormCat("");
+      await Promise.all([queryClient.invalidateQueries({ queryKey: ["expense-categories"] }), queryClient.invalidateQueries({ queryKey: ["finance"] })]);
+      toast.success("Categoria excluída.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível excluir.");
     }
   }
   const [rawTab, setTab] = useState<string>("agua");
@@ -374,6 +397,12 @@ function CustosPage() {
                     </option>
                   ))}
                 </select>
+                {access.isAdmin && (extraCats.data || []).includes(curCat) && !CATEGORIES.includes(curCat as never) ? (
+                  <div className="mt-1 flex gap-3 text-[11px]">
+                    <button type="button" onClick={() => editCategory(curCat)} className="text-primary hover:underline">Editar categoria</button>
+                    <button type="button" onClick={() => removeCategory(curCat)} className="text-destructive hover:underline">Excluir categoria</button>
+                  </div>
+                ) : null}
               </div>
             )}
             {(tab === "aluguer" || curCat === STOCK_CATEGORY || curCat === "Combustível") && (
