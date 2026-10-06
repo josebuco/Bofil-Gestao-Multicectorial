@@ -98,6 +98,8 @@ function emptySnapshot(range: { from: string; to: string }): FinanceSnapshot {
 }
 
 function queuedEntry(item: QueuedItem): FinanceEntry | null {
+  // Vehicle drafts (Estação 4 de Abril) stay on their cards, outside sector totals.
+  if (item.data["draft"]) return null;
   const amount = Number(item.data["amount"] ?? item.data["offline_total"] ?? item.data["total"]) || 0;
   const payment = String(item.data["payment_method"] || "Numerário");
   if (item.kind === "sector_entry") {
@@ -204,8 +206,8 @@ export function useMergedFinance(
 type SectorEntryRow = { id: string; amount: number; cost: number; status: string; client_name: string | null; payment_method: string; created_at: string };
 
 /** Same local payment overlay used by the finance snapshot and sector histories. */
-export function mergeQueuedSectorEntries(rows: SectorEntryRow[], queue: QueuedItem[], sector: string, range: { from: string; to: string }) {
-  const local = queue.filter((item) => item.kind === "sector_entry" && item.data["sector"] === sector).map((item) => ({
+export function mergeQueuedSectorEntries(rows: SectorEntryRow[], queue: QueuedItem[], sector: string, range: { from: string; to: string }, includeDrafts = false) {
+  const local = queue.filter((item) => item.kind === "sector_entry" && item.data["sector"] === sector && (includeDrafts || !item.data["draft"])).map((item) => ({
     id: item.id, amount: Number(item.data["amount"]) || 0, cost: Number(item.data["cost"]) || 0,
     status: String(item.data["status"] || "Pago"), client_name: item.data["client_name"] ? String(item.data["client_name"]) : null,
     payment_method: String(item.data["payment_method"] || "Numerário"),
