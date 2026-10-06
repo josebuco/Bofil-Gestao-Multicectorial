@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { CalendarDays, FileText, Plus, Trash2, Truck, Wrench, Package, Fuel } from "lucide-react";
 import { addSectorEntry, deleteSectorEntry, listSectorEntries, paySectorEntry } from "@/lib/access.functions";
-import { createExpense, deleteExpense, getExpenses } from "@/lib/expenses.functions";
+import { createExpense, deleteExpense, getExpenses, markExpensePaid } from "@/lib/expenses.functions";
 import { openInvoice, uploadInvoice } from "@/lib/invoice";
 import { addCategory, createAsset, createStockUsage, deleteAsset, listAssets, listCategories, listStock, listAssetContributions, type FleetSector } from "@/lib/rental.functions";
 import { Card, CashBalanceCard, ExpandableCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
@@ -40,6 +40,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   const addEntry = useServerFn(addSectorEntry);
   const addExp = useServerFn(createExpense);
   const delExp = useServerFn(deleteExpense);
+  const payExp = useServerFn(markExpensePaid);
 
   const assets = useQuery({ queryKey: ["rental-assets", sector], queryFn: () => listA({ data: { sector } }) });
   const entries = useQuery({ queryKey: ["entries", sector, range.from, range.to], queryFn: () => listE({ data: { sector, ...range } }) });
@@ -109,7 +110,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
     const cost = ents.reduce((s, e) => s + (e.cost || 0), 0);
     const rev = ents.filter((e) => e.status !== "Pendente").reduce((s, e) => s + e.amount, 0)
       + allTruck.filter((t) => t.asset_id === id && t.status !== "Pendente").reduce((s, t) => s + t.total, 0);
-    const exp = allExp.filter((e) => e.asset_id === id).reduce((s, e) => s + (e.amount || 0), 0)
+    const exp = allExp.filter((e) => e.asset_id === id && e.status !== "Pendente").reduce((s, e) => s + (e.amount || 0), 0)
       + allContrib.filter((c) => c.asset_id === id).reduce((s, c) => s + (c.amount || 0), 0);
     const used = allUsage.filter((u) => u.asset_id === id && u.used_on >= range.from && u.used_on <= range.to);
     const stk = used.reduce((s, u) => s + (u.amount || 0), 0);
@@ -654,6 +655,12 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                       <span className="flex items-center gap-3 shrink-0">
                         {e.invoice_path && !e.pending ? (
                           <button type="button" onClick={() => e.invoice_path && void openInvoice(e.invoice_path)} className="text-xs text-primary flex items-center gap-1"><FileText className="size-3.5" /> Ver fatura</button>
+                        ) : null}
+                        {e.status === "Pendente" && !e.pending ? (
+                          <button type="button" onClick={async () => {
+                            try { await payExp({ data: { id: e.id, invoice_path: null, notes: null } }); toast.success("Saída marcada como paga."); await Promise.all([qc.invalidateQueries({ queryKey: ["expenses"] }), qc.invalidateQueries({ queryKey: ["finance"] })]); }
+                            catch (err) { toast.error(err instanceof Error ? err.message : "Não foi possível marcar."); }
+                          }} className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">Pendente · Marcar pago</button>
                         ) : null}
                         <span className="font-display text-destructive">−{formatMoney(e.amount || 0)}</span>
                         {access.isAdmin && !e.pending ? (
