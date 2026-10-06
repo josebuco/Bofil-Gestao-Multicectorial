@@ -43,7 +43,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   const payExp = useServerFn(markExpensePaid);
 
   const assets = useQuery({ queryKey: ["rental-assets", sector], queryFn: () => listA({ data: { sector } }) });
-  const entries = useQuery({ queryKey: ["entries", sector, range.from, range.to], queryFn: () => listE({ data: { sector, ...range } }) });
+  const entries = useQuery({ queryKey: ["entries", sector, range.from, range.to, "fleet"], queryFn: () => listE({ data: { sector, ...range } }) });
   const expenses = useQuery({ queryKey: ["expenses"], queryFn: () => listX() });
   const cats = useQuery({ queryKey: ["expense-categories"], queryFn: () => listC() });
   const categories = Array.from(new Set([...BASE_CATEGORIES, ...(cats.data || [])]));
