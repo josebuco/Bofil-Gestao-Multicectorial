@@ -74,7 +74,6 @@ export const getFinance = createServerFn({ method: "GET" })
 
     const draftIds = await draftVehicleIds(context.supabase as never);
     if (quick.data) quick.data = quick.data.filter(notDraft(draftIds));
-    if (expenses.data) expenses.data = expenses.data.filter(notDraft(draftIds));
 
     // build buckets
     const buckets: string[] = [];
@@ -289,7 +288,7 @@ async function sectorCashOnHand(
   ]);
   const draftIds = sector === "lavagem" ? await draftVehicleIds(supabase) : new Set<string>();
   entries.data = (entries.data || []).filter(notDraft(draftIds));
-  expenses.data = (expenses.data || []).filter(notDraft(draftIds));
+  // Vehicle expenses count in sector outflows; only vehicle entries are drafts.
   for (const t of tIn.data || []) if (t.payment_method !== "Banco") entries.data = [...(entries.data || []), { amount: t.amount, payment_method: "Numerário" }];
   for (const t of tOut.data || []) if (t.payment_method !== "Banco") expenses.data = [...(expenses.data || []), { amount: t.amount, payment_method: "Numerário" }];
   let rev = 0;
