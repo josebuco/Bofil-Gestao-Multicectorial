@@ -625,7 +625,7 @@ export function QuickCashPage({
         {slug === "lavagem" && (
           <section className="space-y-3">
             <h2 className="font-display text-lg uppercase tracking-wide text-foreground">Veículos e equipamentos</h2>
-            <FleetPage sector="lavagem" title="Estação 4 de Abril" subtitle="" dot="bg-wash" embedded />
+            <FleetPage sector="lavagem" title="Estação 4 de Abril" subtitle="" dot="bg-wash" embedded range={range} />
           </section>
         )}
       </div>

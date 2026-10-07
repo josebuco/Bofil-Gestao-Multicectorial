@@ -23,11 +23,14 @@ import { Area, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, 
 const BASE_CATEGORIES = ["Manutenção e Reparação", "Combustível", "Seguro", "Pneus", "Salários", "Impostos", "Outros"];
 const label = "text-[11px] uppercase tracking-[0.14em] text-muted-foreground";
 
-export function FleetPage({ sector, title, subtitle, dot, embedded = false, afterAssets }: { sector: FleetSector; title: string; subtitle: string; dot: string; embedded?: boolean; afterAssets?: React.ReactNode }) {
+export function FleetPage({ sector, title, subtitle, dot, embedded = false, afterAssets, range: parentRange }: { sector: FleetSector; title: string; subtitle: string; dot: string; embedded?: boolean; afterAssets?: React.ReactNode; range?: { from: string; to: string } }) {
   const perStudentMode = sector === "transporte";
   const sectorEntryMode = false; // entradas sempre por veículo (no Transporte: alunos × valor diário)
   const equipmentOnly = false;
-  const { preset, setPreset, custom, setCustom, range } = usePeriod("mes");
+  const period = usePeriod("mes");
+  const { preset, setPreset, custom, setCustom } = period;
+  // Embedded in a sector page: follow the period chosen at the top of that page.
+  const range = parentRange ?? period.range;
   const qc = useQueryClient();
   const access = useAccess();
   const listA = useServerFn(listAssets);
