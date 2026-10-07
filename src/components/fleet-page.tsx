@@ -12,7 +12,7 @@ import { DebtCard } from "@/components/debt-card";
 import { periodLabel } from "@/lib/period";
 import { useAccess } from "@/lib/use-access";
 import { readQueue, sendOrQueue, useQueue, writeQueue } from "@/lib/offline";
-import { todayAngola } from "@/lib/tz";
+import { angolaParts, todayAngola } from "@/lib/tz";
 import { getFinance } from "@/lib/finance.functions";
 import { useMergedFinance } from "@/lib/offline-finance";
 import { chartTooltip } from "@/components/sector-cash";
@@ -79,7 +79,9 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   const qExp = useQueue("expense").filter((q) => q.data["sector"] === sector)
     .map((q) => ({ id: q.id, amount: Number(q.data["amount"]) || 0, description: String(q.data["description"] || ""), category: String(q.data["category"] || ""), expense_date: String(q.data["expense_date"] || q.at.slice(0, 10)), status: String(q.data["status"] || "Pendente"), asset_id: (q.data["asset_id"] as string) || null, invoice_path: null as string | null, pending: true }));
 
-  const allEntries = [...qEntries, ...(entries.data || []).map((e) => ({ ...e, pending: false }))];
+  const angolaDay = (when: string) => { const p = angolaParts(when); return `${p.y}-${String(p.m).padStart(2, "0")}-${String(p.d).padStart(2, "0")}`; };
+  const allEntries = [...qEntries, ...(entries.data || []).map((e) => ({ ...e, pending: false }))]
+    .filter((e) => { const d = angolaDay(e.created_at); return d >= range.from && d <= range.to; });
   const allExp = [
     ...qExp,
     ...(expenses.data?.expenses || []).filter((e) => e.sector === sector).map((e) => ({ ...e, pending: false })),
