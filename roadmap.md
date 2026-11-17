@@ -1,5 +1,11 @@
 # Roadmap
 
+- [ ] Aba "Controle de consumo dos veículos"
+  - [ ] Permissão independente para acesso à aba
+  - [ ] Reunir veículos, consumos e compras de estoque partilhado
+  - [ ] Aplicar período diário aos técnicos e ocultar receitas/saldos de setores sem permissão
+  - [ ] Verificar cálculos, permissões e apresentação
+
 - [x] Compras individuais de estoque nos setores
   - [x] Registar compras como despesa paga do setor, com lotes partilhados
   - [x] Calcular automaticamente combustível a 420 Kz por litro

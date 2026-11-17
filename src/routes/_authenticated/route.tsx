@@ -55,6 +55,7 @@ const allSectors = [
   { id: "/transporte", label: "Transporte Escolar", color: "bg-transport", perm: "transporte" },
   { id: "/aluguer", label: "Aluguer de Veículos", color: "bg-primary", perm: "aluguer" },
   { id: "/custos", label: "Centro de Custos", color: "bg-brand", perm: "custos" },
+  { id: "/controle-consumo-veiculos", label: "Controle de consumo dos veículos", color: "bg-primary", perm: "veiculos" },
   { id: "/cedencias", label: "Cedências entre Setores", color: "bg-success", perm: "admin" },
   { id: "/faturacao", label: "Faturação", color: "bg-wash", perm: "admin" },
   { id: "/utilizadores", label: "Utilizadores", color: "bg-muted-foreground", perm: "admin" },

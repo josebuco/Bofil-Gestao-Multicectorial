@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAguaRouteImport } from './routes/_authenticated/agua'
 import { Route as AuthenticatedAluguerRouteImport } from './routes/_authenticated/aluguer'
 import { Route as AuthenticatedCedenciasRouteImport } from './routes/_authenticated/cedencias'
+import { Route as AuthenticatedControleConsumoVeiculosRouteImport } from './routes/_authenticated/controle-consumo-veiculos'
 import { Route as AuthenticatedCustosRouteImport } from './routes/_authenticated/custos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFaturacaoRouteImport } from './routes/_authenticated/faturacao'
@@ -52,6 +53,12 @@ const AuthenticatedCedenciasRoute = AuthenticatedCedenciasRouteImport.update({
   path: '/cedencias',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedControleConsumoVeiculosRoute =
+  AuthenticatedControleConsumoVeiculosRouteImport.update({
+    id: '/controle-consumo-veiculos',
+    path: '/controle-consumo-veiculos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCustosRoute = AuthenticatedCustosRouteImport.update({
   id: '/custos',
   path: '/custos',
@@ -96,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/agua': typeof AuthenticatedAguaRoute
   '/aluguer': typeof AuthenticatedAluguerRoute
   '/cedencias': typeof AuthenticatedCedenciasRoute
+  '/controle-consumo-veiculos': typeof AuthenticatedControleConsumoVeiculosRoute
   '/custos': typeof AuthenticatedCustosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/faturacao': typeof AuthenticatedFaturacaoRoute
@@ -110,6 +118,7 @@ export interface FileRoutesByTo {
   '/agua': typeof AuthenticatedAguaRoute
   '/aluguer': typeof AuthenticatedAluguerRoute
   '/cedencias': typeof AuthenticatedCedenciasRoute
+  '/controle-consumo-veiculos': typeof AuthenticatedControleConsumoVeiculosRoute
   '/custos': typeof AuthenticatedCustosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/faturacao': typeof AuthenticatedFaturacaoRoute
@@ -126,6 +135,7 @@ export interface FileRoutesById {
   '/_authenticated/agua': typeof AuthenticatedAguaRoute
   '/_authenticated/aluguer': typeof AuthenticatedAluguerRoute
   '/_authenticated/cedencias': typeof AuthenticatedCedenciasRoute
+  '/_authenticated/controle-consumo-veiculos': typeof AuthenticatedControleConsumoVeiculosRoute
   '/_authenticated/custos': typeof AuthenticatedCustosRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/faturacao': typeof AuthenticatedFaturacaoRoute
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/agua'
     | '/aluguer'
     | '/cedencias'
+    | '/controle-consumo-veiculos'
     | '/custos'
     | '/dashboard'
     | '/faturacao'
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | '/agua'
     | '/aluguer'
     | '/cedencias'
+    | '/controle-consumo-veiculos'
     | '/custos'
     | '/dashboard'
     | '/faturacao'
@@ -171,6 +183,7 @@ export interface FileRouteTypes {
     | '/_authenticated/agua'
     | '/_authenticated/aluguer'
     | '/_authenticated/cedencias'
+    | '/_authenticated/controle-consumo-veiculos'
     | '/_authenticated/custos'
     | '/_authenticated/dashboard'
     | '/_authenticated/faturacao'
@@ -230,6 +243,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCedenciasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/controle-consumo-veiculos': {
+      id: '/_authenticated/controle-consumo-veiculos'
+      path: '/controle-consumo-veiculos'
+      fullPath: '/controle-consumo-veiculos'
+      preLoaderRoute: typeof AuthenticatedControleConsumoVeiculosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/custos': {
       id: '/_authenticated/custos'
       path: '/custos'
@@ -286,6 +306,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAguaRoute: typeof AuthenticatedAguaRoute
   AuthenticatedAluguerRoute: typeof AuthenticatedAluguerRoute
   AuthenticatedCedenciasRoute: typeof AuthenticatedCedenciasRoute
+  AuthenticatedControleConsumoVeiculosRoute: typeof AuthenticatedControleConsumoVeiculosRoute
   AuthenticatedCustosRoute: typeof AuthenticatedCustosRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFaturacaoRoute: typeof AuthenticatedFaturacaoRoute
@@ -299,6 +320,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAguaRoute: AuthenticatedAguaRoute,
   AuthenticatedAluguerRoute: AuthenticatedAluguerRoute,
   AuthenticatedCedenciasRoute: AuthenticatedCedenciasRoute,
+  AuthenticatedControleConsumoVeiculosRoute:
+    AuthenticatedControleConsumoVeiculosRoute,
   AuthenticatedCustosRoute: AuthenticatedCustosRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFaturacaoRoute: AuthenticatedFaturacaoRoute,

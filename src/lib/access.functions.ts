@@ -10,6 +10,7 @@ export const PERMISSION_OPTIONS = [
   { slug: "transporte", label: "Transporte Escolar" },
   { slug: "aluguer", label: "Aluguer de Veículos" },
   { slug: "custos", label: "Centro de Custos" },
+  { slug: "veiculos", label: "Controle de consumo dos veículos" },
 ] as const;
 
 export const getMyAccess = createServerFn({ method: "GET" })
@@ -48,7 +49,7 @@ export const listStaff = createServerFn({ method: "GET" })
     }));
   });
 
-const sectorsSchema = z.array(z.enum(["agua", "restaurante", "lavagem", "transporte", "aluguer", "custos"]));
+const sectorsSchema = z.array(z.enum(["agua", "restaurante", "lavagem", "transporte", "aluguer", "custos", "veiculos"]));
 
 export const createStaff = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

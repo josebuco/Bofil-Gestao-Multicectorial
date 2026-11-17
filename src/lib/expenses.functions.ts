@@ -71,6 +71,7 @@ export const createExpense = createServerFn({ method: "POST" })
         quantity: z.number().int().min(0).nullable().default(null),
         stock_unit: z.enum(["litro", "unidade"]).nullable().default(null),
         sector_stock_purchase: z.boolean().default(false),
+        vehicle_stock_purchase: z.boolean().default(false),
         contributions: z
           .array(z.object({ sector: z.string().min(1), amount: z.number().min(0.01), asset_id: z.string().uuid().nullable().optional() }))
           .optional(),
@@ -79,7 +80,21 @@ export const createExpense = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-    if (data.sector_stock_purchase) {
+    if (data.vehicle_stock_purchase) {
+      const [{ data: permissions }, { data: staff }] = await Promise.all([
+        context.supabase.from("user_permissions").select("sector").eq("user_id", context.userId),
+        context.supabase.from("staff_accounts").select("active").eq("user_id", context.userId).maybeSingle(),
+      ]);
+      if (!isAdmin && (!staff?.active || !(permissions || []).some((p) => p.sector === "veiculos"))) {
+        throw new Error("Sem permissão para registar compras nesta aba.");
+      }
+      if (!data.sector_stock_purchase || !data.asset_id || data.category !== "Compra de estoque" || !data.stock_unit || !data.quantity || data.quantity < 1) {
+        throw new Error("A compra deve estar ligada a um veículo e indicar tipo e quantidade.");
+      }
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: asset } = await supabaseAdmin.from("rental_assets").select("id, sector, kind").eq("id", data.asset_id).maybeSingle();
+      if (!asset || asset.sector !== data.sector || asset.kind !== "Veículo") throw new Error("Veículo não encontrado neste setor.");
+    } else if (data.sector_stock_purchase) {
       const { data: canAccess } = await context.supabase.rpc("can_access", {
         _user_id: context.userId,
         _sector: data.sector,
@@ -90,7 +105,8 @@ export const createExpense = createServerFn({ method: "POST" })
       }
     }
     const { todayAngola } = await import("@/lib/tz");
-    const { recorded_at, contributions, sector_stock_purchase, ...rest } = data;
+    const { recorded_at, contributions, sector_stock_purchase, vehicle_stock_purchase, ...rest } = data;
+    void vehicle_stock_purchase;
     const stockQuantity = data.quantity ?? 0;
     const t = recorded_at ? new Date(recorded_at).getTime() : NaN;
     const offlineDay =
@@ -111,11 +127,14 @@ export const createExpense = createServerFn({ method: "POST" })
       const sum = contribs.reduce((s, c) => s + c.amount, 0);
       if (sum > row.amount) throw new Error("As contribuições ultrapassam o valor da fatura.");
     }
-    const { data: created, error } = await context.supabase
-      .from("expenses")
-      .insert({ ...row, created_by: context.userId })
-      .select("id")
-      .single();
+    const expenseInsert = vehicle_stock_purchase
+      ? await (await import("@/integrations/supabase/client.server")).supabaseAdmin
+          .from("expenses")
+          .insert({ ...row, created_by: context.userId })
+          .select("id")
+          .single()
+      : await context.supabase.from("expenses").insert({ ...row, created_by: context.userId }).select("id").single();
+    const { data: created, error } = expenseInsert;
     if (error) throw new Error(error.message);
     if (contribs.length) {
       // Cada setor transfere a sua parte para o setor da fatura: sai do caixa do setor,

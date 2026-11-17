@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { todayAngola } from "@/lib/tz";
 
 const FLEET = z.enum(["aluguer", "transporte", "agua", "lavagem"]).default("aluguer");
 export type FleetSector = "aluguer" | "transporte" | "agua" | "lavagem";
@@ -157,13 +158,52 @@ export const createStockUsage = createServerFn({ method: "POST" })
         note: z.string().trim().max(200).nullable().default(null),
         used_on: z.string().min(1),
         sector: FLEET,
+        vehicle_control: z.boolean().default(false),
         recorded_at: z.string().datetime().optional(),
       })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
-    const { recorded_at, ...rest } = data;
+    const { recorded_at, vehicle_control, ...rest } = data;
     void recorded_at;
+    if (!vehicle_control) {
+      const [{ data: isAdmin }, { data: canAccess }] = await Promise.all([
+        context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
+        context.supabase.rpc("can_access", { _user_id: context.userId, _sector: rest.sector }),
+      ]);
+      if (!isAdmin && !canAccess) throw new Error("Sem acesso a este setor.");
+    }
+    if (vehicle_control) {
+      const [{ data: isAdmin }, { data: permissions }, { data: staff }] = await Promise.all([
+        context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
+        context.supabase.from("user_permissions").select("sector").eq("user_id", context.userId),
+        context.supabase.from("staff_accounts").select("active").eq("user_id", context.userId).maybeSingle(),
+      ]);
+      if (!isAdmin && (!staff?.active || !(permissions || []).some((p) => p.sector === "veiculos"))) {
+        throw new Error("Sem permissão para registar consumos nesta aba.");
+      }
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const [{ data: asset }, { data: lot }] = await Promise.all([
+        rest.asset_id
+          ? supabaseAdmin.from("rental_assets").select("id, sector, kind").eq("id", rest.asset_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        supabaseAdmin.from("expenses").select("id, sector, category, status, quantity").eq("id", rest.purchase_id).maybeSingle(),
+      ]);
+      if (!asset || asset.sector !== rest.sector || asset.kind !== "Veículo") throw new Error("Veículo não encontrado neste setor.");
+      if (!lot || lot.category !== STOCK_CATEGORY || lot.status !== "Pago" || !STOCK_SECTORS.includes(lot.sector as FleetSector)) {
+        throw new Error("Lote de estoque indisponível.");
+      }
+      const { data: usages } = await supabaseAdmin.from("rental_stock_usage").select("quantity").eq("purchase_id", lot.id);
+      const available = Math.max(0, (lot.quantity || 1) - (usages || []).reduce((sum, row) => sum + (row.quantity || 0), 0));
+      if (rest.quantity > available) throw new Error("A quantidade ultrapassa o estoque disponível.");
+      const { error } = await supabaseAdmin.from("rental_stock_usage").insert({
+        ...rest,
+        used_on: isAdmin ? rest.used_on : todayAngola(),
+        created_by: context.userId,
+      });
+      if (error) throw new Error(error.message);
+      return { ok: true };
+    }
     const { error } = await context.supabase
       .from("rental_stock_usage")
       .insert({ ...rest, created_by: context.userId });

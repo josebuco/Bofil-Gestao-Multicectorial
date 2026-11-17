@@ -26,7 +26,7 @@ const LABELS: Record<string, string> = {
   activity_logs: "Histórico de actividade",
   devices: "Dispositivos autorizados",
   staff_accounts: "Contas da equipa",
-  user_permissions: "Permissões por setor",
+  user_permissions: "Permissões por setor e veículos",
   user_roles: "Funções",
   profiles: "Perfis",
 };
