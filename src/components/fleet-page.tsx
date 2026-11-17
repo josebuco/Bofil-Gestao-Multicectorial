@@ -6,7 +6,7 @@ import { CalendarDays, FileText, Plus, Trash2, Truck, Wrench, Package, Fuel } fr
 import { addSectorEntry, deleteSectorEntry, listSectorEntries, paySectorEntry } from "@/lib/access.functions";
 import { createExpense, deleteExpense, getExpenses, markExpensePaid } from "@/lib/expenses.functions";
 import { openInvoice, uploadInvoice } from "@/lib/invoice";
-import { addCategory, createAsset, createStockUsage, deleteAsset, listAssets, listCategories, listStock, listAssetContributions, type FleetSector } from "@/lib/rental.functions";
+import { addCategory, createAsset, createStockUsage, deleteAsset, listAssets, listCategories, listStock, listAssetContributions, STOCK_CATEGORY, type FleetSector } from "@/lib/rental.functions";
 import { Card, CashBalanceCard, ExpandableCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
 import { DebtCard } from "@/components/debt-card";
 import { periodLabel } from "@/lib/period";
@@ -16,12 +16,18 @@ import { angolaParts, todayAngola } from "@/lib/tz";
 import { getFinance } from "@/lib/finance.functions";
 import { useMergedFinance } from "@/lib/offline-finance";
 import { chartTooltip } from "@/components/sector-cash";
+import { FUEL_PRICE_PER_LITER, stockPurchaseAmount } from "@/lib/stock";
 import { createWaterSale, listTruckSales, updateWaterSaleStatus, deleteRecord } from "@/lib/crud.functions";
 import { getWaterData } from "@/lib/sectors.functions";
 import { Area, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const BASE_CATEGORIES = ["Manutenção e Reparação", "Combustível", "Seguro", "Pneus", "Salários", "Impostos", "Outros"];
 const label = "text-[11px] uppercase tracking-[0.14em] text-muted-foreground";
+type StockItemView = {
+  id: string; description: string; supplier: string | null; sector: string; fuel: boolean;
+  purchase_date: string; quantity: number; amount: number; unit_price: number;
+  used_quantity: number; used_amount: number; left_quantity: number; left_amount: number; pending?: boolean;
+};
 
 export function FleetPage({ sector, title, subtitle, dot, embedded = false, afterAssets, range: parentRange }: { sector: FleetSector; title: string; subtitle: string; dot: string; embedded?: boolean; afterAssets?: React.ReactNode; range?: { from: string; to: string } }) {
   const perStudentMode = sector === "transporte";
@@ -54,6 +60,30 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   const addUse = useServerFn(createStockUsage);
   const stock = useQuery({ queryKey: ["rental-stock", sector], queryFn: () => listStk({ data: { sector } }) });
 
+  const queuedStockItems = useQueue("expense")
+    .filter((item) => item.data["sector_stock_purchase"] === true && item.data["status"] === "Pago")
+    .map((item) => {
+      const quantity = Number(item.data["quantity"]) || 0;
+      const amount = Number(item.data["amount"]) || 0;
+      const unit = item.data["stock_unit"] === "litro" ? "litro" : "unidade";
+      return {
+        id: item.id,
+        description: String(item.data["description"] || "Compra de estoque"),
+        supplier: (item.data["supplier"] as string | null) ?? null,
+        sector: String(item.data["sector"] || sector),
+        fuel: unit === "litro",
+        purchase_date: String(item.data["expense_date"] || item.at.slice(0, 10)),
+        quantity,
+        amount,
+        unit_price: quantity > 0 ? amount / quantity : 0,
+        used_quantity: 0,
+        used_amount: 0,
+        left_quantity: quantity,
+        left_amount: amount,
+        pending: true,
+      };
+    });
+
   const qUsageAll = useQueue("stock_usage").map((q) => ({
     id: q.id,
     purchase_id: String(q.data["purchase_id"] || ""),
@@ -67,7 +97,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   }));
   const qUsage = qUsageAll.filter((u) => u.sector === sector);
   const allUsage = [...qUsage, ...(stock.data?.usages || []).map((u) => ({ ...u, pending: false }))];
-  const stockItems = (stock.data?.items || []).map((i) => {
+  const stockItems = ([...queuedStockItems, ...(stock.data?.items || [])] as StockItemView[]).map((i): StockItemView => {
     const pend = qUsageAll.filter((u) => u.purchase_id === i.id);
     const pq = pend.reduce((s, u) => s + u.quantity, 0);
     const pa = pend.reduce((s, u) => s + u.amount, 0);
@@ -244,10 +274,64 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
   const [useValue, setUseValue] = useState("");
   const selectedLot = stockItems.find((i) => i.id === usePurchase);
   const suggested = selectedLot ? selectedLot.unit_price * (Number(useQty) || 0) : 0;
+  const [buyUnit, setBuyUnit] = useState<"litro" | "unidade">("litro");
+  const [buyQuantity, setBuyQuantity] = useState("1");
+  const [buyTotal, setBuyTotal] = useState("");
+  const buyAmount = stockPurchaseAmount(buyUnit, Number(buyQuantity) || 0, Number(buyTotal) || 0);
+
+  async function onStockPurchase(ev: React.FormEvent<HTMLFormElement>) {
+    ev.preventDefault();
+    const form = ev.currentTarget;
+    const fields = new FormData(form);
+    const quantity = Number(buyQuantity);
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      toast.error("Indique uma quantidade válida.");
+      return;
+    }
+    if (buyUnit === "unidade" && buyAmount <= 0) {
+      toast.error("Indique o valor total da compra.");
+      return;
+    }
+    const payload = {
+      sector,
+      category: STOCK_CATEGORY,
+      description: String(fields.get("stock_description") || "").trim(),
+      amount: buyAmount,
+      expense_date: todayAngola(),
+      supplier: String(fields.get("stock_supplier") || "").trim() || null,
+      status: "Pago",
+      invoice_path: null,
+      notes: null,
+      payment_method: (fields.get("stock_payment") === "Banco" ? "Banco" : "Numerário") as "Banco" | "Numerário",
+      asset_id: null,
+      quantity,
+      stock_unit: buyUnit,
+      sector_stock_purchase: true,
+    };
+    if (!payload.description) {
+      toast.error("Indique o nome do item comprado.");
+      return;
+    }
+    try {
+      const result = await sendOrQueue("expense", payload, `Compra de estoque (${title}): ${payload.description}`, () => addExp({ data: payload }));
+      form.reset();
+      setBuyUnit("litro");
+      setBuyQuantity("1");
+      setBuyTotal("");
+      toast.success(result === "queued" ? "Compra guardada no aparelho; o lote ficará disponível após sincronizar." : "Compra registada e estoque partilhado actualizado.");
+      if (result === "sent") await Promise.all([
+        qc.invalidateQueries({ queryKey: ["expenses"] }),
+        qc.invalidateQueries({ queryKey: ["rental-stock"] }),
+        qc.invalidateQueries({ queryKey: ["finance"] }),
+      ]);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível registar a compra.");
+    }
+  }
 
   async function onUsage(ev: React.FormEvent) {
     ev.preventDefault();
-    if (!current || !selectedLot) return;
+    if (!current || !selectedLot || selectedLot.pending) return;
     const qty = (Math.round(Number(useQty) * 100) / 100);
     if (!qty || qty <= 0) { toast.error("Indique a quantidade."); return; }
     if (qty > selectedLot.left_quantity) { toast.error("Não há essa quantidade no estoque."); return; }
@@ -566,11 +650,34 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
           </>
         )}
         {sectorEntryMode && entriesCard}
-        <Card title="Estoque de peças e materiais">
+        <ExpandableCard title={`Comprar estoque para ${title}`} summary="A compra fica registada como despesa deste setor">
+          <form onSubmit={onStockPurchase} className="p-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-2 border-b border-edge">
+            <input name="stock_description" required placeholder="Item (ex.: Gasóleo)" className={inputClass} />
+            <select value={buyUnit} onChange={(event) => { setBuyUnit(event.target.value as "litro" | "unidade"); setBuyTotal(""); }} aria-label="Tipo de estoque" className={inputClass}>
+              <option value="litro">Combustível (litros)</option>
+              <option value="unidade">Peças e materiais</option>
+            </select>
+            <input value={buyQuantity} onChange={(event) => setBuyQuantity(event.target.value)} type="number" step="1" min="1" required aria-label={buyUnit === "litro" ? "Litros comprados" : "Quantidade comprada"} placeholder={buyUnit === "litro" ? "Litros" : "Quantidade"} className={inputClass} />
+            {buyUnit === "litro" ? (
+              <div className={`${inputClass} flex items-center text-sm text-muted-foreground`}>
+                {formatMoney(buyAmount)} Kz · {FUEL_PRICE_PER_LITER} Kz/L
+              </div>
+            ) : (
+              <input value={buyTotal} onChange={(event) => setBuyTotal(event.target.value)} type="number" step="any" min="0.01" required aria-label="Valor total da compra" placeholder="Valor total (Kz)" className={inputClass} />
+            )}
+            <select name="stock_payment" aria-label="Forma de pagamento" className={inputClass}>
+              <option value="Numerário">Numerário</option><option value="Banco">Banco</option>
+            </select>
+            <input name="stock_supplier" placeholder="Fornecedor (opcional)" className={`${inputClass} sm:col-span-2`} />
+            <button className="h-10 rounded-md bg-primary px-4 text-primary-foreground font-medium sm:col-span-2 xl:col-span-3">Registar compra · {formatMoney(buyAmount)} Kz</button>
+          </form>
+        </ExpandableCard>
+
+        <Card title="Estoque partilhado entre setores">
           <ul className="divide-y divide-edge/60 max-h-80 overflow-auto">
             {stockItems.length === 0 && (
               <li className="p-5 text-sm text-muted-foreground">
-                Ainda não há compras de estoque. Registe-as no Centro de Custos (Água, Lavagem, Transporte ou Aluguer) — o estoque é partilhado.
+                Ainda não há compras de estoque. Cada setor pode registar a sua compra; os lotes disponíveis ficam acessíveis aos outros setores.
               </li>
             )}
             {stockItems.map((i) => (
@@ -580,6 +687,7 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                     <Package className="size-3.5 text-primary shrink-0" />
                     {i.description}
                     {i.fuel && <span className="text-[10px] uppercase tracking-wide rounded bg-primary/15 text-primary px-1.5 py-0.5">Combustível</span>}
+                    {i.pending && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/15 text-warning">No aparelho</span>}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
                     {new Date(i.purchase_date).toLocaleDateString("pt-AO")} · {formatMoney(i.unit_price)} Kz por {i.fuel ? "litro" : "unidade"}
@@ -701,8 +809,8 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                   >
                     <option value="">Escolher item do estoque…</option>
                     {stockItems.filter((i) => i.left_quantity > 0).map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {i.fuel ? "⛽ " : ""}{i.description} — {i.left_quantity} {i.fuel ? "L" : ""} disponíveis
+                      <option key={i.id} value={i.id} disabled={i.pending}>
+                        {i.fuel ? "⛽ " : ""}{i.description} — {i.left_quantity} {i.fuel ? "L" : ""} disponíveis{i.pending ? " · aguarda sincronização" : ""}
                       </option>
                     ))}
                   </select>
@@ -726,10 +834,10 @@ export function FleetPage({ sector, title, subtitle, dot, embedded = false, afte
                     Sai do estoque e fica no custo da unidade. Não entra nas despesas gerais do período.
                   </p>
                   <button
-                    disabled={!usePurchase}
+                    disabled={!usePurchase || selectedLot?.pending}
                     className="col-span-2 h-10 rounded-md bg-primary text-primary-foreground font-medium disabled:opacity-50"
                   >
-                    Aplicar na unidade
+                    {selectedLot?.pending ? "Aguarda sincronização" : "Aplicar na unidade"}
                   </button>
                 </form>
               </ExpandableCard>

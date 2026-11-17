@@ -94,7 +94,7 @@ export const listAllAssets = createServerFn({ method: "GET" })
     return data || [];
   });
 
-/** Lotes de estoque comprados no Centro de Custos e o que já foi aplicado nos veículos. */
+/** Lotes de estoque comprados pelos setores e o que já foi aplicado nos veículos. */
 export const listStock = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ sector: FLEET }).parse(d ?? {}))
@@ -105,9 +105,10 @@ export const listStock = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: purchases, error } = await supabaseAdmin
       .from("expenses")
-      .select("id, description, amount, quantity, expense_date, supplier, sector, stock_unit")
+      .select("id, description, amount, quantity, expense_date, supplier, sector, stock_unit, status")
       .in("sector", [...STOCK_SECTORS])
       .eq("category", STOCK_CATEGORY)
+      .eq("status", "Pago")
       .order("expense_date", { ascending: false })
       .limit(300);
     if (error) throw new Error(error.message);
@@ -120,7 +121,7 @@ export const listStock = createServerFn({ method: "GET" })
 
     const all = usage || [];
     const usages = all.filter((u) => u.sector === input.sector);
-    const items = (purchases || []).map((p) => {
+    const items = (purchases || []).filter((p) => p.status !== "Pendente").map((p) => {
       const mine = all.filter((u) => u.purchase_id === p.id);
       const usedQty = mine.reduce((s, u) => s + (u.quantity || 0), 0);
       const usedAmount = mine.reduce((s, u) => s + (u.amount || 0), 0);

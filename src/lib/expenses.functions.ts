@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { FUEL_PRICE_PER_LITER } from "@/lib/stock";
 
 export const SECTORS = [
   { slug: "agua", label: "Água", color: "bg-water" },
@@ -69,6 +70,7 @@ export const createExpense = createServerFn({ method: "POST" })
         asset_id: z.string().uuid().nullable().default(null),
         quantity: z.number().int().min(0).nullable().default(null),
         stock_unit: z.enum(["litro", "unidade"]).nullable().default(null),
+        sector_stock_purchase: z.boolean().default(false),
         contributions: z
           .array(z.object({ sector: z.string().min(1), amount: z.number().min(0.01), asset_id: z.string().uuid().nullable().optional() }))
           .optional(),
@@ -77,14 +79,32 @@ export const createExpense = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (data.sector_stock_purchase) {
+      const { data: canAccess } = await context.supabase.rpc("can_access", {
+        _user_id: context.userId,
+        _sector: data.sector,
+      });
+      if (!canAccess && !isAdmin) throw new Error("Sem acesso a este setor.");
+      if (data.category !== "Compra de estoque" || !data.stock_unit || !data.quantity || data.quantity < 1) {
+        throw new Error("Indique o tipo e a quantidade da compra de estoque.");
+      }
+    }
     const { todayAngola } = await import("@/lib/tz");
-    const { recorded_at, contributions, ...rest } = data;
+    const { recorded_at, contributions, sector_stock_purchase, ...rest } = data;
+    const stockQuantity = data.quantity ?? 0;
     const t = recorded_at ? new Date(recorded_at).getTime() : NaN;
     const offlineDay =
       t && t <= Date.now() && t > Date.now() - 60 * 864e5
         ? new Date(t + 3600e3).toISOString().slice(0, 10) // dia em Angola (UTC+1)
         : null;
-    const row = { ...rest, expense_date: isAdmin ? data.expense_date : offlineDay || todayAngola() };
+    const row = {
+      ...rest,
+      ...(sector_stock_purchase ? {
+        status: "Pago",
+        amount: data.stock_unit === "litro" ? Math.round(stockQuantity * FUEL_PRICE_PER_LITER * 100) / 100 : data.amount,
+      } : {}),
+      expense_date: isAdmin ? data.expense_date : offlineDay || todayAngola(),
+    };
     const contribs = (contributions || []).filter((c) => c.sector !== row.sector);
     if (contribs.length) {
       if (!isAdmin) throw new Error("Só a administração pode dividir faturas entre setores.");

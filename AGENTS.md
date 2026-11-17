@@ -16,3 +16,4 @@
 - Use the shared expandable sector panel for operational forms and long histories, so sector pages remain compact without changing financial behavior.
 - Represent sector-entry payment changes as idempotent, authenticated updates and overlay queued changes in the shared finance merger, so offline receipts affect every financial view consistently without duplicate revenue.
 - Treat Estação 4 de Abril (lavagem) vehicle entries as drafts (vehicle expenses still count in sector outflows): excluded from sector cash, balances and global lists (server and offline queue via `draft` flag), and the sector Custo e Lucro board shows only these vehicle values, because cash vs bank cannot be separated for them.
+- Keep sector stock purchases as paid `expenses` in the purchasing sector; inventory lots remain shared across stock sectors and consumption reduces shared availability.

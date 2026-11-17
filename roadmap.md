@@ -1,5 +1,11 @@
 # Roadmap
 
+- [x] Compras individuais de estoque nos setores
+  - [x] Registar compras como despesa paga do setor, com lotes partilhados
+  - [x] Calcular automaticamente combustível a 420 Kz por litro
+  - [x] Mostrar compra local pendente de sincronização e testar cálculos
+  - [ ] Confirmar registo no ecrã autenticado (pré-visualização sem sessão autenticada)
+
 - [x] Pagamentos pendentes no Restaurante e Lavagem
   - [x] Estado e cliente opcional, preservando entradas antigas
   - [x] Marcar pago e sincronizar sem internet
