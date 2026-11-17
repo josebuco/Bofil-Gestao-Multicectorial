@@ -29,7 +29,7 @@ export const getVehicleControlData = createServerFn({ method: "GET" })
     if (assetsError) throw new Error("Não foi possível carregar os veículos.");
     const rows = assets || [];
     const ids = rows.filter((asset) => asset.kind === "Veículo").map((asset) => asset.id);
-    if (!ids.length) return { range: { from, to }, assets: [], entries: [], truckSales: [], expenses: [], stockItems: [], usages: [] };
+    if (!ids.length) return { range: { from, to }, assets: [], entries: [], truckSales: [], expenses: [], stockItems: [], usages: [], contributions: [] };
 
     const [{ data: entries, error: entriesError }, { data: truckSales, error: salesError }, { data: expenses, error: expensesError }, { data: purchases, error: purchasesError }, { data: allUsages, error: usagesError }] = await Promise.all([
       supabaseAdmin.from("sector_entries").select("id, amount, cost, status, client_name, payment_method, created_at, asset_id, sector").in("asset_id", ids).gte("created_at", dayStartIso(from)).lte("created_at", dayEndIso(to)).order("created_at", { ascending: false }).limit(2000),
@@ -38,6 +38,8 @@ export const getVehicleControlData = createServerFn({ method: "GET" })
       supabaseAdmin.from("expenses").select("id, description, amount, quantity, expense_date, supplier, sector, stock_unit, status, asset_id").in("sector", [...STOCK_SECTORS]).eq("category", STOCK_CATEGORY).eq("status", "Pago").order("expense_date", { ascending: false }).limit(1000),
       supabaseAdmin.from("rental_stock_usage").select("id, purchase_id, asset_id, quantity, amount, note, used_on, sector").order("created_at", { ascending: false }).limit(5000),
     ]);
+    const { data: contributions, error: ctbError } = await supabaseAdmin.from("sector_transfers").select("id, asset_id, amount, note, transfer_date").in("asset_id", ids).in("kind", ["contribuicao", "cedencia"]).gte("transfer_date", from).lte("transfer_date", to).limit(2000);
+    if (ctbError) throw new Error("Não foi possível carregar os custos do Centro de Custos.");
     if (entriesError || salesError || expensesError || purchasesError || usagesError) throw new Error("Não foi possível carregar os registos dos veículos.");
     const allowedSectors = new Set(rows.filter((asset) => isAdmin || grants.includes(asset.sector)).map((asset) => asset.sector));
     const visibleEntries = (entries || []).map((entry) => allowedSectors.has(entry.sector)
@@ -72,6 +74,7 @@ export const getVehicleControlData = createServerFn({ method: "GET" })
       truckSales: visibleTruckSales,
       expenses: expenses || [],
       stockItems,
+      contributions: contributions || [],
       usages: usageRows.filter((usage) => usage.used_on >= from && usage.used_on <= to),
     };
   });

@@ -166,6 +166,11 @@ export function VehicleControlPage() {
             ];
             const expenses = [
               ...(query.data?.expenses || []).filter((expense) => expense.asset_id === asset.id),
+              ...(query.data?.contributions || []).filter((c) => c.asset_id === asset.id).map((c) => ({
+                id: c.id, asset_id: asset.id, sector: asset.sector, category: "Centro de Custos",
+                description: c.note || "Fatura do Centro de Custos", amount: Number(c.amount) || 0,
+                expense_date: c.transfer_date, status: "Pago", payment_method: "", local: false,
+              })),
               ...queuedExpenses.filter((item) => item.data["asset_id"] === asset.id && inRange(queuedDate(item, "expense_date"))).map((item) => ({
                 id: item.id,
                 asset_id: asset.id,
@@ -194,7 +199,10 @@ export function VehicleControlPage() {
             ];
             const financials = canSeeVehicleFinancials(access.isAdmin, access.sectors, asset.sector);
             const totals = vehicleTotals(
-              entries.map((entry) => ({ amount: entry.amount, cost: entry.cost, status: entry.status })),
+              [
+                ...entries.map((entry) => ({ amount: entry.amount, cost: entry.cost, status: entry.status })),
+                ...sales.map((sale) => ({ amount: sale.amount, cost: 0, status: sale.status })),
+              ],
               expenses.map((expense) => ({ amount: expense.amount, status: expense.status })),
               uses.filter((usage) => stockItems.find((item) => item.id === usage.purchase_id)?.asset_id !== asset.id),
             );
