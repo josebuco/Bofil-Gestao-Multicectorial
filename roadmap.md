@@ -1,5 +1,9 @@
 # Roadmap
 
+- [ ] Pedido actual
+  - [x] Mostrar os veículos em cartões individuais, semelhantes aos cartões dos sectores; testes e build OK
+  - [ ] Repor a palavra-passe da conta administrativa (aguarda sessão/autorização administrativa)
+
 - [ ] Aba "Controle de consumo dos veículos"
   - [ ] Permissão independente para acesso à aba
   - [ ] Reunir veículos, consumos e compras de estoque partilhado

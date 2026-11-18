@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Package, Truck } from "lucide-react";
+import { ChevronDown, Package, Truck } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { ExpandableCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
 import { useAccess } from "@/lib/use-access";
 import { FUEL_PRICE_PER_LITER, stockPurchaseAmount } from "@/lib/stock";
@@ -134,7 +135,7 @@ export function VehicleControlPage() {
         {!query.isPending && !query.isError && assets.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">Ainda não há veículos cadastrados.</p> : null}
         {!query.isPending && !query.isError && assets.length > 0 && visibleAssets.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">Não há veículos neste setor.</p> : null}
 
-        <section className="space-y-3">
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {visibleAssets.map((asset) => {
             const entries = [
               ...(query.data?.entries || []).filter((entry) => entry.asset_id === asset.id),
@@ -206,13 +207,11 @@ export function VehicleControlPage() {
               expenses.map((expense) => ({ amount: expense.amount, status: expense.status })),
               uses.filter((usage) => stockItems.find((item) => item.id === usage.purchase_id)?.asset_id !== asset.id),
             );
-            const summary = `${financials ? `${formatMoney(totals.revenue)} de entradas · ` : ""}${formatMoney(totals.expense)} de custos${financials ? ` · saldo ${formatMoney(totals.balance)}` : ""}`;
             return (
               <VehicleCard
                 key={asset.id}
                 asset={asset}
                 financials={financials}
-                summary={summary}
                 totals={totals}
                 entries={entries}
                 sales={sales}
@@ -236,12 +235,11 @@ type StockView = { id: string; description: string; sector: string; asset_id?: s
 type RecordView = { id: string; amount: number; status?: string; created_at?: string; expense_date?: string; description?: string | null; category?: string; cost?: number; payment_method?: string; quantity?: number; total?: number; purchase_id?: string; used_on?: string; local?: boolean; pending?: boolean };
 
 function VehicleCard({
-  asset, financials, summary, totals, entries, sales, expenses, uses, stockItems,
+  asset, financials, totals, entries, sales, expenses, uses, stockItems,
   today, makeExpense, addUsage, refresh,
 }: {
   asset: VehicleControlAsset;
   financials: boolean;
-  summary: string;
   totals: { revenue: number; expense: number; balance: number };
   entries: RecordView[];
   sales: RecordView[];
@@ -253,6 +251,7 @@ function VehicleCard({
   addUsage: ReturnType<typeof useServerFn<typeof createStockUsage>>;
   refresh: () => Promise<void>;
 }) {
+  const [open, setOpen] = useState(false);
   const [unit, setUnit] = useState<"litro" | "unidade">("litro");
   const [buyQuantity, setBuyQuantity] = useState("1");
   const [buyTotal, setBuyTotal] = useState("");
@@ -262,6 +261,7 @@ function VehicleCard({
   const selectedLot = stockItems.find((item) => item.id === usePurchase);
   const useAmount = Math.round((selectedLot?.unit_price || 0) * (Number(useQuantity) || 0) * 100) / 100;
   const icon = asset.kind === "Equipamento" ? <Package className="size-4 text-primary" /> : <Truck className="size-4 text-primary" />;
+  const sector = SECTORS.find((item) => item.slug === asset.sector);
   const sourceEntries = [...entries, ...sales];
   const history = [
       ...(financials
@@ -341,21 +341,36 @@ function VehicleCard({
   }
 
   return (
-    <ExpandableCard title={`${asset.name}${asset.plate ? ` · ${asset.plate}` : ""}`} summary={`${asset.sector} · ${summary}`}>
-      <div className="space-y-4 p-4">
+    <article className="min-w-0 overflow-hidden rounded-lg bg-panel ring-1 ring-edge shadow-sm">
+      <div className="flex items-start justify-between gap-2 p-3">
+        <div className="flex min-w-0 items-start gap-2">
+          <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-md bg-ink ring-1 ring-edge">{icon}</span>
+          <div className="min-w-0">
+            <h2 className="truncate font-display text-sm font-semibold uppercase text-foreground">{asset.name}</h2>
+            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{asset.kind}{asset.plate ? ` · ${asset.plate}` : ""}</p>
+            <span className={`mt-1 inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground ${sector?.color || "bg-primary"}`}>{sector?.label || asset.sector}</span>
+          </div>
+        </div>
+        <Button type="button" variant="ghost" size="icon" onClick={() => setOpen((value) => !value)} aria-label={open ? `Fechar ${asset.name}` : `Abrir ${asset.name}`}>
+          <ChevronDown className={`transition-transform ${open ? "rotate-180" : ""}`} />
+        </Button>
+      </div>
+      <div className="grid grid-cols-2 gap-2 px-3 pb-3 sm:grid-cols-3">
+        {financials ? (
+          <>
+            <Metric label="Entradas" amount={totals.revenue} tone="text-warning" />
+            <Metric label="Custos" amount={totals.expense} tone="text-destructive" />
+            <Metric label="Saldo" amount={totals.balance} tone={totals.balance >= 0 ? "text-success" : "text-destructive"} />
+          </>
+        ) : (
+          <Metric label="Custos" amount={totals.expense} tone="text-destructive" />
+        )}
+      </div>
+      {open ? <div className="space-y-4 border-t border-edge p-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="flex items-center gap-2 text-xs text-muted-foreground">{icon}{asset.kind} · {financials ? "valores do período" : "custos do período"}</p>
+          <p className="text-xs text-muted-foreground">{financials ? "Valores do período" : "Custos do período"}</p>
           {!financials ? <span className="text-[11px] text-muted-foreground">Entradas e saldo não disponíveis nesta permissão.</span> : null}
         </div>
-        {financials ? (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <Metric label="Entradas pagas" amount={totals.revenue} tone="text-warning" />
-            <Metric label="Custos pagos" amount={totals.expense} tone="text-destructive" />
-            <Metric label="Saldo" amount={totals.balance} tone={totals.balance >= 0 ? "text-success" : "text-destructive"} />
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3"><Metric label="Custos pagos" amount={totals.expense} tone="text-destructive" /></div>
-        )}
 
         {asset.kind === "Veículo" ? (
           <div className="grid gap-3 xl:grid-cols-2">
@@ -398,8 +413,8 @@ function VehicleCard({
             ))}
           </ul>
         </ExpandableCard>
-      </div>
-    </ExpandableCard>
+      </div> : null}
+    </article>
   );
 }
 
