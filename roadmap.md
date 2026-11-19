@@ -5,9 +5,11 @@
   - [ ] Repor a palavra-passe da conta administrativa (aguarda sessão/autorização administrativa)
 
 - [ ] Aba "Controle de consumo dos veículos"
-  - [ ] Permissão independente para acesso à aba
-  - [ ] Reunir veículos, consumos e compras de estoque partilhado
-  - [ ] Aplicar período diário aos técnicos e ocultar receitas/saldos de setores sem permissão
+  - [x] Permissão independente para acesso à aba
+  - [x] Reunir veículos, consumos e compras de estoque partilhado
+  - [ ] Cartões seleccionáveis e painel de operações por baixo
+  - [ ] Ocultar compras e histórico de entradas quando o técnico não tem acesso ao setor
+  - [ ] Aplicar período diário aos técnicos e período escolhido pela administração
   - [ ] Verificar cálculos, permissões e apresentação
 
 - [x] Compras individuais de estoque nos setores

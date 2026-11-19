@@ -8,6 +8,10 @@ export function canSeeVehicleFinancials(isAdmin: boolean, sectors: string[], veh
   return isAdmin || sectors.includes(vehicleSector);
 }
 
+export function canPurchaseVehicleStock(isAdmin: boolean, hasSectorAccess: boolean) {
+  return isAdmin || hasSectorAccess;
+}
+
 export function vehicleTotals(
   entries: Array<{ amount: number; cost?: number; status: string }>,
   expenses: Array<{ amount: number; status: string }>,

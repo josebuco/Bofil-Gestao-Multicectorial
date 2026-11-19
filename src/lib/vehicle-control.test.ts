@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canSeeVehicleFinancials, vehicleRangeForAccess, vehicleTotals } from "./vehicle-control";
+import { canPurchaseVehicleStock, canSeeVehicleFinancials, vehicleRangeForAccess, vehicleTotals } from "./vehicle-control";
 
 describe("vehicle control access and daily totals", () => {
   it("limits technicians to today even if they request a historical period", () => {
@@ -11,6 +11,12 @@ describe("vehicle control access and daily totals", () => {
     expect(canSeeVehicleFinancials(false, ["agua", "veiculos"], "agua")).toBe(true);
     expect(canSeeVehicleFinancials(false, ["veiculos"], "transporte")).toBe(false);
     expect(canSeeVehicleFinancials(true, [], "transporte")).toBe(true);
+  });
+
+  it("allows vehicle stock purchases only to admins or users with sector access", () => {
+    expect(canPurchaseVehicleStock(false, false)).toBe(false);
+    expect(canPurchaseVehicleStock(false, true)).toBe(true);
+    expect(canPurchaseVehicleStock(true, false)).toBe(true);
   });
 
   it("counts only paid entries and expenses in the vehicle balance", () => {

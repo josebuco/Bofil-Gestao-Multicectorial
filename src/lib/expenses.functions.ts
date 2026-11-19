@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { FUEL_PRICE_PER_LITER } from "@/lib/stock";
+import { canPurchaseVehicleStock } from "@/lib/vehicle-control";
 
 export const SECTORS = [
   { slug: "agua", label: "Água", color: "bg-water" },
@@ -94,6 +95,13 @@ export const createExpense = createServerFn({ method: "POST" })
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: asset } = await supabaseAdmin.from("rental_assets").select("id, sector, kind").eq("id", data.asset_id).maybeSingle();
       if (!asset || asset.sector !== data.sector || asset.kind !== "Veículo") throw new Error("Veículo não encontrado neste setor.");
+      const { data: canAccessSector } = await context.supabase.rpc("can_access", {
+        _user_id: context.userId,
+        _sector: asset.sector,
+      });
+      if (!canPurchaseVehicleStock(Boolean(isAdmin), Boolean(canAccessSector))) {
+        throw new Error("Sem acesso ao setor deste veículo para registar compras.");
+      }
     } else if (data.sector_stock_purchase) {
       const { data: canAccess } = await context.supabase.rpc("can_access", {
         _user_id: context.userId,

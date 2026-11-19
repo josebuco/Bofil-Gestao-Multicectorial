@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronDown, Package, Truck } from "lucide-react";
+import { ChevronDown, Package, Truck, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ExpandableCard, PageHeader, PeriodPicker, formatMoney, inputClass, usePeriod } from "@/components/panel";
@@ -10,7 +10,7 @@ import { FUEL_PRICE_PER_LITER, stockPurchaseAmount } from "@/lib/stock";
 import { STOCK_CATEGORY, createStockUsage } from "@/lib/rental.functions";
 import { createExpense } from "@/lib/expenses.functions";
 import { getVehicleControlData, type VehicleControlAsset } from "@/lib/vehicle-control.functions";
-import { canSeeVehicleFinancials, vehicleTotals } from "@/lib/vehicle-control";
+import { canSeeVehicleFinancials, vehicleRangeForAccess, vehicleTotals } from "@/lib/vehicle-control";
 import { sendOrQueue, useQueue } from "@/lib/offline";
 import { angolaParts, todayAngola } from "@/lib/tz";
 
@@ -32,12 +32,13 @@ export function VehicleControlPage() {
   const hasTabPermission = access.isAdmin || access.sectors.includes("veiculos");
   const loadingAccess = "loading" in access;
   const [filter, setFilter] = useState("todos");
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [today, setToday] = useState(todayAngola());
   useEffect(() => {
     const timer = setInterval(() => setToday(todayAngola()), 30_000);
     return () => clearInterval(timer);
   }, []);
-  const effectiveRange = access.isAdmin ? range : { from: today, to: today };
+  const effectiveRange = vehicleRangeForAccess(access.isAdmin, range, today);
   const query = useQuery({
     queryKey: ["vehicle-control", effectiveRange.from, effectiveRange.to],
     queryFn: () => getData({ data: effectiveRange }),
@@ -54,6 +55,95 @@ export function VehicleControlPage() {
   };
   const inRange = (day: string) => day >= effectiveRange.from && day <= effectiveRange.to;
   const visibleAssets = assets.filter((asset) => filter === "todos" || asset.sector === filter);
+
+  function getVehicleView(asset: VehicleControlAsset) {
+    const financials = canSeeVehicleFinancials(access.isAdmin, access.sectors, asset.sector);
+    const entries = financials ? [
+      ...(query.data?.entries || []).filter((entry) => entry.asset_id === asset.id),
+      ...queuedEntries.filter((item) => item.data["asset_id"] === asset.id).map((item) => ({
+        id: item.id,
+        asset_id: asset.id,
+        amount: Number(item.data["amount"]) || 0,
+        cost: Number(item.data["cost"]) || 0,
+        status: String(item.data["status"] || "Pago"),
+        payment_method: String(item.data["payment_method"] || "Numerário"),
+        created_at: String(item.data["entry_date"] ? `${item.data["entry_date"]}T12:00:00+01:00` : item.at),
+        local: true,
+      })),
+    ] : [];
+    const sales = financials ? [
+      ...(query.data?.truckSales || []).filter((sale) => sale.asset_id === asset.id).map((sale) => ({ ...sale, amount: sale.total || 0 })),
+      ...queuedWater.filter((item) => item.data["asset_id"] === asset.id).map((item) => ({
+        id: item.id,
+        asset_id: asset.id,
+        description: String(item.data["description"] || "Serviço"),
+        quantity: Number(item.data["quantity"]) || 0,
+        amount: Number(item.data["offline_total"]) || 0,
+        total: Number(item.data["offline_total"]) || 0,
+        status: String(item.data["status"] || "Entregue"),
+        payment_method: String(item.data["payment_method"] || "Numerário"),
+        created_at: item.at,
+        local: true,
+      })),
+    ] : [];
+    const expenses = financials ? [
+      ...(query.data?.expenses || []).filter((expense) => expense.asset_id === asset.id),
+      ...(query.data?.contributions || []).filter((contribution) => contribution.asset_id === asset.id).map((contribution) => ({
+        id: contribution.id,
+        asset_id: asset.id,
+        sector: asset.sector,
+        category: "Centro de Custos",
+        description: contribution.note || "Fatura do Centro de Custos",
+        amount: Number(contribution.amount) || 0,
+        expense_date: contribution.transfer_date,
+        status: "Pago",
+        payment_method: "",
+        local: false,
+      })),
+      ...queuedExpenses.filter((item) => item.data["asset_id"] === asset.id && inRange(queuedDate(item, "expense_date"))).map((item) => ({
+        id: item.id,
+        asset_id: asset.id,
+        sector: String(item.data["sector"] || asset.sector),
+        category: String(item.data["category"] || "Outros"),
+        description: String(item.data["description"] || "Despesa"),
+        amount: Number(item.data["amount"]) || 0,
+        expense_date: String(item.data["expense_date"] || item.at.slice(0, 10)),
+        status: String(item.data["status"] || "Pendente"),
+        payment_method: String(item.data["payment_method"] || "Numerário"),
+        local: true,
+      })),
+    ] : [];
+    const uses = [
+      ...(query.data?.usages || []).filter((usage) => usage.asset_id === asset.id),
+      ...queuedUsages.filter((item) => item.data["asset_id"] === asset.id && inRange(queuedDate(item, "used_on"))).map((item) => ({
+        id: item.id,
+        purchase_id: String(item.data["purchase_id"] || ""),
+        asset_id: asset.id,
+        quantity: Number(item.data["quantity"]) || 0,
+        amount: Number(item.data["amount"]) || 0,
+        note: typeof item.data["note"] === "string" ? item.data["note"] : null,
+        used_on: String(item.data["used_on"] || item.at.slice(0, 10)),
+        local: true,
+      })),
+    ];
+    const totals = financials
+      ? vehicleTotals(
+        [
+          ...entries.map((entry) => ({ amount: entry.amount, cost: entry.cost, status: entry.status })),
+          ...sales.map((sale) => ({ amount: sale.amount, cost: 0, status: sale.status })),
+        ],
+        expenses.map((expense) => ({ amount: expense.amount, status: expense.status })),
+        uses.filter((usage) => stockItems.find((item) => item.id === usage.purchase_id)?.asset_id !== asset.id),
+      )
+      : { revenue: 0, expense: uses.reduce((sum, usage) => sum + (usage.amount || 0), 0), balance: 0 };
+    const consumedLiters = uses.reduce((sum, usage) => {
+      const item = stockItems.find((stockItem) => stockItem.id === usage.purchase_id);
+      return item?.fuel ? sum + (usage.quantity || 0) : sum;
+    }, 0);
+    return { financials, entries, sales, expenses, uses, totals, consumedLiters };
+  }
+  const selectedAsset = visibleAssets.find((asset) => asset.id === selectedVehicleId) || null;
+  const selectedView = selectedAsset ? getVehicleView(selectedAsset) : null;
 
   const queuedExpenses = queue.filter((item) => item.kind === "expense" && item.data["asset_id"]);
   const queuedUsages = queue.filter((item) => item.kind === "stock_usage" && item.data["asset_id"]);
@@ -118,15 +208,16 @@ export function VehicleControlPage() {
       <main className="flex-1 overflow-auto p-4 md:p-6 space-y-5">
         <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar veículos por setor">
           {[{ slug: "todos", label: "Todos" }, ...SECTORS].map((sector) => (
-            <button
+            <Button
               key={sector.slug}
               type="button"
               onClick={() => setFilter(sector.slug)}
               aria-pressed={filter === sector.slug}
-              className={`h-8 rounded-md px-3 text-xs font-semibold ring-1 transition-colors ${filter === sector.slug ? "bg-brand text-primary-foreground ring-brand" : "bg-panel text-muted-foreground ring-edge hover:text-foreground"}`}
+              variant={filter === sector.slug ? "default" : "outline"}
+              className="h-8 px-3 text-xs"
             >
               {sector.label}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -137,95 +228,31 @@ export function VehicleControlPage() {
 
         <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {visibleAssets.map((asset) => {
-            const entries = [
-              ...(query.data?.entries || []).filter((entry) => entry.asset_id === asset.id),
-              ...queuedEntries.filter((item) => item.data["asset_id"] === asset.id).map((item) => ({
-                id: item.id,
-                asset_id: asset.id,
-                amount: Number(item.data["amount"]) || 0,
-                cost: Number(item.data["cost"]) || 0,
-                status: String(item.data["status"] || "Pago"),
-                payment_method: String(item.data["payment_method"] || "Numerário"),
-                created_at: String(item.data["entry_date"] ? `${item.data["entry_date"]}T12:00:00+01:00` : item.at),
-                local: true,
-              })),
-            ];
-            const sales = [
-              ...(query.data?.truckSales || []).filter((sale) => sale.asset_id === asset.id).map((sale) => ({ ...sale, amount: sale.total || 0 })),
-              ...queuedWater.filter((item) => item.data["asset_id"] === asset.id).map((item) => ({
-                id: item.id,
-                asset_id: asset.id,
-                description: String(item.data["description"] || "Serviço"),
-                quantity: Number(item.data["quantity"]) || 0,
-                amount: Number(item.data["offline_total"]) || 0,
-                total: Number(item.data["offline_total"]) || 0,
-                status: String(item.data["status"] || "Entregue"),
-                payment_method: String(item.data["payment_method"] || "Numerário"),
-                created_at: item.at,
-                local: true,
-              })),
-            ];
-            const expenses = [
-              ...(query.data?.expenses || []).filter((expense) => expense.asset_id === asset.id),
-              ...(query.data?.contributions || []).filter((c) => c.asset_id === asset.id).map((c) => ({
-                id: c.id, asset_id: asset.id, sector: asset.sector, category: "Centro de Custos",
-                description: c.note || "Fatura do Centro de Custos", amount: Number(c.amount) || 0,
-                expense_date: c.transfer_date, status: "Pago", payment_method: "", local: false,
-              })),
-              ...queuedExpenses.filter((item) => item.data["asset_id"] === asset.id && inRange(queuedDate(item, "expense_date"))).map((item) => ({
-                id: item.id,
-                asset_id: asset.id,
-                sector: String(item.data["sector"] || asset.sector),
-                category: String(item.data["category"] || "Outros"),
-                description: String(item.data["description"] || "Despesa"),
-                amount: Number(item.data["amount"]) || 0,
-                expense_date: String(item.data["expense_date"] || item.at.slice(0, 10)),
-                status: String(item.data["status"] || "Pendente"),
-                payment_method: String(item.data["payment_method"] || "Numerário"),
-                local: true,
-              })),
-            ];
-            const uses = [
-              ...(query.data?.usages || []).filter((usage) => usage.asset_id === asset.id),
-              ...queuedUsages.filter((item) => item.data["asset_id"] === asset.id && inRange(queuedDate(item, "used_on"))).map((item) => ({
-                id: item.id,
-                purchase_id: String(item.data["purchase_id"] || ""),
-                asset_id: asset.id,
-                quantity: Number(item.data["quantity"]) || 0,
-                amount: Number(item.data["amount"]) || 0,
-                note: typeof item.data["note"] === "string" ? item.data["note"] : null,
-                used_on: String(item.data["used_on"] || item.at.slice(0, 10)),
-                local: true,
-              })),
-            ];
-            const financials = canSeeVehicleFinancials(access.isAdmin, access.sectors, asset.sector);
-            const totals = vehicleTotals(
-              [
-                ...entries.map((entry) => ({ amount: entry.amount, cost: entry.cost, status: entry.status })),
-                ...sales.map((sale) => ({ amount: sale.amount, cost: 0, status: sale.status })),
-              ],
-              expenses.map((expense) => ({ amount: expense.amount, status: expense.status })),
-              uses.filter((usage) => stockItems.find((item) => item.id === usage.purchase_id)?.asset_id !== asset.id),
-            );
-            return (
-              <VehicleCard
-                key={asset.id}
-                asset={asset}
-                financials={financials}
-                totals={totals}
-                entries={entries}
-                sales={sales}
-                expenses={expenses}
-                uses={uses}
-                stockItems={stockItems}
-                today={today}
-                makeExpense={makeExpense}
-                addUsage={addUsage}
-                refresh={refreshData}
-              />
-            );
+            const view = getVehicleView(asset);
+            return <VehicleCard
+              key={asset.id}
+              asset={asset}
+              selected={asset.id === selectedAsset?.id}
+              financials={view.financials}
+              totals={view.totals}
+              consumedLiters={view.consumedLiters}
+              onSelect={() => setSelectedVehicleId((current) => current === asset.id ? null : asset.id)}
+            />;
           })}
         </section>
+        {selectedAsset && selectedView ? (
+          <VehicleOperations
+            key={selectedAsset.id}
+            asset={selectedAsset}
+            {...selectedView}
+            stockItems={stockItems}
+            today={today}
+            makeExpense={makeExpense}
+            addUsage={addUsage}
+            refresh={refreshData}
+            onClose={() => setSelectedVehicleId(null)}
+          />
+        ) : null}
       </main>
     </div>
   );
