@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { dayEndIso, dayStartIso, todayAngola } from "@/lib/tz";
 import { STOCK_CATEGORY, STOCK_SECTORS, type FleetSector } from "@/lib/rental.functions";
+import { canSeeVehicleFinancials } from "@/lib/vehicle-control";
 
 export const getVehicleControlData = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -41,11 +42,14 @@ export const getVehicleControlData = createServerFn({ method: "GET" })
     const { data: contributions, error: ctbError } = await supabaseAdmin.from("sector_transfers").select("id, asset_id, amount, note, transfer_date").in("asset_id", ids).in("kind", ["contribuicao", "cedencia"]).gte("transfer_date", from).lte("transfer_date", to).limit(2000);
     if (ctbError) throw new Error("Não foi possível carregar os custos do Centro de Custos.");
     if (entriesError || salesError || expensesError || purchasesError || usagesError) throw new Error("Não foi possível carregar os registos dos veículos.");
-    const allowedSectors = new Set(rows.filter((asset) => isAdmin || grants.includes(asset.sector)).map((asset) => asset.sector));
-    const visibleEntries = (entries || []).map((entry) => allowedSectors.has(entry.sector)
-      ? entry
-      : { ...entry, amount: 0, payment_method: "", client_name: null });
-    const visibleTruckSales = (truckSales || []).filter(() => allowedSectors.has("agua"));
+    const financialAssetIds = new Set(rows
+      .filter((asset) => canSeeVehicleFinancials(Boolean(isAdmin), grants, asset.sector))
+      .map((asset) => asset.id));
+    // Never send another sector's financial rows to the browser, even if its UI hides them.
+    const visibleEntries = (entries || []).filter((entry) => financialAssetIds.has(entry.asset_id));
+    const visibleTruckSales = (truckSales || []).filter((sale) => financialAssetIds.has(sale.asset_id));
+    const visibleExpenses = (expenses || []).filter((expense) => expense.asset_id && financialAssetIds.has(expense.asset_id));
+    const visibleContributions = (contributions || []).filter((contribution) => contribution.asset_id && financialAssetIds.has(contribution.asset_id));
     const usageRows = allUsages || [];
     const stockItems = (purchases || []).map((purchase) => {
       const quantity = purchase.quantity && purchase.quantity > 0 ? purchase.quantity : 1;
@@ -72,9 +76,9 @@ export const getVehicleControlData = createServerFn({ method: "GET" })
       assets: rows.filter((asset) => asset.kind === "Veículo").map((asset) => ({ ...asset, sector: asset.sector as FleetSector, canSeeFinancials: isAdmin || grants.includes(asset.sector) })),
       entries: visibleEntries,
       truckSales: visibleTruckSales,
-      expenses: expenses || [],
+      expenses: visibleExpenses,
       stockItems,
-      contributions: contributions || [],
+      contributions: visibleContributions,
       usages: usageRows.filter((usage) => usage.used_on >= from && usage.used_on <= to),
     };
   });

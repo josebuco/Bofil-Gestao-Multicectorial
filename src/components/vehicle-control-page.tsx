@@ -142,9 +142,6 @@ export function VehicleControlPage() {
     }, 0);
     return { financials, entries, sales, expenses, uses, totals, consumedLiters };
   }
-  const selectedAsset = visibleAssets.find((asset) => asset.id === selectedVehicleId) || null;
-  const selectedView = selectedAsset ? getVehicleView(selectedAsset) : null;
-
   const queuedExpenses = queue.filter((item) => item.kind === "expense" && item.data["asset_id"]);
   const queuedUsages = queue.filter((item) => item.kind === "stock_usage" && item.data["asset_id"]);
   const queuedEntries = queue.filter((item) => item.kind === "sector_entry" && item.data["asset_id"] && inRange(queuedDate(item, "entry_date")));
@@ -182,6 +179,9 @@ export function VehicleControlPage() {
       return { ...item, left_quantity: item.left_quantity - localUsed, left_amount: item.left_amount - localUsed * item.unit_price };
     });
   }, [query.data, queue, queuedUsages]);
+
+  const selectedAsset = visibleAssets.find((asset) => asset.id === selectedVehicleId) || null;
+  const selectedView = selectedAsset ? getVehicleView(selectedAsset) : null;
 
   async function refreshData() {
     await Promise.all([
@@ -236,6 +236,10 @@ export function VehicleControlPage() {
               financials={view.financials}
               totals={view.totals}
               consumedLiters={view.consumedLiters}
+              consumedFuelCost={view.uses.reduce((sum, usage) => {
+                const lot = stockItems.find((item) => item.id === usage.purchase_id);
+                return lot?.fuel ? sum + (usage.amount || 0) : sum;
+              }, 0)}
               onSelect={() => setSelectedVehicleId((current) => current === asset.id ? null : asset.id)}
             />;
           })}
@@ -261,24 +265,66 @@ export function VehicleControlPage() {
 type StockView = { id: string; description: string; sector: string; asset_id?: string | null; fuel: boolean; purchase_date: string; quantity: number; amount: number; unit_price: number; left_quantity: number; left_amount: number; pending?: boolean };
 type RecordView = { id: string; amount: number; status?: string; created_at?: string; expense_date?: string; description?: string | null; category?: string; cost?: number; payment_method?: string; quantity?: number; total?: number; purchase_id?: string; used_on?: string; local?: boolean; pending?: boolean };
 
-function VehicleCard({
-  asset, financials, totals, entries, sales, expenses, uses, stockItems,
-  today, makeExpense, addUsage, refresh,
-}: {
+function VehicleCard({ asset, selected, financials, totals, consumedLiters, consumedFuelCost, onSelect }: {
   asset: VehicleControlAsset;
+  selected: boolean;
   financials: boolean;
   totals: { revenue: number; expense: number; balance: number };
+  consumedLiters: number;
+  consumedFuelCost: number;
+  onSelect: () => void;
+}) {
+  const icon = asset.kind === "Equipamento" ? <Package className="size-4 text-primary" /> : <Truck className="size-4 text-primary" />;
+  const sector = SECTORS.find((item) => item.slug === asset.sector);
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      aria-pressed={selected}
+      onClick={onSelect}
+      className={`h-auto min-w-0 w-full flex-col items-stretch whitespace-normal rounded-lg border p-0 text-left shadow-sm transition-colors ${selected ? "border-primary bg-primary/5 ring-2 ring-primary" : "border-edge bg-panel hover:bg-ink"}`}
+    >
+      <div className="flex items-start justify-between gap-2 p-3">
+        <div className="flex min-w-0 items-start gap-2">
+          <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-md bg-ink ring-1 ring-edge">{icon}</span>
+          <div className="min-w-0">
+            <h2 className="truncate font-display text-sm font-semibold uppercase text-foreground">{asset.name}</h2>
+            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{asset.kind}{asset.plate ? ` · ${asset.plate}` : ""}</p>
+            <span className={`mt-1 inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground ${sector?.color || "bg-primary"}`}>{sector?.label || asset.sector}</span>
+          </div>
+        </div>
+        <ChevronDown className={`mt-1 size-4 shrink-0 text-muted-foreground transition-transform ${selected ? "rotate-180" : ""}`} aria-hidden="true" />
+      </div>
+      <div className="grid grid-cols-2 gap-2 px-3 pb-3 sm:grid-cols-3">
+        {financials ? <>
+          <Metric label="Entradas" amount={totals.revenue} tone="text-warning" />
+          <Metric label="Custos" amount={totals.expense} tone="text-destructive" />
+          <Metric label="Saldo" amount={totals.balance} tone={totals.balance >= 0 ? "text-success" : "text-destructive"} />
+        </> : <Metric label="Custos" amount={totals.expense} tone="text-destructive" />}
+      </div>
+      <div className="mx-3 mb-3 flex items-center justify-between gap-2 rounded-md bg-primary/10 px-3 py-2 ring-1 ring-primary/20">
+        <span className="text-[10px] font-semibold uppercase text-primary">Consumo de combustível</span>
+        <span className="text-right text-xs text-primary">{consumedLiters} L · {formatMoney(consumedFuelCost)} Kz</span>
+      </div>
+    </Button>
+  );
+}
+
+function VehicleOperations({ asset, financials, entries, sales, expenses, uses, totals, stockItems, today, makeExpense, addUsage, refresh, onClose }: {
+  asset: VehicleControlAsset;
+  financials: boolean;
   entries: RecordView[];
   sales: RecordView[];
   expenses: RecordView[];
   uses: RecordView[];
+  totals: { revenue: number; expense: number; balance: number };
   stockItems: StockView[];
   today: string;
   makeExpense: ReturnType<typeof useServerFn<typeof createExpense>>;
   addUsage: ReturnType<typeof useServerFn<typeof createStockUsage>>;
   refresh: () => Promise<void>;
+  onClose: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [unit, setUnit] = useState<"litro" | "unidade">("litro");
   const [buyQuantity, setBuyQuantity] = useState("1");
   const [buyTotal, setBuyTotal] = useState("");
@@ -287,14 +333,11 @@ function VehicleCard({
   const purchaseAmount = stockPurchaseAmount(unit, Number(buyQuantity) || 0, Number(buyTotal) || 0);
   const selectedLot = stockItems.find((item) => item.id === usePurchase);
   const useAmount = Math.round((selectedLot?.unit_price || 0) * (Number(useQuantity) || 0) * 100) / 100;
-  const icon = asset.kind === "Equipamento" ? <Package className="size-4 text-primary" /> : <Truck className="size-4 text-primary" />;
   const sector = SECTORS.find((item) => item.slug === asset.sector);
   const sourceEntries = [...entries, ...sales];
   const history = [
-      ...(financials
-        ? sourceEntries.map((row) => ({ id: row.id, date: row.created_at || "", description: "Entrada", amount: row.amount, type: "entrada", status: row.status, local: row.local || row.pending }))
-        : sourceEntries.filter((row) => (row.cost || 0) > 0).map((row) => ({ id: row.id, date: row.created_at || "", description: "Custo da entrada", amount: row.cost || 0, type: "despesa", status: row.status, local: row.local || row.pending }))),
-    ...expenses.map((row) => ({ id: row.id, date: row.expense_date || "", description: row.description || row.category || "Despesa", amount: row.amount, type: "despesa", status: row.status, local: row.local || row.pending })),
+      ...(financials ? sourceEntries.map((row) => ({ id: row.id, date: row.created_at || "", description: "Entrada", amount: row.amount, type: "entrada", status: row.status, local: row.local || row.pending })) : []),
+    ...(financials ? expenses.map((row) => ({ id: row.id, date: row.expense_date || "", description: row.description || row.category || "Despesa", amount: row.amount, type: "despesa", status: row.status, local: row.local || row.pending })) : []),
     ...uses.map((row) => ({ id: row.id, date: row.used_on || "", description: `Consumo · ${stockItems.find((item) => item.id === row.purchase_id)?.description || "Estoque"}${row.quantity ? ` · ${row.quantity}${stockItems.find((item) => item.id === row.purchase_id)?.fuel ? " L" : " un."}` : ""}`, amount: row.amount, type: "despesa", status: row.status, local: row.local || row.pending })),
   ].sort((a, b) => b.date.localeCompare(a.date));
 
@@ -368,40 +411,18 @@ function VehicleCard({
   }
 
   return (
-    <article className="min-w-0 overflow-hidden rounded-lg bg-panel ring-1 ring-edge shadow-sm">
-      <div className="flex items-start justify-between gap-2 p-3">
-        <div className="flex min-w-0 items-start gap-2">
-          <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-md bg-ink ring-1 ring-edge">{icon}</span>
-          <div className="min-w-0">
-            <h2 className="truncate font-display text-sm font-semibold uppercase text-foreground">{asset.name}</h2>
-            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{asset.kind}{asset.plate ? ` · ${asset.plate}` : ""}</p>
-            <span className={`mt-1 inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground ${sector?.color || "bg-primary"}`}>{sector?.label || asset.sector}</span>
-          </div>
+    <section className="min-w-0 space-y-4 rounded-lg border border-edge bg-panel p-3 shadow-sm md:p-4" aria-label={`Operações de ${asset.name}`}>
+      <div className="flex items-center justify-between gap-3 border-b border-edge pb-3">
+        <div className="min-w-0">
+          <h2 className="truncate font-display text-sm font-semibold uppercase">{asset.name}</h2>
+          <p className="text-xs text-muted-foreground">{sector?.label || asset.sector} · {financials ? "Valores do período" : "Consumos do período"}</p>
         </div>
-        <Button type="button" variant="ghost" size="icon" onClick={() => setOpen((value) => !value)} aria-label={open ? `Fechar ${asset.name}` : `Abrir ${asset.name}`}>
-          <ChevronDown className={`transition-transform ${open ? "rotate-180" : ""}`} />
-        </Button>
+        <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Fechar operações do veículo"><X className="size-4" /></Button>
       </div>
-      <div className="grid grid-cols-2 gap-2 px-3 pb-3 sm:grid-cols-3">
-        {financials ? (
-          <>
-            <Metric label="Entradas" amount={totals.revenue} tone="text-warning" />
-            <Metric label="Custos" amount={totals.expense} tone="text-destructive" />
-            <Metric label="Saldo" amount={totals.balance} tone={totals.balance >= 0 ? "text-success" : "text-destructive"} />
-          </>
-        ) : (
-          <Metric label="Custos" amount={totals.expense} tone="text-destructive" />
-        )}
-      </div>
-      {open ? <div className="space-y-4 border-t border-edge p-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs text-muted-foreground">{financials ? "Valores do período" : "Custos do período"}</p>
-          {!financials ? <span className="text-[11px] text-muted-foreground">Entradas e saldo não disponíveis nesta permissão.</span> : null}
-        </div>
 
         {asset.kind === "Veículo" ? (
-          <div className="grid gap-3 xl:grid-cols-2">
-            <ExpandableCard title={`Comprar estoque · ${asset.name}`} summary="A compra é paga pelo veículo e o lote fica partilhado">
+          <div className={`grid gap-3 ${financials ? "xl:grid-cols-2" : "grid-cols-1"}`}>
+            {financials ? <ExpandableCard title={`Comprar estoque · ${asset.name}`} summary="A compra é paga pelo veículo e o lote fica partilhado">
               <form onSubmit={submitPurchase} className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3">
                 <input name="description" required placeholder="Item (ex.: Gasóleo)" className={`${inputClass} col-span-2 sm:col-span-1`} />
                 <select value={unit} onChange={(event) => { setUnit(event.target.value as "litro" | "unidade"); setBuyTotal(""); }} aria-label="Tipo de estoque" className={inputClass}>
@@ -411,9 +432,9 @@ function VehicleCard({
                 {unit === "litro" ? <div className={`${inputClass} flex items-center text-xs text-muted-foreground`}>{formatMoney(purchaseAmount)} · {FUEL_PRICE_PER_LITER} Kz/L</div> : <input value={buyTotal} onChange={(event) => setBuyTotal(event.target.value)} type="number" step="any" min="0.01" required placeholder="Total (Kz)" className={inputClass} />}
                 <select name="payment_method" aria-label="Forma de pagamento" className={inputClass}><option>Numerário</option><option>Banco</option></select>
                 <input name="supplier" placeholder="Fornecedor (opcional)" className={`${inputClass} col-span-2 sm:col-span-1`} />
-                <button className="col-span-2 h-10 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground sm:col-span-3">Registar compra · {formatMoney(purchaseAmount)}</button>
+                <Button type="submit" className="col-span-2 sm:col-span-3">Registar compra · {formatMoney(purchaseAmount)}</Button>
               </form>
-            </ExpandableCard>
+            </ExpandableCard> : null}
 
             <ExpandableCard title={`Registar consumo · ${asset.name}`} summary="Retira material do estoque partilhado">
               <form onSubmit={submitUsage} className="grid grid-cols-2 gap-2 p-3">
@@ -423,25 +444,36 @@ function VehicleCard({
                 </select>
                 <input value={useQuantity} onChange={(event) => setUseQuantity(event.target.value)} type="number" step="1" min="1" max={selectedLot?.left_quantity} aria-label="Quantidade consumida" placeholder="Quantidade" className={inputClass} />
                 <div className={`${inputClass} flex items-center text-xs text-muted-foreground`}>{formatMoney(useAmount)} Kz de custo</div>
-                <button disabled={!selectedLot || selectedLot.pending} className="col-span-2 h-10 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50">Registar consumo</button>
+                <Button type="submit" disabled={!selectedLot || selectedLot.pending} className="col-span-2">Registar consumo</Button>
               </form>
             </ExpandableCard>
           </div>
         ) : null}
 
-        <ExpandableCard title="Histórico do veículo" summary={`${history.length} registo${history.length === 1 ? "" : "s"}`}>
+        {!financials ? <p className="text-xs text-muted-foreground">As entradas e os valores financeiros deste setor não estão disponíveis nesta conta.</p> : null}
+
+        {financials ? <ExpandableCard title="Histórico do veículo" summary={`${history.length} registo${history.length === 1 ? "" : "s"}`}>
           <ul className="max-h-72 divide-y divide-edge/60 overflow-auto">
             {history.length === 0 ? <li className="p-4 text-sm text-muted-foreground">Sem registos neste período.</li> : null}
             {history.map((row) => (
               <li key={`${row.type}-${row.id}`} className="flex items-center justify-between gap-3 px-4 py-2.5 text-xs">
                 <span className="min-w-0 truncate text-muted-foreground">{row.date} · {row.description}{row.status === "Pendente" ? " · Pendente" : ""}{row.local ? " · No aparelho" : ""}</span>
-                {row.status !== "Pendente" && (financials || row.type !== "entrada") ? <span className={`shrink-0 font-display ${row.type === "entrada" ? "text-warning" : "text-destructive"}`}>{row.type === "entrada" ? "+" : "−"}{formatMoney(row.amount)}</span> : null}
+                {row.status !== "Pendente" ? <span className={`shrink-0 font-display ${row.type === "entrada" ? "text-warning" : "text-destructive"}`}>{row.type === "entrada" ? "+" : "−"}{formatMoney(row.amount)}</span> : null}
               </li>
             ))}
           </ul>
-        </ExpandableCard>
-      </div> : null}
-    </article>
+        </ExpandableCard> : <ExpandableCard title="Histórico de consumos" summary={`${uses.length} registo${uses.length === 1 ? "" : "s"}`}>
+          <ul className="max-h-72 divide-y divide-edge/60 overflow-auto">
+            {uses.length === 0 ? <li className="p-4 text-sm text-muted-foreground">Sem consumos neste período.</li> : null}
+            {history.filter((row) => row.type === "despesa").map((row) => (
+              <li key={`${row.type}-${row.id}`} className="flex items-center justify-between gap-3 px-4 py-2.5 text-xs">
+                <span className="min-w-0 truncate text-muted-foreground">{row.date} · {row.description}{row.local ? " · No aparelho" : ""}</span>
+                <span className="shrink-0 font-display text-destructive">−{formatMoney(row.amount)}</span>
+              </li>
+            ))}
+          </ul>
+        </ExpandableCard>}
+    </section>
   );
 }
 

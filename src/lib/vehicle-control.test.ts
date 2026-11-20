@@ -7,6 +7,11 @@ describe("vehicle control access and daily totals", () => {
       .toEqual({ from: "2026-11-17", to: "2026-11-17" });
   });
 
+  it("preserves the selected period for administrators", () => {
+    expect(vehicleRangeForAccess(true, { from: "2026-01-01", to: "2026-01-31" }, "2026-11-17"))
+      .toEqual({ from: "2026-01-01", to: "2026-01-31" });
+  });
+
   it("shows entry values only to admins or technicians with that vehicle sector", () => {
     expect(canSeeVehicleFinancials(false, ["agua", "veiculos"], "agua")).toBe(true);
     expect(canSeeVehicleFinancials(false, ["veiculos"], "transporte")).toBe(false);
