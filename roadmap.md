@@ -7,9 +7,9 @@
 - [ ] Aba "Controle de consumo dos veículos"
   - [x] Permissão independente para acesso à aba
   - [x] Reunir veículos, consumos e compras de estoque partilhado
-  - [ ] Cartões seleccionáveis e painel de operações por baixo
-  - [ ] Ocultar compras e histórico de entradas quando o técnico não tem acesso ao setor
-  - [ ] Aplicar período diário aos técnicos e período escolhido pela administração
+  - [x] Cartões seleccionáveis e painel de operações por baixo
+  - [x] Ocultar compras e histórico de entradas quando o técnico não tem acesso ao setor
+  - [x] Aplicar período diário aos técnicos e período escolhido pela administração
   - [ ] Verificar cálculos, permissões e apresentação
 
 - [x] Compras individuais de estoque nos setores

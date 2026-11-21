@@ -46,8 +46,8 @@ export const getVehicleControlData = createServerFn({ method: "GET" })
       .filter((asset) => canSeeVehicleFinancials(Boolean(isAdmin), grants, asset.sector))
       .map((asset) => asset.id));
     // Never send another sector's financial rows to the browser, even if its UI hides them.
-    const visibleEntries = (entries || []).filter((entry) => financialAssetIds.has(entry.asset_id));
-    const visibleTruckSales = (truckSales || []).filter((sale) => financialAssetIds.has(sale.asset_id));
+    const visibleEntries = (entries || []).filter((entry) => Boolean(entry.asset_id) && financialAssetIds.has(entry.asset_id as string));
+    const visibleTruckSales = (truckSales || []).filter((sale) => Boolean(sale.asset_id) && financialAssetIds.has(sale.asset_id as string));
     const visibleExpenses = (expenses || []).filter((expense) => expense.asset_id && financialAssetIds.has(expense.asset_id));
     const visibleContributions = (contributions || []).filter((contribution) => contribution.asset_id && financialAssetIds.has(contribution.asset_id));
     const usageRows = allUsages || [];
