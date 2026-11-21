@@ -187,9 +187,10 @@ export const createStockUsage = createServerFn({ method: "POST" })
         rest.asset_id
           ? supabaseAdmin.from("rental_assets").select("id, sector, kind").eq("id", rest.asset_id).maybeSingle()
           : Promise.resolve({ data: null }),
-        supabaseAdmin.from("expenses").select("id, sector, category, status, quantity").eq("id", rest.purchase_id).maybeSingle(),
+        supabaseAdmin.from("expenses").select("id, sector, category, status, quantity, description").eq("id", rest.purchase_id).maybeSingle(),
       ]);
-      if (!asset || asset.sector !== rest.sector || asset.kind !== "Veículo") throw new Error("Veículo não encontrado neste setor.");
+      const neutral = asset?.sector === "neutro";
+      if (!asset || asset.kind !== "Veículo" || (neutral ? rest.sector !== lot?.sector : asset.sector !== rest.sector)) throw new Error("Veículo não encontrado neste setor.");
       if (!lot || lot.category !== STOCK_CATEGORY || lot.status !== "Pago" || !STOCK_SECTORS.includes(lot.sector as FleetSector)) {
         throw new Error("Lote de estoque indisponível.");
       }
@@ -202,6 +203,22 @@ export const createStockUsage = createServerFn({ method: "POST" })
         created_by: context.userId,
       });
       if (error) throw new Error(error.message);
+      // A sector vehicle using another sector's own lot pays that sector back; general (Centro de Custos) lots and neutral vehicles never move money.
+      if (!neutral && asset.sector !== lot.sector && rest.amount > 0) {
+        const { data: links } = await supabaseAdmin.from("sector_transfers").select("id").eq("kind", "contribuicao").eq("expense_id", lot.id).limit(1);
+        if (!links?.length) {
+          await supabaseAdmin.from("sector_transfers").insert({
+            from_sector: asset.sector,
+            to_sector: lot.sector,
+            amount: rest.amount,
+            kind: "cedencia",
+            payment_method: "Numerário",
+            note: `Compensação de estoque · ${lot.description}`,
+            transfer_date: isAdmin ? rest.used_on : todayAngola(),
+            created_by: context.userId,
+          });
+        }
+      }
       return { ok: true };
     }
     const { error } = await context.supabase

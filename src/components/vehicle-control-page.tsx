@@ -9,7 +9,7 @@ import { useAccess } from "@/lib/use-access";
 import { FUEL_PRICE_PER_LITER, stockPurchaseAmount } from "@/lib/stock";
 import { STOCK_CATEGORY, createStockUsage } from "@/lib/rental.functions";
 import { createExpense } from "@/lib/expenses.functions";
-import { getVehicleControlData, type VehicleControlAsset } from "@/lib/vehicle-control.functions";
+import { createNeutralVehicle, getVehicleControlData, type VehicleControlAsset } from "@/lib/vehicle-control.functions";
 import { canSeeVehicleFinancials, vehicleRangeForAccess, vehicleTotals } from "@/lib/vehicle-control";
 import { sendOrQueue, useQueue } from "@/lib/offline";
 import { angolaParts, todayAngola } from "@/lib/tz";
@@ -19,6 +19,7 @@ const SECTORS = [
   { slug: "lavagem", label: "Estação 4 de Abril", color: "bg-wash" },
   { slug: "transporte", label: "Transporte", color: "bg-transport" },
   { slug: "aluguer", label: "Aluguer", color: "bg-primary" },
+  { slug: "neutro", label: "Neutros", color: "bg-muted-foreground" },
 ] as const;
 
 export function VehicleControlPage() {
@@ -29,6 +30,22 @@ export function VehicleControlPage() {
   const queryClient = useQueryClient();
   const makeExpense = useServerFn(createExpense);
   const addUsage = useServerFn(createStockUsage);
+  const addNeutral = useServerFn(createNeutralVehicle);
+  const [showNeutral, setShowNeutral] = useState(false);
+  async function submitNeutral(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    try {
+      await addNeutral({ data: { name: String(form.get("name") || ""), plate: String(form.get("plate") || "").trim() || null } });
+      formElement.reset();
+      setShowNeutral(false);
+      toast.success("Veículo neutro cadastrado.");
+      await queryClient.invalidateQueries({ queryKey: ["vehicle-control"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível cadastrar.");
+    }
+  }
   const hasTabPermission = access.isAdmin || access.sectors.includes("veiculos");
   const loadingAccess = "loading" in access;
   const [filter, setFilter] = useState("todos");
@@ -57,7 +74,7 @@ export function VehicleControlPage() {
   const visibleAssets = assets.filter((asset) => filter === "todos" || asset.sector === filter);
 
   function getVehicleView(asset: VehicleControlAsset) {
-    const financials = canSeeVehicleFinancials(access.isAdmin, access.sectors, asset.sector);
+    const financials = asset.sector !== "neutro" && canSeeVehicleFinancials(access.isAdmin, access.sectors, asset.sector);
     const entries = financials ? [
       ...(query.data?.entries || []).filter((entry) => entry.asset_id === asset.id),
       ...queuedEntries.filter((item) => item.data["asset_id"] === asset.id).map((item) => ({
@@ -136,11 +153,12 @@ export function VehicleControlPage() {
         uses.filter((usage) => stockItems.find((item) => item.id === usage.purchase_id)?.asset_id !== asset.id),
       )
       : { revenue: 0, expense: uses.reduce((sum, usage) => sum + (usage.amount || 0), 0), balance: 0 };
-    const consumedLiters = uses.reduce((sum, usage) => {
-      const item = stockItems.find((stockItem) => stockItem.id === usage.purchase_id);
-      return item?.fuel ? sum + (usage.quantity || 0) : sum;
-    }, 0);
-    return { financials, entries, sales, expenses, uses, totals, consumedLiters };
+    const isFuel = (text?: string | null) => /combust|gas[oó]leo|gasolina|diesel/i.test(text || "");
+    const fuelUses = uses.filter((usage) => stockItems.find((stockItem) => stockItem.id === usage.purchase_id)?.fuel);
+    const extraFuelKz = expenses.filter((expense) => expense.status !== "Pendente" && (isFuel(expense.category) || isFuel(expense.description)) && expense.category !== STOCK_CATEGORY).reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+    const consumedLiters = Math.round((fuelUses.reduce((sum, usage) => sum + (usage.quantity || 0), 0) + extraFuelKz / FUEL_PRICE_PER_LITER) * 10) / 10;
+    const consumedFuelCost = fuelUses.reduce((sum, usage) => sum + (usage.amount || 0), 0) + extraFuelKz;
+    return { financials, entries, sales, expenses, uses, totals, consumedLiters, consumedFuelCost };
   }
   const queuedExpenses = queue.filter((item) => item.kind === "expense" && item.data["asset_id"]);
   const queuedUsages = queue.filter((item) => item.kind === "stock_usage" && item.data["asset_id"]);
@@ -219,7 +237,16 @@ export function VehicleControlPage() {
               {sector.label}
             </Button>
           ))}
+          <Button type="button" variant="outline" className="ml-auto h-8 px-3 text-xs" onClick={() => setShowNeutral((v) => !v)}>+ Novo veículo neutro</Button>
         </div>
+        {showNeutral ? (
+          <form onSubmit={submitNeutral} className="grid grid-cols-2 gap-2 rounded-lg border border-edge bg-panel p-3 sm:grid-cols-4">
+            <input name="name" required maxLength={100} placeholder="Nome do veículo" className={`${inputClass} col-span-2`} />
+            <input name="plate" maxLength={40} placeholder="Matrícula (opcional)" className={inputClass} />
+            <Button type="submit">Cadastrar</Button>
+            <p className="col-span-2 text-[11px] text-muted-foreground sm:col-span-4">Veículo neutro: sem entradas nem saldo. Só regista consumos; o custo fica no setor dono do estoque.</p>
+          </form>
+        ) : null}
 
         {query.isPending ? <p className="py-8 text-center text-sm text-muted-foreground">A carregar veículos…</p> : null}
         {query.isError ? <p className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">Não foi possível actualizar os veículos. Os dados guardados poderão continuar disponíveis.</p> : null}
@@ -236,10 +263,7 @@ export function VehicleControlPage() {
               financials={view.financials}
               totals={view.totals}
               consumedLiters={view.consumedLiters}
-              consumedFuelCost={view.uses.reduce((sum, usage) => {
-                const lot = stockItems.find((item) => item.id === usage.purchase_id);
-                return lot?.fuel ? sum + (usage.amount || 0) : sum;
-              }, 0)}
+              consumedFuelCost={view.consumedFuelCost}
               onSelect={() => setSelectedVehicleId((current) => current === asset.id ? null : asset.id)}
             />;
           })}
@@ -250,6 +274,7 @@ export function VehicleControlPage() {
             asset={selectedAsset}
             {...selectedView}
             stockItems={stockItems}
+            assets={assets}
             today={today}
             makeExpense={makeExpense}
             addUsage={addUsage}
@@ -262,7 +287,7 @@ export function VehicleControlPage() {
   );
 }
 
-type StockView = { id: string; description: string; sector: string; asset_id?: string | null; fuel: boolean; purchase_date: string; quantity: number; amount: number; unit_price: number; left_quantity: number; left_amount: number; pending?: boolean };
+type StockView = { id: string; description: string; sector: string; asset_id?: string | null; general?: boolean; fuel: boolean; purchase_date: string; quantity: number; amount: number; unit_price: number; left_quantity: number; left_amount: number; pending?: boolean };
 type RecordView = { id: string; amount: number; status?: string; created_at?: string; expense_date?: string; description?: string | null; category?: string; cost?: number; payment_method?: string; quantity?: number; total?: number; purchase_id?: string; used_on?: string; local?: boolean; pending?: boolean };
 
 function VehicleCard({ asset, selected, financials, totals, consumedLiters, consumedFuelCost, onSelect }: {
@@ -310,7 +335,7 @@ function VehicleCard({ asset, selected, financials, totals, consumedLiters, cons
   );
 }
 
-function VehicleOperations({ asset, financials, entries, sales, expenses, uses, totals, stockItems, today, makeExpense, addUsage, refresh, onClose }: {
+function VehicleOperations({ asset, assets, financials, entries, sales, expenses, uses, totals, stockItems, today, makeExpense, addUsage, refresh, onClose }: {
   asset: VehicleControlAsset;
   financials: boolean;
   entries: RecordView[];
@@ -319,6 +344,7 @@ function VehicleOperations({ asset, financials, entries, sales, expenses, uses, 
   uses: RecordView[];
   totals: { revenue: number; expense: number; balance: number };
   stockItems: StockView[];
+  assets: VehicleControlAsset[];
   today: string;
   makeExpense: ReturnType<typeof useServerFn<typeof createExpense>>;
   addUsage: ReturnType<typeof useServerFn<typeof createStockUsage>>;
@@ -334,6 +360,12 @@ function VehicleOperations({ asset, financials, entries, sales, expenses, uses, 
   const selectedLot = stockItems.find((item) => item.id === usePurchase);
   const useAmount = Math.round((selectedLot?.unit_price || 0) * (Number(useQuantity) || 0) * 100) / 100;
   const sector = SECTORS.find((item) => item.slug === asset.sector);
+  const lotOrigin = (item: StockView) => {
+    if (item.general) return "Centro de Custos (geral)";
+    const owner = item.asset_id ? assets.find((row) => row.id === item.asset_id) : null;
+    const sectorName = SECTORS.find((row) => row.slug === item.sector)?.label || item.sector;
+    return owner ? `${owner.name} · ${sectorName}` : sectorName;
+  };
   const sourceEntries = [...entries, ...sales];
   const history = [
       ...(financials ? sourceEntries.map((row) => ({ id: row.id, date: row.created_at || "", description: "Entrada", amount: row.amount, type: "entrada", status: row.status, local: row.local || row.pending })) : []),
@@ -397,7 +429,7 @@ function VehicleOperations({ asset, financials, entries, sales, expenses, uses, 
       amount: useAmount,
       note: null,
       used_on: today,
-      sector: asset.sector,
+      sector: (asset.sector === "neutro" ? selectedLot.sector : asset.sector) as "agua" | "lavagem" | "transporte" | "aluguer",
       vehicle_control: true,
     };
     try {
@@ -440,7 +472,7 @@ function VehicleOperations({ asset, financials, entries, sales, expenses, uses, 
               <form onSubmit={submitUsage} className="grid grid-cols-2 gap-2 p-3">
                 <select value={usePurchase} onChange={(event) => { setUsePurchase(event.target.value); setUseQuantity("1"); }} className={`${inputClass} col-span-2`} aria-label="Lote de estoque">
                   <option value="">Escolher item disponível…</option>
-                  {stockItems.filter((item) => item.left_quantity > 0).map((item) => <option key={item.id} value={item.id} disabled={item.pending}>{item.fuel ? "Combustível · " : ""}{item.description} — {item.left_quantity}{item.fuel ? " L" : " un."}{item.pending ? " · aguarda sincronização" : ""}</option>)}
+                  {stockItems.filter((item) => item.left_quantity > 0).map((item) => <option key={item.id} value={item.id} disabled={item.pending}>{item.fuel ? "Combustível · " : ""}{item.description} · {lotOrigin(item)} — {item.left_quantity}{item.fuel ? " L" : " un."}{item.pending ? " · aguarda sincronização" : ""}</option>)}
                 </select>
                 <input value={useQuantity} onChange={(event) => setUseQuantity(event.target.value)} type="number" step="1" min="1" max={selectedLot?.left_quantity} aria-label="Quantidade consumida" placeholder="Quantidade" className={inputClass} />
                 <div className={`${inputClass} flex items-center text-xs text-muted-foreground`}>{formatMoney(useAmount)} Kz de custo</div>
