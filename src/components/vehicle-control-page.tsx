@@ -452,7 +452,7 @@ function VehicleOperations({ asset, assets, financials, entries, sales, expenses
         <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Fechar operações do veículo"><X className="size-4" /></Button>
       </div>
 
-        {asset.kind === "Veículo" ? (
+        {asset.kind ? (
           <div className={`grid gap-3 ${financials ? "xl:grid-cols-2" : "grid-cols-1"}`}>
             {financials ? <ExpandableCard title={`Comprar estoque · ${asset.name}`} summary="A compra é paga pelo veículo e o lote fica partilhado">
               <form onSubmit={submitPurchase} className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3">

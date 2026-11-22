@@ -28,8 +28,9 @@ export const getVehicleControlData = createServerFn({ method: "GET" })
       .in("sector", [...STOCK_SECTORS, "neutro"])
       .order("name");
     if (assetsError) throw new Error("Não foi possível carregar os veículos.");
-    const rows = assets || [];
-    const ids = rows.filter((asset) => asset.kind === "Veículo").map((asset) => asset.id);
+    const HIDDEN = new Set(["restaurante", "lavagem", "cartões", "cartoes"]);
+    const rows = (assets || []).filter((asset) => !HIDDEN.has(asset.name.trim().toLowerCase()));
+    const ids = rows.map((asset) => asset.id);
     if (!ids.length) return { range: { from, to }, assets: [], entries: [], truckSales: [], expenses: [], stockItems: [], usages: [], contributions: [] };
 
     const [{ data: entries, error: entriesError }, { data: truckSales, error: salesError }, { data: expenses, error: expensesError }, { data: purchases, error: purchasesError }, { data: allUsages, error: usagesError }] = await Promise.all([
@@ -79,7 +80,7 @@ export const getVehicleControlData = createServerFn({ method: "GET" })
     });
     return {
       range: { from, to },
-      assets: rows.filter((asset) => asset.kind === "Veículo").map((asset) => ({ ...asset, sector: asset.sector as FleetSector | "neutro", canSeeFinancials: asset.sector !== "neutro" && (Boolean(isAdmin) || grants.includes(asset.sector)) })),
+      assets: rows.map((asset) => ({ ...asset, sector: asset.sector as FleetSector | "neutro", canSeeFinancials: asset.sector !== "neutro" && (Boolean(isAdmin) || grants.includes(asset.sector)) })),
       entries: visibleEntries,
       truckSales: visibleTruckSales,
       expenses: visibleExpenses,
